@@ -1,0 +1,5 @@
+{
+  "name": "Repair Ledger Pro",
+  "description": "A transaction-based inventory system for tracking second-hand laptop classes and repair transitions.",
+  "requestFramePermissions": []
+}

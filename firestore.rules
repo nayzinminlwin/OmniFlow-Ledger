@@ -1,0 +1,115 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: inventory/current
+    // Fields:
+    //   - classA: number (required, >= 0)
+    //   - classB: number (required, >= 0)
+    //   - classC: number (required, >= 0)
+    //   - classCMinus: number (required, >= 0)
+    //   - classD: number (required, >= 0)
+    //   - unclassified: number (required, >= 0)
+    //   - lastUpdated: string (ISO 8601)
+    //
+    // Collection: batches/{batchId}
+    // Fields:
+    //   - batchId: string (required)
+    //   - classA: number (required, >= 0)
+    //   - classB: number (required, >= 0)
+    //   - classC: number (required, >= 0)
+    //   - classCMinus: number (required, >= 0)
+    //   - classD: number (required, >= 0)
+    //   - unclassified: number (required, >= 0)
+    //   - createdAt: string (ISO 8601)
+    //
+    // Collection: transactions/{transactionId}
+    // Fields:
+    //   - type: string (enum: INCOMING, REPAIR, SALE, ADJUSTMENT)
+    //   - batchId: string (required)
+    //   - fromClass: string (optional, enum: A, B, C, C-, D, UNCLASSIFIED)
+    //   - toClass: string (optional, enum: A, B, C, C-, D, UNCLASSIFIED)
+    //   - quantity: number (required, > 0)
+    //   - timestamp: string (ISO 8601)
+    //   - userId: string (required)
+    //   - notes: string (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.token.email == "nayzinminlwin22@gmail.com" && 
+        request.auth.token.email_verified == true
+      );
+    }
+
+    function isValidClass(className) {
+      return className in ['A', 'B', 'C', 'C-', 'D', 'UNCLASSIFIED'];
+    }
+
+    function isValidStock(data) {
+      return data.keys().hasAll(['classA', 'classB', 'classC', 'classCMinus', 'classD', 'unclassified', 'lastUpdated']) &&
+             data.classA is number && data.classA >= 0 &&
+             data.classB is number && data.classB >= 0 &&
+             data.classC is number && data.classC >= 0 &&
+             data.classCMinus is number && data.classCMinus >= 0 &&
+             data.classD is number && data.classD >= 0 &&
+             data.unclassified is number && data.unclassified >= 0 &&
+             data.lastUpdated is string;
+    }
+
+    function isValidBatch(data) {
+      return data.keys().hasAll(['batchId', 'classA', 'classB', 'classC', 'classCMinus', 'classD', 'unclassified', 'createdAt']) &&
+             data.batchId is string &&
+             data.classA is number && data.classA >= 0 &&
+             data.classB is number && data.classB >= 0 &&
+             data.classC is number && data.classC >= 0 &&
+             data.classCMinus is number && data.classCMinus >= 0 &&
+             data.classD is number && data.classD >= 0 &&
+             data.unclassified is number && data.unclassified >= 0 &&
+             data.createdAt is string;
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['type', 'batchId', 'quantity', 'timestamp', 'userId']) &&
+             data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT'] &&
+             data.batchId is string &&
+             data.quantity is number && data.quantity > 0 &&
+             data.timestamp is string &&
+             data.userId == request.auth.uid &&
+             (!('fromClass' in data) || isValidClass(data.fromClass)) &&
+             (!('toClass' in data) || isValidClass(data.toClass));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /inventory/current {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && isValidStock(request.resource.data);
+    }
+
+    match /batches/{batchId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && isValidBatch(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidTransaction(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+  }
+}

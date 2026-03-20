@@ -1,0 +1,65 @@
+{
+  "entities": {
+    "Stock": {
+      "title": "Inventory Stock",
+      "description": "Current counts of each laptop class.",
+      "type": "object",
+      "properties": {
+        "classA": { "type": "number", "description": "Count of Class A laptops" },
+        "classB": { "type": "number", "description": "Count of Class B laptops" },
+        "classC": { "type": "number", "description": "Count of Class C laptops" },
+        "classCMinus": { "type": "number", "description": "Count of Class C- laptops" },
+        "classD": { "type": "number", "description": "Count of Class D laptops" },
+        "unclassified": { "type": "number", "description": "Count of unclassified laptops" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["classA", "classB", "classC", "classCMinus", "classD", "unclassified"]
+    },
+    "Batch": {
+      "title": "Batch Stock",
+      "description": "Stock counts for a specific batch of laptops.",
+      "type": "object",
+      "properties": {
+        "batchId": { "type": "string", "description": "The date or identifier for the batch (e.g., 16/03/2026)" },
+        "classA": { "type": "number" },
+        "classB": { "type": "number" },
+        "classC": { "type": "number" },
+        "classCMinus": { "type": "number" },
+        "classD": { "type": "number" },
+        "unclassified": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["batchId", "classA", "classB", "classC", "classCMinus", "classD", "unclassified"]
+    },
+    "Transaction": {
+      "title": "Ledger Transaction",
+      "description": "A single entry in the ledger representing a stock change.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["INCOMING", "REPAIR", "SALE", "ADJUSTMENT"], "description": "Type of transaction" },
+        "batchId": { "type": "string", "description": "The batch this transaction belongs to" },
+        "fromClass": { "type": "string", "description": "The class the laptop is moving FROM" },
+        "toClass": { "type": "string", "description": "The class the laptop is moving TO" },
+        "quantity": { "type": "number", "description": "Number of laptops involved" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["type", "batchId", "quantity", "timestamp", "userId"]
+    }
+  },
+  "firestore": {
+    "/inventory/current": {
+      "schema": "Stock",
+      "description": "The single source of truth for global stock levels."
+    },
+    "/batches/{batchId}": {
+      "schema": "Batch",
+      "description": "Stock levels for a specific batch."
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Historical log of all stock movements."
+    }
+  }
+}
