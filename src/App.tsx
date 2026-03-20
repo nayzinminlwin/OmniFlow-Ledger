@@ -44,6 +44,7 @@ import {
 import { format } from 'date-fns';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { translations, Language } from './translations';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -113,6 +114,9 @@ const INITIAL_STOCK: Stock = {
 };
 
 export default function App() {
+  const [lang, setLang] = useState<Language>('en');
+  const t = translations[lang];
+
   const [user, setUser] = useState<User | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [stock, setStock] = useState<Stock | null>(null);
@@ -157,7 +161,7 @@ export default function App() {
         await getDocFromServer(doc(db, 'inventory', 'current'));
       } catch (error) {
         if (error instanceof Error && error.message.includes('the client is offline')) {
-          setError("Firestore is offline. Please check your configuration.");
+          setError(t.firestoreOffline);
         }
       }
     }
@@ -209,7 +213,7 @@ export default function App() {
       await signInWithPopup(auth, provider);
     } catch (err) {
       console.error('Login failed:', err);
-      setError('Failed to log in with Google.');
+      setError(t.loginFailed);
     }
   };
 
@@ -268,12 +272,12 @@ export default function App() {
       // 1. Get old batch data
       const oldBatchRef = doc(db, 'batches', oldBatchId);
       const oldBatchSnap = await getDoc(oldBatchRef);
-      if (!oldBatchSnap.exists()) throw new Error("Batch not found");
+      if (!oldBatchSnap.exists()) throw new Error(t.batchNotFound);
       
       // 2. Check if new batch exists
       const newBatchRef = doc(db, 'batches', newId);
       const newBatchSnap = await getDoc(newBatchRef);
-      if (newBatchSnap.exists()) throw new Error("A batch with this name already exists");
+      if (newBatchSnap.exists()) throw new Error(t.batchExists);
       
       // 3. Create new batch
       const batchData = oldBatchSnap.data();
@@ -297,7 +301,7 @@ export default function App() {
       }
     } catch (err: any) {
       console.error('Rename failed:', err);
-      setError(err.message || 'Failed to rename batch.');
+      setError(err.message || t.renameFailed);
     } finally {
       setIsRenaming(false);
     }
@@ -319,7 +323,7 @@ export default function App() {
         const batchDoc = await transaction.get(batchRef);
         
         if (!stockDoc.exists()) {
-          throw new Error("Global stock document does not exist!");
+          throw new Error(t.globalStockMissing);
         }
 
         const currentStock = stockDoc.data() as Stock;
@@ -368,7 +372,7 @@ export default function App() {
         } else if (txType === 'SALE') {
           const key = getStockKey(fromClass);
           if ((currentBatchStock[key] as number) < quantity) {
-            throw new Error(`Insufficient stock in Batch ${batchId}, Class ${fromClass}`);
+            throw new Error(t.insufficientStock(batchId, fromClass));
           }
           (newStock[key] as number) -= quantity;
           (newBatchStock[key] as number) -= quantity;
@@ -376,7 +380,7 @@ export default function App() {
           const fromKey = getStockKey(fromClass);
           const toKey = getStockKey(toClass);
           if ((currentBatchStock[fromKey] as number) < quantity) {
-            throw new Error(`Insufficient stock in Batch ${batchId}, Class ${fromClass}`);
+            throw new Error(t.insufficientStock(batchId, fromClass));
           }
           (newStock[fromKey] as number) -= quantity;
           (newStock[toKey] as number) += quantity;
@@ -423,7 +427,7 @@ export default function App() {
       setActiveTab('dashboard');
     } catch (err: any) {
       console.error('Transaction failed:', err);
-      setError(err.message || 'Failed to process transaction.');
+      setError(err.message || t.transactionFailed);
     } finally {
       setIsSubmitting(false);
     }
@@ -434,7 +438,7 @@ export default function App() {
       <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <RefreshCw className="w-10 h-10 text-indigo-600 animate-spin" />
-          <p className="text-indigo-900/60 font-medium animate-pulse">Initializing Ledger...</p>
+          <p className="text-indigo-900/60 font-medium animate-pulse">{t.initLedger}</p>
         </div>
       </div>
     );
@@ -447,19 +451,19 @@ export default function App() {
           <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-8 rotate-3 shadow-lg shadow-indigo-200">
             <LayoutDashboard className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">Repair Ledger Pro</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-3 tracking-tight">{t.brand}</h1>
           <p className="text-gray-500 mb-10 leading-relaxed">
-            Securely track your second-hand laptop inventory and repair transitions with automated consistency checks.
+            {t.subtitle}
           </p>
           <button
             onClick={handleLogin}
             className="w-full bg-indigo-600 text-white font-semibold py-4 rounded-2xl hover:bg-indigo-700 transition-all flex items-center justify-center gap-3 group active:scale-95 shadow-lg shadow-indigo-100"
           >
             <LogIn className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            Sign in with Google
+            {t.signIn}
           </button>
           <p className="mt-8 text-xs text-gray-400 uppercase tracking-widest font-medium">
-            Authorized Personnel Only
+            {t.authOnly}
           </p>
         </div>
       </div>
@@ -477,10 +481,14 @@ export default function App() {
                 <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-md shadow-indigo-100">
                   <LayoutDashboard className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xl font-bold tracking-tight text-gray-900 hidden sm:block">Repair Ledger Pro</span>
+                <span className="text-xl font-bold tracking-tight text-gray-900 hidden sm:block">{t.brand}</span>
               </div>
               
               <div className="flex items-center gap-2 sm:gap-4">
+                <div className="flex bg-gray-100 p-1 rounded-lg">
+                  <button onClick={() => setLang('en')} className={cn("px-2 py-1 text-xs font-bold rounded-md transition-colors", lang === 'en' ? "bg-white shadow-sm text-indigo-600" : "text-gray-500 hover:text-gray-700")}>EN</button>
+                  <button onClick={() => setLang('ms')} className={cn("px-2 py-1 text-xs font-bold rounded-md transition-colors", lang === 'ms' ? "bg-white shadow-sm text-indigo-600" : "text-gray-500 hover:text-gray-700")}>MS</button>
+                </div>
                 <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-100">
                   <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-600">
                     {user.displayName?.charAt(0) || 'U'}
@@ -490,7 +498,7 @@ export default function App() {
                 <button
                   onClick={handleLogout}
                   className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all active:scale-90"
-                  title="Logout"
+                  title={t.logout}
                 >
                   <LogOut className="w-5 h-5" />
                 </button>
@@ -520,7 +528,7 @@ export default function App() {
               )}
             >
               <LayoutDashboard className="w-4 h-4" />
-              Dashboard
+              {t.dashboard}
             </button>
             <button
               onClick={() => setActiveTab('batches')}
@@ -530,7 +538,7 @@ export default function App() {
               )}
             >
               <Settings className="w-4 h-4" />
-              Batches
+              {t.batches}
             </button>
             <button
               onClick={() => setActiveTab('add')}
@@ -539,8 +547,8 @@ export default function App() {
                 activeTab === 'add' ? "bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "text-gray-500 hover:bg-gray-50"
               )}
             >
-              <Plus className="w-4 h-4" />
-              New Entry
+              <Edit2 className="w-4 h-4" />
+              {t.updateStock}
             </button>
             <button
               onClick={() => setActiveTab('history')}
@@ -550,7 +558,7 @@ export default function App() {
               )}
             >
               <History className="w-4 h-4" />
-              Ledger
+              {t.ledger}
             </button>
           </div>
 
@@ -562,22 +570,22 @@ export default function App() {
             )}>
               <section>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Current Inventory</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{t.currentInventory}</h2>
                   <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                    Last updated: {stock ? format(new Date(stock.lastUpdated), 'HH:mm:ss') : 'Never'}
+                    {t.lastUpdated} {stock ? format(new Date(stock.lastUpdated), 'HH:mm:ss') : t.never}
                   </span>
                 </div>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
                   <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100 shadow-sm hover:shadow-md transition-shadow group">
-                    <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2 group-hover:text-indigo-600 transition-colors">Unclassified</div>
+                    <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2 group-hover:text-indigo-600 transition-colors">{t.unclassified}</div>
                     <div className="text-4xl font-black text-indigo-900 tabular-nums">
                       {stock ? stock.unclassified : 0}
                     </div>
                   </div>
                   {CLASSES.map((cls) => (
                     <div key={cls} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
-                      <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-indigo-600 transition-colors">Class {cls}</div>
+                      <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-indigo-600 transition-colors">{t.class} {cls}</div>
                       <div className="text-4xl font-black text-gray-900 tabular-nums">
                         {stock ? stock[getStockKey(cls)] : 0}
                       </div>
@@ -588,9 +596,9 @@ export default function App() {
 
               <section className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between">
-                  <h2 className="text-xl font-bold text-gray-900">Recent Activity</h2>
+                  <h2 className="text-xl font-bold text-gray-900">{t.recentActivity}</h2>
                   <button onClick={() => setActiveTab('history')} className="text-indigo-600 text-sm font-bold hover:underline flex items-center gap-1">
-                    View Full Ledger <ChevronRight className="w-4 h-4" />
+                    {t.viewFullLedger} <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="divide-y divide-gray-50">
@@ -612,11 +620,11 @@ export default function App() {
                         <div>
                     <p className="font-bold text-gray-900">
                       {tx.type === 'REPAIR' ? (
-                        <>Repair: {tx.fromClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {tx.toClass}</>
+                        <>{t.repairPrefix} {tx.fromClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {tx.toClass}</>
                       ) : tx.type === 'INCOMING' ? (
-                        <>Incoming Batch</>
+                        <>{t.incomingBatch}</>
                       ) : (
-                        <>{tx.type.charAt(0) + tx.type.slice(1).toLowerCase()} {tx.toClass || tx.fromClass}</>
+                        <>{t[tx.type.toLowerCase() as keyof typeof t] || tx.type} {tx.toClass || tx.fromClass}</>
                       )}
                     </p>
                           <p className="text-xs text-gray-400 font-medium">{format(new Date(tx.timestamp), 'MMM d, HH:mm')}</p>
@@ -635,7 +643,7 @@ export default function App() {
                   ))}
                   {transactions.length === 0 && (
                     <div className="px-8 py-12 text-center text-gray-400">
-                      No transactions recorded yet.
+                      {t.noTransactions}
                     </div>
                   )}
                 </div>
@@ -648,11 +656,11 @@ export default function App() {
               activeTab !== 'add' && "hidden lg:block"
             )}>
               <div className="bg-white rounded-3xl border border-gray-100 shadow-xl shadow-indigo-100/20 p-8 sticky top-28">
-                <h2 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">Record Transaction</h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">{t.recordTransaction}</h2>
                 
                 <form onSubmit={handleAddTransaction} className="space-y-6">
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Batch ID (Date)</label>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">{t.batchId}</label>
                     <div className="flex gap-2">
                       <input
                         type="text"
@@ -666,14 +674,14 @@ export default function App() {
                         onChange={(e) => setBatchId(e.target.value)}
                         className="bg-gray-50 border-none rounded-xl px-2 py-3 text-xs font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
                       >
-                        <option value="">Select Existing</option>
+                        <option value="">{t.selectExisting}</option>
                         {batches.map(b => <option key={b.id} value={b.batchId}>{b.batchId}</option>)}
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Transaction Type</label>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">{t.transactionType}</label>
                     <div className="grid grid-cols-2 gap-2">
                       {(['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT'] as TransactionType[]).map((type) => (
                         <button
@@ -687,7 +695,7 @@ export default function App() {
                               : "bg-white text-gray-500 border-gray-100 hover:border-indigo-200"
                           )}
                         >
-                          {type}
+                          {t[type.toLowerCase() as keyof typeof t] || type}
                         </button>
                       ))}
                     </div>
@@ -696,28 +704,28 @@ export default function App() {
                   <div className="grid grid-cols-2 gap-6">
                     {(txType === 'REPAIR' || txType === 'SALE') && (
                       <div>
-                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">From Class</label>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">{t.fromClass}</label>
                         <select
                           value={fromClass}
                           onChange={(e) => setFromClass(e.target.value as LaptopClass)}
                           className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
                         >
-                          <option value="UNCLASSIFIED">Unclassified</option>
-                          {CLASSES.map(c => <option key={c} value={c}>Class {c}</option>)}
+                          <option value="UNCLASSIFIED">{t.unclassified}</option>
+                          {CLASSES.map(c => <option key={c} value={c}>{t.class} {c}</option>)}
                         </select>
                       </div>
                     )}
                     {(txType === 'REPAIR' || txType === 'ADJUSTMENT') && (
                       <div className={cn(txType === 'ADJUSTMENT' && "col-span-2")}>
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-                          {txType === 'ADJUSTMENT' ? 'Target Class' : 'To Class'}
+                          {txType === 'ADJUSTMENT' ? t.targetClass : t.toClass}
                         </label>
                         <select
                           value={toClass}
                           onChange={(e) => setToClass(e.target.value as LaptopClass)}
                           className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
                         >
-                          {CLASSES.map(c => <option key={c} value={c}>Class {c}</option>)}
+                          {CLASSES.map(c => <option key={c} value={c}>{t.class} {c}</option>)}
                         </select>
                       </div>
                     )}
@@ -725,7 +733,7 @@ export default function App() {
 
                   <div>
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-                      {txType === 'ADJUSTMENT' ? 'New Total Count' : 'Quantity'}
+                      {txType === 'ADJUSTMENT' ? t.newTotalCount : t.quantity}
                     </label>
                     <input
                       type="number"
@@ -738,11 +746,10 @@ export default function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Notes (Optional)</label>
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">{t.notes}</label>
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      placeholder="e.g., Customer return, Repair batch #42..."
                       className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none min-h-[100px] resize-none"
                     />
                   </div>
@@ -753,7 +760,7 @@ export default function App() {
                     className="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
-                    {isSubmitting ? 'Processing...' : 'Record Entry'}
+                    {isSubmitting ? t.processing : t.recordEntry}
                   </button>
                 </form>
               </div>
@@ -766,13 +773,13 @@ export default function App() {
             )}>
               <section>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Batch Stock Levels</h2>
+                  <h2 className="text-2xl font-bold text-gray-900 tracking-tight">{t.batchStockLevels}</h2>
                   <select
                     value={selectedBatchId}
                     onChange={(e) => setSelectedBatchId(e.target.value)}
                     className="bg-white border border-gray-100 rounded-xl px-4 py-2 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none shadow-sm"
                   >
-                    <option value="">Select a Batch to View</option>
+                    <option value="">{t.selectBatch}</option>
                     {batches.map(b => <option key={b.id} value={b.batchId}>{b.batchId}</option>)}
                   </select>
                 </div>
@@ -784,19 +791,19 @@ export default function App() {
                       return (
                         <>
                           <div className="bg-indigo-50 p-6 rounded-3xl border border-indigo-100 shadow-sm hover:shadow-md transition-shadow group">
-                            <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2 group-hover:text-indigo-600 transition-colors">Unclassified</div>
+                            <div className="text-xs font-bold text-indigo-400 uppercase tracking-widest mb-2 group-hover:text-indigo-600 transition-colors">{t.unclassified}</div>
                             <div className="text-4xl font-black text-indigo-900 tabular-nums">
                               {b ? b.unclassified : 0}
                             </div>
-                            <div className="text-[10px] text-gray-400 mt-2">In Batch {selectedBatchId}</div>
+                            <div className="text-[10px] text-gray-400 mt-2">{t.inBatch} {selectedBatchId}</div>
                           </div>
                           {CLASSES.map((cls) => (
                             <div key={cls} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow group">
-                              <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-indigo-600 transition-colors">Class {cls}</div>
+                              <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-indigo-600 transition-colors">{t.class} {cls}</div>
                               <div className="text-4xl font-black text-gray-900 tabular-nums">
                                 {b ? (b as any)[getStockKey(cls)] : 0}
                               </div>
-                              <div className="text-[10px] text-gray-400 mt-2">In Batch {selectedBatchId}</div>
+                              <div className="text-[10px] text-gray-400 mt-2">{t.inBatch} {selectedBatchId}</div>
                             </div>
                           ))}
                         </>
@@ -806,28 +813,28 @@ export default function App() {
                 ) : (
                   <div className="bg-white rounded-3xl border border-dashed border-gray-200 p-12 text-center">
                     <Settings className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                    <p className="text-gray-400 font-medium">Select a batch from the dropdown to see its specific stock levels.</p>
+                    <p className="text-gray-400 font-medium">{t.selectBatchToView}</p>
                   </div>
                 )}
               </section>
 
               <section className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-8 py-6 border-b border-gray-50 bg-gray-50/30">
-                  <h2 className="text-xl font-bold text-gray-900">All Batches Summary</h2>
+                  <h2 className="text-xl font-bold text-gray-900">{t.allBatchesSummary}</h2>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
                       <tr className="bg-gray-50/50">
-                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Batch ID</th>
-                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Created</th>
-                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">Unclassified</th>
+                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">{t.batchId}</th>
+                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">{t.created}</th>
+                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">{t.unclassified}</th>
                         <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">A</th>
                         <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">B</th>
                         <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">C</th>
                         <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">C-</th>
                         <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-center">D</th>
-                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">{t.actions}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -853,13 +860,20 @@ export default function App() {
                                 setNewBatchName(b.batchId);
                               }}
                               className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                              title="Edit Batch Name"
+                              title={t.editBatchName}
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                           </td>
                         </tr>
                       ))}
+                      {batches.length === 0 && (
+                        <tr>
+                          <td colSpan={9} className="px-8 py-12 text-center text-gray-400 font-medium">
+                            {t.noBatches}
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -871,21 +885,21 @@ export default function App() {
             )}>
               <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
-                  <h2 className="text-xl font-bold text-gray-900">Full Transaction Ledger</h2>
+                  <h2 className="text-xl font-bold text-gray-900">{t.fullLedger}</h2>
                   <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                    Showing last 50 entries
+                    {t.showingLast50}
                   </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
                       <tr className="bg-gray-50/50">
-                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Date & Time</th>
-                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Batch</th>
-                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Type</th>
-                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Movement</th>
-                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">Qty</th>
-                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Notes</th>
+                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">{t.dateTime}</th>
+                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">{t.batch}</th>
+                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">{t.type}</th>
+                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">{t.movement}</th>
+                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest text-right">{t.qty}</th>
+                        <th className="px-8 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">{t.notes}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -906,7 +920,7 @@ export default function App() {
                               tx.type === 'REPAIR' && "bg-indigo-100 text-indigo-700",
                               tx.type === 'ADJUSTMENT' && "bg-gray-100 text-gray-700"
                             )}>
-                              {tx.type}
+                              {t[tx.type.toLowerCase() as keyof typeof t] || tx.type}
                             </span>
                           </td>
                           <td className="px-8 py-4">
@@ -914,11 +928,11 @@ export default function App() {
                               {tx.type === 'REPAIR' ? (
                                 <>{tx.fromClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {tx.toClass}</>
                               ) : tx.type === 'INCOMING' ? (
-                                <>To Unclassified</>
+                                <>{t.toUnclassified}</>
                               ) : tx.type === 'SALE' ? (
-                                <>From {tx.fromClass}</>
+                                <>{t.from} {tx.fromClass}</>
                               ) : (
-                                <>Class {tx.toClass}</>
+                                <>{t.class} {tx.toClass}</>
                               )}
                             </p>
                           </td>
@@ -935,6 +949,13 @@ export default function App() {
                           </td>
                         </tr>
                       ))}
+                      {transactions.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-8 py-12 text-center text-gray-400 font-medium">
+                            {t.noTransactions}
+                          </td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -947,14 +968,14 @@ export default function App() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center gap-2 text-gray-400">
               <LayoutDashboard className="w-4 h-4" />
-              <span className="text-xs font-bold uppercase tracking-widest">Repair Ledger Pro v1.0</span>
+              <span className="text-xs font-bold uppercase tracking-widest">{t.brand} v1.0</span>
             </div>
             <div className="flex items-center gap-6 text-xs font-bold text-gray-400 uppercase tracking-widest">
-              <span>Secure Transaction Ledger</span>
+              <span>{t.footerFeature1}</span>
               <span>•</span>
-              <span>Automated Consistency</span>
+              <span>{t.footerFeature2}</span>
               <span>•</span>
-              <span>Cloud Sync</span>
+              <span>{t.footerFeature3}</span>
             </div>
           </div>
         </footer>
@@ -965,21 +986,20 @@ export default function App() {
             <div className="px-8 py-6 border-b border-gray-100 bg-red-50/30">
               <div className="flex items-center gap-3 text-red-600 mb-2">
                 <AlertCircle className="w-6 h-6" />
-                <h3 className="text-xl font-bold">Rename Batch</h3>
+                <h3 className="text-xl font-bold">{t.renameBatch}</h3>
               </div>
               <p className="text-sm text-red-600/80 font-medium">
-                Warning: This is a fatal operation. Renaming a batch will update the batch record and all associated transactions.
+                {t.renameWarning}
               </p>
             </div>
             <div className="p-8">
               <div className="mb-6">
-                <label className="block text-sm font-bold text-gray-700 mb-2">New Batch Name</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">{t.newBatchName}</label>
                 <input
                   type="text"
                   value={newBatchName}
                   onChange={(e) => setNewBatchName(e.target.value)}
                   className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-semibold focus:ring-2 focus:ring-indigo-500 outline-none"
-                  placeholder="e.g., 16-03-2026"
                 />
               </div>
               <div className="flex justify-end gap-3">
@@ -988,7 +1008,7 @@ export default function App() {
                   disabled={isRenaming}
                   className="px-6 py-2.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
                 >
-                  Cancel
+                  {t.cancel}
                 </button>
                 <button
                   onClick={handleRenameBatch}
@@ -998,10 +1018,10 @@ export default function App() {
                   {isRenaming ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin" />
-                      Renaming...
+                      {t.renaming}
                     </>
                   ) : (
-                    'Confirm Rename'
+                    t.confirmRename
                   )}
                 </button>
               </div>
