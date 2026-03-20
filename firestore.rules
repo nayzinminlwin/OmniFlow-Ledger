@@ -9,6 +9,7 @@ service cloud.firestore {
     // Fields:
     //   - classA: number (required, >= 0)
     //   - classB: number (required, >= 0)
+    //   - classBMinus: number (required, >= 0)
     //   - classC: number (required, >= 0)
     //   - classCMinus: number (required, >= 0)
     //   - classD: number (required, >= 0)
@@ -20,6 +21,7 @@ service cloud.firestore {
     //   - batchId: string (required)
     //   - classA: number (required, >= 0)
     //   - classB: number (required, >= 0)
+    //   - classBMinus: number (required, >= 0)
     //   - classC: number (required, >= 0)
     //   - classCMinus: number (required, >= 0)
     //   - classD: number (required, >= 0)
@@ -30,8 +32,8 @@ service cloud.firestore {
     // Fields:
     //   - type: string (enum: INCOMING, REPAIR, SALE, ADJUSTMENT)
     //   - batchId: string (required)
-    //   - fromClass: string (optional, enum: A, B, C, C-, D, UNCLASSIFIED)
-    //   - toClass: string (optional, enum: A, B, C, C-, D, UNCLASSIFIED)
+    //   - fromClass: string (optional, enum: A, B, B-, C, C-, D, UNCLASSIFIED)
+    //   - toClass: string (optional, enum: A, B, B-, C, C-, D, UNCLASSIFIED)
     //   - quantity: number (required, > 0)
     //   - timestamp: string (ISO 8601)
     //   - userId: string (required)
@@ -54,13 +56,14 @@ service cloud.firestore {
     }
 
     function isValidClass(className) {
-      return className in ['A', 'B', 'C', 'C-', 'D', 'UNCLASSIFIED'];
+      return className in ['A', 'B', 'B-', 'C', 'C-', 'D', 'UNCLASSIFIED'];
     }
 
     function isValidStock(data) {
-      return data.keys().hasAll(['classA', 'classB', 'classC', 'classCMinus', 'classD', 'unclassified', 'lastUpdated']) &&
+      return data.keys().hasAll(['classA', 'classB', 'classBMinus', 'classC', 'classCMinus', 'classD', 'unclassified', 'lastUpdated']) &&
              data.classA is number && data.classA >= 0 &&
              data.classB is number && data.classB >= 0 &&
+             data.classBMinus is number && data.classBMinus >= 0 &&
              data.classC is number && data.classC >= 0 &&
              data.classCMinus is number && data.classCMinus >= 0 &&
              data.classD is number && data.classD >= 0 &&
@@ -69,10 +72,11 @@ service cloud.firestore {
     }
 
     function isValidBatch(data) {
-      return data.keys().hasAll(['batchId', 'classA', 'classB', 'classC', 'classCMinus', 'classD', 'unclassified', 'createdAt']) &&
+      return data.keys().hasAll(['batchId', 'classA', 'classB', 'classBMinus', 'classC', 'classCMinus', 'classD', 'unclassified', 'createdAt']) &&
              data.batchId is string &&
              data.classA is number && data.classA >= 0 &&
              data.classB is number && data.classB >= 0 &&
+             data.classBMinus is number && data.classBMinus >= 0 &&
              data.classC is number && data.classC >= 0 &&
              data.classCMinus is number && data.classCMinus >= 0 &&
              data.classD is number && data.classD >= 0 &&
@@ -84,11 +88,12 @@ service cloud.firestore {
       return data.keys().hasAll(['type', 'batchId', 'quantity', 'timestamp', 'userId']) &&
              data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT'] &&
              data.batchId is string &&
-             data.quantity is number && data.quantity > 0 &&
+             data.quantity is number && data.quantity >= 0 &&
              data.timestamp is string &&
              data.userId == request.auth.uid &&
              (!('fromClass' in data) || isValidClass(data.fromClass)) &&
-             (!('toClass' in data) || isValidClass(data.toClass));
+             (!('toClass' in data) || isValidClass(data.toClass)) &&
+             (!('notes' in data) || data.notes is string);
     }
 
     // ===============================================================

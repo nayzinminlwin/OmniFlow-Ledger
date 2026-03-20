@@ -7,13 +7,14 @@
       "properties": {
         "classA": { "type": "number", "description": "Count of Class A laptops" },
         "classB": { "type": "number", "description": "Count of Class B laptops" },
+        "classBMinus": { "type": "number", "description": "Count of Class B- laptops" },
         "classC": { "type": "number", "description": "Count of Class C laptops" },
         "classCMinus": { "type": "number", "description": "Count of Class C- laptops" },
         "classD": { "type": "number", "description": "Count of Class D laptops" },
         "unclassified": { "type": "number", "description": "Count of unclassified laptops" },
         "lastUpdated": { "type": "string", "format": "date-time" }
       },
-      "required": ["classA", "classB", "classC", "classCMinus", "classD", "unclassified"]
+      "required": ["classA", "classB", "classBMinus", "classC", "classCMinus", "classD", "unclassified"]
     },
     "Batch": {
       "title": "Batch Stock",
@@ -23,13 +24,14 @@
         "batchId": { "type": "string", "description": "The date or identifier for the batch (e.g., 16/03/2026)" },
         "classA": { "type": "number" },
         "classB": { "type": "number" },
+        "classBMinus": { "type": "number" },
         "classC": { "type": "number" },
         "classCMinus": { "type": "number" },
         "classD": { "type": "number" },
         "unclassified": { "type": "number" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["batchId", "classA", "classB", "classC", "classCMinus", "classD", "unclassified"]
+      "required": ["batchId", "classA", "classB", "classBMinus", "classC", "classCMinus", "classD", "unclassified"]
     },
     "Transaction": {
       "title": "Ledger Transaction",

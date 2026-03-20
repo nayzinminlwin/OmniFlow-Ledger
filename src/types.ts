@@ -1,8 +1,9 @@
-export type LaptopClass = 'A' | 'B' | 'C' | 'C-' | 'D' | 'UNCLASSIFIED';
+export type LaptopClass = 'A' | 'B' | 'B-' | 'C' | 'C-' | 'D' | 'UNCLASSIFIED';
 
 export interface Stock {
   classA: number;
   classB: number;
+  classBMinus: number;
   classC: number;
   classCMinus: number;
   classD: number;
@@ -15,6 +16,7 @@ export interface Batch {
   batchId: string;
   classA: number;
   classB: number;
+  classBMinus: number;
   classC: number;
   classCMinus: number;
   classD: number;
