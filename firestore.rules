@@ -1,49 +1,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // ===============================================================
-    // Assumed Data Model
-    // ===============================================================
-    //
-    // Collection: inventory/current
-    // Fields:
-    //   - classA: number (required, >= 0)
-    //   - classB: number (required, >= 0)
-    //   - classBMinus: number (required, >= 0)
-    //   - classC: number (required, >= 0)
-    //   - classCMinus: number (required, >= 0)
-    //   - classD: number (required, >= 0)
-    //   - unclassified: number (required, >= 0)
-    //   - lastUpdated: string (ISO 8601)
-    //
-    // Collection: batches/{batchId}
-    // Fields:
-    //   - batchId: string (required)
-    //   - classA: number (required, >= 0)
-    //   - classB: number (required, >= 0)
-    //   - classBMinus: number (required, >= 0)
-    //   - classC: number (required, >= 0)
-    //   - classCMinus: number (required, >= 0)
-    //   - classD: number (required, >= 0)
-    //   - unclassified: number (required, >= 0)
-    //   - createdAt: string (ISO 8601)
-    //
-    // Collection: transactions/{transactionId}
-    // Fields:
-    //   - type: string (enum: INCOMING, REPAIR, SALE, ADJUSTMENT)
-    //   - batchId: string (required)
-    //   - fromClass: string (optional, enum: A, B, B-, C, C-, D, UNCLASSIFIED)
-    //   - toClass: string (optional, enum: A, B, B-, C, C-, D, UNCLASSIFIED)
-    //   - quantity: number (required, > 0)
-    //   - timestamp: string (ISO 8601)
-    //   - userId: string (required)
-    //   - notes: string (optional)
-    //
-    // ===============================================================
-
-    // ===============================================================
-    // Helper Functions
-    // ===============================================================
+    
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -95,10 +53,6 @@ service cloud.firestore {
              (!('toClass' in data) || isValidClass(data.toClass)) &&
              (!('notes' in data) || data.notes is string);
     }
-
-    // ===============================================================
-    // Rules
-    // ===============================================================
 
     match /inventory/current {
       allow read: if isAuthenticated();

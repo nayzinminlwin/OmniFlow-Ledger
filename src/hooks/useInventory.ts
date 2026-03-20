@@ -50,7 +50,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
     const txQuery = query(collection(db, 'transactions'), orderBy('timestamp', 'desc'), limit(50));
     const batchesQuery = query(collection(db, 'batches'), orderBy('createdAt', 'desc'));
 
-    const unsubStock = onSnapshot(stockRef, (doc) => {
+    const unsubStock = onSnapshot(stockRef, { includeMetadataChanges: true }, (doc) => {
       if (doc.exists()) {
         setStock(doc.data() as Stock);
       } else {
@@ -58,7 +58,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       }
     }, (err) => handleFirestoreError(err, OperationType.GET, 'inventory/current'));
 
-    const unsubBatches = onSnapshot(batchesQuery, (snapshot) => {
+    const unsubBatches = onSnapshot(batchesQuery, { includeMetadataChanges: true }, (snapshot) => {
       const b: Batch[] = [];
       snapshot.forEach((doc) => {
         b.push({ id: doc.id, ...doc.data() } as Batch);
@@ -67,7 +67,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       setLoading(false);
     }, (err) => handleFirestoreError(err, OperationType.GET, 'batches'));
 
-    const unsubTx = onSnapshot(txQuery, (snapshot) => {
+    const unsubTx = onSnapshot(txQuery, { includeMetadataChanges: true }, (snapshot) => {
       const txs: Transaction[] = [];
       snapshot.forEach((doc) => {
         txs.push({ id: doc.id, ...doc.data() } as Transaction);

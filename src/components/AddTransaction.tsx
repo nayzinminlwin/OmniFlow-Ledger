@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { RefreshCw, CheckCircle2 } from 'lucide-react';
 import { Batch, LaptopClass, TransactionType } from '../types';
 import { CLASSES } from '../constants';
 import { cn } from '../lib/utils';
+import { getStockKey } from '../utils/stock';
 
 interface AddTransactionProps {
   t: any;
@@ -32,6 +33,15 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
   const [toClass, setToClass] = useState<LaptopClass>('A');
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
+
+  const currentBatch = useMemo(() => batches.find(b => b.batchId === batchId), [batches, batchId]);
+
+  const getStockCount = (className: LaptopClass) => {
+    if (!currentBatch) return 0;
+    return (currentBatch as any)[getStockKey(className)] || 0;
+  };
+
+  const isFromStockEmpty = (txType === 'REPAIR' || txType === 'SALE') && batchId && getStockCount(fromClass) <= 0;
 
   const handleBatchIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\//g, '-');
@@ -123,7 +133,17 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
           <div className="grid grid-cols-2 gap-6">
             {(txType === 'REPAIR' || txType === 'SALE') && (
               <div>
-                <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">{t.fromClass}</label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.fromClass}</label>
+                  {currentBatch && (
+                    <span className={cn(
+                      "text-[11px] font-medium px-2 py-0.5 rounded-full",
+                      getStockCount(fromClass) <= 0 ? "text-red-600 bg-red-50" : "text-blue-600 bg-blue-50"
+                    )}>
+                      {t.currentStock}: {getStockCount(fromClass)}
+                    </span>
+                  )}
+                </div>
                 <select
                   value={fromClass}
                   onChange={(e) => setFromClass(e.target.value as LaptopClass)}
@@ -136,9 +156,16 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
             )}
             {(txType === 'REPAIR' || txType === 'ADJUSTMENT') && (
               <div className={cn(txType === 'ADJUSTMENT' && "col-span-2")}>
-                <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                  {txType === 'ADJUSTMENT' ? t.targetClass : t.toClass}
-                </label>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider">
+                    {txType === 'ADJUSTMENT' ? t.targetClass : t.toClass}
+                  </label>
+                  {currentBatch && (
+                    <span className="text-[11px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                      {t.currentStock}: {getStockCount(toClass)}
+                    </span>
+                  )}
+                </div>
                 <select
                   value={toClass}
                   onChange={(e) => setToClass(e.target.value as LaptopClass)}
@@ -175,8 +202,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
 
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="ios-button w-full py-4 text-[17px] mt-4"
+            disabled={isSubmitting || isFromStockEmpty}
+            className={cn(
+              "ios-button w-full py-4 text-[17px] mt-4",
+              isFromStockEmpty && "opacity-50 cursor-not-allowed bg-gray-400"
+            )}
           >
             {isSubmitting ? <RefreshCw className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
             {isSubmitting ? t.processing : t.recordEntry}
