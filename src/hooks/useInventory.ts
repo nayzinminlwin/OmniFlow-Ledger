@@ -20,9 +20,15 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
   const [stock, setStock] = useState<Stock | null>(null);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingStates, setLoadingStates] = useState({
+    stock: true,
+    batches: true,
+    transactions: true
+  });
   const [error, setError] = useState<string | null>(null);
   const t = translations[lang];
+
+  const loading = loadingStates.stock || loadingStates.batches || loadingStates.transactions;
 
   // Test connection
   useEffect(() => {
@@ -42,7 +48,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
 
   useEffect(() => {
     if (!isAuthReady || !user) {
-      if (isAuthReady && !user) setLoading(false);
+      if (isAuthReady && !user) setLoadingStates({ stock: false, batches: false, transactions: false });
       return;
     }
 
@@ -50,13 +56,18 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
     const txQuery = query(collection(db, 'transactions'), orderBy('timestamp', 'desc'), limit(50));
     const batchesQuery = query(collection(db, 'batches'), orderBy('createdAt', 'desc'));
 
-    const unsubStock = onSnapshot(stockRef, { includeMetadataChanges: true }, (doc) => {
-      if (doc.exists()) {
-        setStock(doc.data() as Stock);
+    const unsubStock = onSnapshot(stockRef, { includeMetadataChanges: true }, (snapshot: any) => {
+      if (snapshot.exists()) {
+        setStock(snapshot.data() as Stock);
       } else {
-        setDoc(stockRef, INITIAL_STOCK).catch(err => handleFirestoreError(err, OperationType.WRITE, 'inventory/current'));
+        setStock(null);
       }
-    }, (err) => handleFirestoreError(err, OperationType.GET, 'inventory/current'));
+      setLoadingStates(prev => ({ ...prev, stock: false }));
+    }, (err) => {
+      console.error('Stock snapshot error:', err);
+      setError(t.firestoreOffline); // Or a more specific error
+      setLoadingStates(prev => ({ ...prev, stock: false }));
+    });
 
     const unsubBatches = onSnapshot(batchesQuery, { includeMetadataChanges: true }, (snapshot) => {
       const b: Batch[] = [];
@@ -64,8 +75,11 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
         b.push({ id: doc.id, ...doc.data() } as Batch);
       });
       setBatches(b);
-      setLoading(false);
-    }, (err) => handleFirestoreError(err, OperationType.GET, 'batches'));
+      setLoadingStates(prev => ({ ...prev, batches: false }));
+    }, (err) => {
+      console.error('Batches snapshot error:', err);
+      setLoadingStates(prev => ({ ...prev, batches: false }));
+    });
 
     const unsubTx = onSnapshot(txQuery, { includeMetadataChanges: true }, (snapshot) => {
       const txs: Transaction[] = [];
@@ -73,7 +87,11 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
         txs.push({ id: doc.id, ...doc.data() } as Transaction);
       });
       setTransactions(txs);
-    }, (err) => handleFirestoreError(err, OperationType.GET, 'transactions'));
+      setLoadingStates(prev => ({ ...prev, transactions: false }));
+    }, (err) => {
+      console.error('Transactions snapshot error:', err);
+      setLoadingStates(prev => ({ ...prev, transactions: false }));
+    });
 
     return () => {
       unsubStock();

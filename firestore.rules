@@ -2,72 +2,83 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
     function isAuthenticated() {
       return request.auth != null;
     }
 
     function isAdmin() {
-      return isAuthenticated() && (
-        request.auth.token.email == "nayzinminlwin22@gmail.com" && 
-        request.auth.token.email_verified == true
-      );
+      return isAuthenticated() && 
+             request.auth.token.email == "nayzinminlwin22@gmail.com";
     }
 
     function isValidClass(className) {
       return className in ['A', 'B', 'B-', 'C', 'C-', 'D', 'UNCLASSIFIED'];
     }
 
+    function validString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    function isValidModelStock(modelStock) {
+      return modelStock is map &&
+             modelStock.keys().hasAll(['model', 'counts']) &&
+             validString(modelStock.model, 100) &&
+             modelStock.counts is map &&
+             modelStock.counts.keys().hasAll(['A', 'B', 'B-', 'C', 'C-', 'D', 'UNCLASSIFIED']) &&
+             modelStock.counts['A'] is number &&
+             modelStock.counts['B'] is number &&
+             modelStock.counts['B-'] is number &&
+             modelStock.counts['C'] is number &&
+             modelStock.counts['C-'] is number &&
+             modelStock.counts['D'] is number &&
+             modelStock.counts['UNCLASSIFIED'] is number;
+    }
+
     function isValidStock(data) {
-      return data.keys().hasAll(['classA', 'classB', 'classBMinus', 'classC', 'classCMinus', 'classD', 'unclassified', 'lastUpdated']) &&
-             data.classA is number && data.classA >= 0 &&
-             data.classB is number && data.classB >= 0 &&
-             data.classBMinus is number && data.classBMinus >= 0 &&
-             data.classC is number && data.classC >= 0 &&
-             data.classCMinus is number && data.classCMinus >= 0 &&
-             data.classD is number && data.classD >= 0 &&
-             data.unclassified is number && data.unclassified >= 0 &&
+      return data.keys().hasAll(['items', 'lastUpdated']) &&
+             data.items is list &&
              data.lastUpdated is string;
     }
 
     function isValidBatch(data) {
-      return data.keys().hasAll(['batchId', 'classA', 'classB', 'classBMinus', 'classC', 'classCMinus', 'classD', 'unclassified', 'createdAt']) &&
-             data.batchId is string &&
-             data.classA is number && data.classA >= 0 &&
-             data.classB is number && data.classB >= 0 &&
-             data.classBMinus is number && data.classBMinus >= 0 &&
-             data.classC is number && data.classC >= 0 &&
-             data.classCMinus is number && data.classCMinus >= 0 &&
-             data.classD is number && data.classD >= 0 &&
-             data.unclassified is number && data.unclassified >= 0 &&
+      return data.keys().hasAll(['batchId', 'items', 'createdAt']) &&
+             validString(data.batchId, 50) &&
+             data.items is list &&
              data.createdAt is string;
     }
 
     function isValidTransaction(data) {
-      return data.keys().hasAll(['type', 'batchId', 'quantity', 'timestamp', 'userId']) &&
+      return data.keys().hasAll(['type', 'batchId', 'model', 'quantity', 'timestamp', 'userId']) &&
              data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT'] &&
-             data.batchId is string &&
-             data.quantity is number && data.quantity >= 0 &&
+             validString(data.batchId, 50) &&
+             validString(data.model, 100) &&
+             data.quantity is number &&
              data.timestamp is string &&
-             data.userId == request.auth.uid &&
-             (!('fromClass' in data) || isValidClass(data.fromClass)) &&
-             (!('toClass' in data) || isValidClass(data.toClass)) &&
-             (!('notes' in data) || data.notes is string);
+             data.userId == request.auth.uid;
     }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
 
     match /inventory/current {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && isValidStock(request.resource.data);
+      allow write: if isAdmin() || (isAuthenticated() && isValidStock(request.resource.data));
     }
 
     match /batches/{batchId} {
       allow read: if isAuthenticated();
-      allow create, update: if isAuthenticated() && isValidBatch(request.resource.data);
+      allow create, update: if isAdmin() || (isAuthenticated() && isValidBatch(request.resource.data));
       allow delete: if isAdmin();
     }
 
     match /transactions/{transactionId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidTransaction(request.resource.data);
+      allow create: if isAdmin() || (isAuthenticated() && isValidTransaction(request.resource.data));
       allow update, delete: if isAdmin();
     }
   }

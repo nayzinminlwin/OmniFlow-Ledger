@@ -2,36 +2,58 @@
   "entities": {
     "Stock": {
       "title": "Inventory Stock",
-      "description": "Current counts of each laptop class.",
+      "description": "Current counts of each laptop class, organized by model.",
       "type": "object",
       "properties": {
-        "classA": { "type": "number", "description": "Count of Class A laptops" },
-        "classB": { "type": "number", "description": "Count of Class B laptops" },
-        "classBMinus": { "type": "number", "description": "Count of Class B- laptops" },
-        "classC": { "type": "number", "description": "Count of Class C laptops" },
-        "classCMinus": { "type": "number", "description": "Count of Class C- laptops" },
-        "classD": { "type": "number", "description": "Count of Class D laptops" },
-        "unclassified": { "type": "number", "description": "Count of unclassified laptops" },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "ModelStock"
+          }
+        },
         "lastUpdated": { "type": "string", "format": "date-time" }
       },
-      "required": ["classA", "classB", "classBMinus", "classC", "classCMinus", "classD", "unclassified"]
+      "required": ["items", "lastUpdated"]
     },
     "Batch": {
       "title": "Batch Stock",
-      "description": "Stock counts for a specific batch of laptops.",
+      "description": "Stock counts for a specific batch of laptops, organized by model.",
       "type": "object",
       "properties": {
         "batchId": { "type": "string", "description": "The date or identifier for the batch (e.g., 16/03/2026)" },
-        "classA": { "type": "number" },
-        "classB": { "type": "number" },
-        "classBMinus": { "type": "number" },
-        "classC": { "type": "number" },
-        "classCMinus": { "type": "number" },
-        "classD": { "type": "number" },
-        "unclassified": { "type": "number" },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "ModelStock"
+          }
+        },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["batchId", "classA", "classB", "classBMinus", "classC", "classCMinus", "classD", "unclassified"]
+      "required": ["batchId", "items", "createdAt"]
+    },
+    "ModelStock": {
+      "title": "Model Stock",
+      "description": "Stock counts for a specific laptop model.",
+      "type": "object",
+      "properties": {
+        "brand": { "type": "string" },
+        "series": { "type": "string" },
+        "model": { "type": "string" },
+        "counts": {
+          "type": "object",
+          "properties": {
+            "A": { "type": "number" },
+            "B": { "type": "number" },
+            "B-": { "type": "number" },
+            "C": { "type": "number" },
+            "C-": { "type": "number" },
+            "D": { "type": "number" },
+            "UNCLASSIFIED": { "type": "number" }
+          },
+          "required": ["A", "B", "B-", "C", "C-", "D", "UNCLASSIFIED"]
+        }
+      },
+      "required": ["brand", "series", "model", "counts"]
     },
     "Transaction": {
       "title": "Ledger Transaction",
@@ -40,6 +62,9 @@
       "properties": {
         "type": { "type": "string", "enum": ["INCOMING", "REPAIR", "SALE", "ADJUSTMENT"], "description": "Type of transaction" },
         "batchId": { "type": "string", "description": "The batch this transaction belongs to" },
+        "brand": { "type": "string" },
+        "series": { "type": "string" },
+        "model": { "type": "string", "description": "The laptop model involved in the transaction" },
         "fromClass": { "type": "string", "description": "The class the laptop is moving FROM" },
         "toClass": { "type": "string", "description": "The class the laptop is moving TO" },
         "quantity": { "type": "number", "description": "Number of laptops involved" },
@@ -47,7 +72,7 @@
         "userId": { "type": "string" },
         "notes": { "type": "string" }
       },
-      "required": ["type", "batchId", "quantity", "timestamp", "userId"]
+      "required": ["type", "batchId", "brand", "series", "model", "quantity", "timestamp", "userId"]
     }
   },
   "firestore": {

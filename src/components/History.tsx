@@ -1,21 +1,22 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { format } from 'date-fns';
 import { ArrowRightLeft } from 'lucide-react';
 import { Transaction } from '../types';
 import { cn } from '../lib/utils';
+import { Skeleton } from './Skeleton';
 
 interface HistoryProps {
   transactions: Transaction[];
   t: any;
   activeTab: string;
+  loading?: boolean;
 }
 
-export const History: React.FC<HistoryProps> = ({ transactions, t, activeTab }) => {
+export const History: React.FC<HistoryProps> = memo(({ transactions, t, activeTab, loading = false }) => {
+  if (activeTab !== 'history') return null;
+
   return (
-    <div className={cn(
-      "lg:col-span-12",
-      activeTab !== 'history' && "hidden"
-    )}>
+    <div className="lg:col-span-12 animate-in fade-in duration-500">
       <div className="glass-panel rounded-[32px] overflow-hidden">
         <div className="px-8 py-6 border-b border-black/5 flex items-center justify-between bg-black/[0.02]">
           <h2 className="text-[22px] font-bold text-black tracking-tight">{t.fullLedger}</h2>
@@ -29,6 +30,9 @@ export const History: React.FC<HistoryProps> = ({ transactions, t, activeTab }) 
               <tr className="bg-black/[0.02]">
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.dateTime}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.batch}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.brandLabel}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.seriesLabel}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.modelLabel}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.type}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.movement}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-right">{t.qty}</th>
@@ -36,7 +40,20 @@ export const History: React.FC<HistoryProps> = ({ transactions, t, activeTab }) 
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
-              {transactions.map((tx) => (
+              {loading ? (
+                Array.from({ length: 10 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="px-8 py-4"><Skeleton className="w-24 h-5 mb-1" /><Skeleton className="w-16 h-3" /></td>
+                    <td className="px-8 py-4"><Skeleton className="w-20 h-5" /></td>
+                    <td className="px-8 py-4"><Skeleton className="w-24 h-5" /></td>
+                    <td className="px-8 py-4"><Skeleton className="w-16 h-6 rounded-full" /></td>
+                    <td className="px-8 py-4"><Skeleton className="w-32 h-5" /></td>
+                    <td className="px-8 py-4 text-right"><Skeleton className="w-12 h-6 ml-auto" /></td>
+                    <td className="px-8 py-4"><Skeleton className="w-40 h-4" /></td>
+                  </tr>
+                ))
+              ) : (
+                transactions.map((tx) => (
                 <tr key={tx.id} className="hover:bg-black/[0.02] transition-colors">
                   <td className="px-8 py-4 whitespace-nowrap">
                     <p className="text-[15px] font-semibold text-black">{format(new Date(tx.timestamp), 'MMM d, yyyy')}</p>
@@ -46,6 +63,15 @@ export const History: React.FC<HistoryProps> = ({ transactions, t, activeTab }) 
                     <p className="text-[15px] font-semibold text-blue-600">{tx.batchId}</p>
                   </td>
                   <td className="px-8 py-4">
+                    <p className="text-[15px] font-medium text-black">{tx.brand}</p>
+                  </td>
+                  <td className="px-8 py-4">
+                    <p className="text-[15px] font-medium text-gray-600">{tx.series}</p>
+                  </td>
+                  <td className="px-8 py-4">
+                    <p className="text-[15px] font-medium text-gray-600">{tx.model}</p>
+                  </td>
+                  <td className="px-8 py-4">
                     <span className={cn(
                       "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider",
                       tx.type === 'INCOMING' && "bg-green-500/10 text-green-700",
@@ -53,7 +79,9 @@ export const History: React.FC<HistoryProps> = ({ transactions, t, activeTab }) 
                       tx.type === 'REPAIR' && "bg-blue-500/10 text-blue-700",
                       tx.type === 'ADJUSTMENT' && "bg-gray-500/10 text-gray-700"
                     )}>
-                      {t[tx.type.toLowerCase() as keyof typeof t] || tx.type}
+                      {tx.type === 'REPAIR' && tx.fromClass === 'UNCLASSIFIED' 
+                        ? t.initClass 
+                        : (t[tx.type.toLowerCase() as keyof typeof t] || tx.type)}
                     </span>
                   </td>
                   <td className="px-8 py-4">
@@ -81,10 +109,11 @@ export const History: React.FC<HistoryProps> = ({ transactions, t, activeTab }) 
                     <p className="text-[13px] text-gray-500 italic max-w-xs truncate">{tx.notes || '-'}</p>
                   </td>
                 </tr>
-              ))}
-              {transactions.length === 0 && (
+              ))
+            )}
+            {!loading && transactions.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-8 py-12 text-center text-gray-400 font-medium text-[15px]">
+                  <td colSpan={9} className="px-8 py-12 text-center text-gray-400 font-medium text-[15px]">
                     {t.noTransactions}
                   </td>
                 </tr>
@@ -95,4 +124,5 @@ export const History: React.FC<HistoryProps> = ({ transactions, t, activeTab }) 
       </div>
     </div>
   );
-};
+});
+

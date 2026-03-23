@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { format } from 'date-fns';
 import { 
   Plus, 
@@ -6,12 +6,12 @@ import {
   RefreshCw, 
   ChevronRight, 
   ArrowRightLeft, 
-  Settings 
+  Settings
 } from 'lucide-react';
-import { Stock, Transaction } from '../types';
+import { Stock, Transaction, LaptopClass } from '../types';
 import { CLASSES } from '../constants';
-import { getStockKey } from '../utils/stock';
 import { cn } from '../lib/utils';
+import { Skeleton } from './Skeleton';
 
 interface DashboardProps {
   stock: Stock | null;
@@ -19,46 +19,103 @@ interface DashboardProps {
   t: any;
   setActiveTab: (tab: 'dashboard' | 'history' | 'add' | 'batches') => void;
   activeTab: string;
+  loading?: boolean;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ 
+export const Dashboard: React.FC<DashboardProps> = memo(({ 
   stock, 
   transactions, 
   t, 
   setActiveTab,
-  activeTab
+  activeTab,
+  loading = false
 }) => {
+  const models = stock?.items || [];
+  
+  const getColumnTotal = (cls: LaptopClass) => {
+    return models.reduce((sum, m) => sum + (m?.counts?.[cls] || 0), 0);
+  };
+
+  const getRowTotal = (counts: Record<LaptopClass, number>) => {
+    if (!counts) return 0;
+    return Object.values(counts).reduce((sum, count) => sum + (count || 0), 0);
+  };
+
+  const grandTotal = models.reduce((sum, m) => sum + getRowTotal(m?.counts), 0);
+
   return (
     <div className={cn(
-      "lg:col-span-8 space-y-8",
-      activeTab !== 'dashboard' && "hidden lg:block"
+      "lg:col-span-12 space-y-8 animate-in fade-in duration-500",
+      activeTab === 'dashboard' ? "block" : "hidden"
     )}>
       <section>
         <div className="flex items-center justify-between mb-6 px-2">
-          <h2 className="text-[28px] font-bold text-black tracking-tight leading-none">{t.currentInventory}</h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-[28px] font-bold text-black tracking-tight leading-none">{t.currentInventory}</h2>
+          </div>
           <span className="text-[13px] font-medium text-gray-500 uppercase tracking-wider">
-            {t.lastUpdated} {stock ? format(new Date(stock.lastUpdated), 'HH:mm:ss') : t.never}
+            {t.lastUpdated} {stock ? format(new Date(stock.lastUpdated), 'HH:mm:ss') : loading ? <Skeleton className="w-16 h-4 inline-block" /> : t.never}
           </span>
         </div>
         
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-          <div className="glass-panel p-6 rounded-[24px] hover:scale-[1.02] transition-transform group relative overflow-hidden">
-            <div className="absolute inset-0 bg-blue-500/5"></div>
-            <div className="relative z-10">
-              <div className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-2">{t.unclassified}</div>
-              <div className="text-[34px] font-bold text-black tracking-tight tabular-nums leading-none">
-                {stock ? stock.unclassified : 0}
-              </div>
-            </div>
+        <div className="glass-panel rounded-[32px] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse whitespace-nowrap">
+              <thead>
+                <tr className="border-b border-black/5 bg-black/[0.02]">
+                  <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.brandLabel}</th>
+                  <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.seriesLabel}</th>
+                  <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.modelLabel}</th>
+                  <th className="px-6 py-4 text-[13px] font-semibold text-blue-500 uppercase tracking-wider">{t.unclassified}</th>
+                  {CLASSES.map(cls => (
+                    <th key={cls} className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.class} {cls}</th>
+                  ))}
+                  <th className="px-6 py-4 text-[13px] font-bold text-black uppercase tracking-wider">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-black/5">
+                {loading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <tr key={`skeleton-${i}`}>
+                      <td className="px-6 py-4"><Skeleton className="w-32 h-5" /></td>
+                      <td className="px-6 py-4"><Skeleton className="w-8 h-5" /></td>
+                      {CLASSES.map(cls => <td key={cls} className="px-6 py-4"><Skeleton className="w-8 h-5" /></td>)}
+                      <td className="px-6 py-4"><Skeleton className="w-10 h-5" /></td>
+                    </tr>
+                  ))
+                ) : models.length === 0 ? (
+                  <tr key="empty-inventory">
+                    <td colSpan={CLASSES.length + 5} className="px-6 py-12 text-center text-gray-400 text-[15px]">
+                      No inventory data available.
+                    </td>
+                  </tr>
+                ) : (
+                  [
+                    ...models.map(m => (
+                      <tr key={`${m.brand}-${m.series}-${m.model}`} className="hover:bg-black/[0.02] transition-colors">
+                        <td className="px-6 py-4 font-medium text-black">{m.brand}</td>
+                        <td className="px-6 py-4 text-gray-600">{m.series}</td>
+                        <td className="px-6 py-4 text-gray-600">{m.model}</td>
+                        <td className="px-6 py-4 font-semibold text-blue-600 tabular-nums">{m?.counts?.['UNCLASSIFIED'] || 0}</td>
+                        {CLASSES.map(cls => (
+                          <td key={cls} className="px-6 py-4 text-gray-600 tabular-nums">{m?.counts?.[cls] || 0}</td>
+                        ))}
+                        <td className="px-6 py-4 font-bold text-black tabular-nums">{getRowTotal(m?.counts)}</td>
+                      </tr>
+                    )),
+                    <tr key="grand-total" className="bg-black/[0.03] border-t-2 border-black/10">
+                      <td colSpan={3} className="px-6 py-4 font-bold text-black uppercase tracking-wider text-[13px]">Grand Total</td>
+                      <td className="px-6 py-4 font-bold text-blue-600 tabular-nums">{getColumnTotal('UNCLASSIFIED')}</td>
+                      {CLASSES.map(cls => (
+                        <td key={cls} className="px-6 py-4 font-bold text-black tabular-nums">{getColumnTotal(cls)}</td>
+                      ))}
+                      <td className="px-6 py-4 font-black text-black tabular-nums text-[17px]">{grandTotal}</td>
+                    </tr>
+                  ]
+                )}
+              </tbody>
+            </table>
           </div>
-          {CLASSES.map((cls) => (
-            <div key={cls} className="glass-panel p-6 rounded-[24px] hover:scale-[1.02] transition-transform group">
-              <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-blue-500 transition-colors">{t.class} {cls}</div>
-              <div className="text-[34px] font-bold text-black tracking-tight tabular-nums leading-none">
-                {stock ? stock[getStockKey(cls)] : 0}
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -70,8 +127,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
           </button>
         </div>
         <div className="divide-y divide-black/5">
-          {transactions.slice(0, 5).map((tx) => (
-            <div key={tx.id} className="px-8 py-5 flex items-center justify-between hover:bg-black/[0.02] transition-colors">
+          {loading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="px-8 py-5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Skeleton className="w-10 h-10 rounded-xl" />
+                  <div>
+                    <Skeleton className="w-32 h-5 mb-1" />
+                    <Skeleton className="w-24 h-3" />
+                  </div>
+                </div>
+                <Skeleton className="w-12 h-6" />
+              </div>
+            ))
+          ) : (
+            transactions.slice(0, 5).map((tx) => (
+              <div key={tx.id} className="px-8 py-5 flex items-center justify-between hover:bg-black/[0.02] transition-colors">
               <div className="flex items-center gap-4">
                 <div className={cn(
                   "w-10 h-10 rounded-xl flex items-center justify-center",
@@ -88,14 +159,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 <div>
                   <p className="font-semibold text-[17px] text-black tracking-tight">
                     {tx.type === 'REPAIR' ? (
-                      <>{t.repairPrefix} {tx.fromClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {tx.toClass}</>
+                      tx.fromClass === 'UNCLASSIFIED' ? (
+                        <>{t.initClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {tx.toClass}</>
+                      ) : (
+                        <>{t.repairPrefix} {tx.fromClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {tx.toClass}</>
+                      )
                     ) : tx.type === 'INCOMING' ? (
                       <>{t.incomingBatch}</>
                     ) : (
                       <>{t[tx.type.toLowerCase() as keyof typeof t] || tx.type} {tx.toClass || tx.fromClass}</>
                     )}
                   </p>
-                  <p className="text-[13px] text-gray-500 font-medium mt-0.5">{format(new Date(tx.timestamp), 'MMM d, HH:mm')}</p>
+                  <p className="text-[13px] text-gray-500 font-medium mt-0.5">
+                    {tx.brand} {tx.series} {tx.model} • {format(new Date(tx.timestamp), 'MMM d, HH:mm')}
+                  </p>
                 </div>
               </div>
               <div className="text-right">
@@ -108,8 +185,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {tx.notes && <p className="text-[11px] text-gray-400 max-w-[120px] truncate mt-0.5">{tx.notes}</p>}
               </div>
             </div>
-          ))}
-          {transactions.length === 0 && (
+          ))
+        )}
+        {!loading && transactions.length === 0 && (
             <div className="px-8 py-12 text-center text-gray-400 text-[15px]">
               {t.noTransactions}
             </div>
@@ -118,4 +196,4 @@ export const Dashboard: React.FC<DashboardProps> = ({
       </section>
     </div>
   );
-};
+});

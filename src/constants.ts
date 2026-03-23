@@ -1,14 +1,18 @@
-import { LaptopClass, Stock } from './types';
+import { LaptopClass, Stock, ClassCounts } from './types';
 
 export const CLASSES: LaptopClass[] = ['A', 'B', 'B-', 'C', 'C-', 'D'];
 
+export const INITIAL_CLASS_COUNTS: ClassCounts = {
+  'A': 0,
+  'B': 0,
+  'B-': 0,
+  'C': 0,
+  'C-': 0,
+  'D': 0,
+  'UNCLASSIFIED': 0
+};
+
 export const INITIAL_STOCK: Stock = {
-  classA: 0,
-  classB: 0,
-  classBMinus: 0,
-  classC: 0,
-  classCMinus: 0,
-  classD: 0,
-  unclassified: 0,
+  items: [],
   lastUpdated: new Date().toISOString()
 };

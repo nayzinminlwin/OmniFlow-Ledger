@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { LayoutDashboard, Edit2, History, Settings } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -8,7 +8,7 @@ interface NavigationProps {
   t: any;
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab, t }) => {
+export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiveTab, t }) => {
   return (
     <div className="flex justify-center mb-8">
       <div className="flex bg-black/5 p-1 rounded-xl shadow-inner overflow-x-auto no-scrollbar w-full max-w-2xl">
@@ -55,4 +55,4 @@ export const Navigation: React.FC<NavigationProps> = ({ activeTab, setActiveTab,
       </div>
     </div>
   );
-};
+});

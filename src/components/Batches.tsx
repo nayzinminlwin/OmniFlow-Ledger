@@ -1,10 +1,10 @@
-import React from 'react';
+import React, { memo, useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Settings, Edit2 } from 'lucide-react';
-import { Batch } from '../types';
+import { Settings, Edit2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Batch, LaptopClass } from '../types';
 import { CLASSES } from '../constants';
-import { getStockKey } from '../utils/stock';
 import { cn } from '../lib/utils';
+import { Skeleton } from './Skeleton';
 
 interface BatchesProps {
   t: any;
@@ -14,9 +14,10 @@ interface BatchesProps {
   batches: Batch[];
   setEditingBatch: (batch: Batch) => void;
   setNewBatchName: (name: string) => void;
+  loading?: boolean;
 }
 
-export const Batches: React.FC<BatchesProps> = ({
+export const Batches: React.FC<BatchesProps> = memo(({
   t,
   activeTab,
   selectedBatchId,
@@ -24,12 +25,59 @@ export const Batches: React.FC<BatchesProps> = ({
   batches,
   setEditingBatch,
   setNewBatchName,
+  loading = false,
 }) => {
+  const [sortField, setSortField] = useState<'batchId' | 'createdAt'>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  const sortedBatches = useMemo(() => {
+    return [...batches].sort((a, b) => {
+      let comparison = 0;
+      if (sortField === 'batchId') {
+        comparison = a.batchId.localeCompare(b.batchId);
+      } else {
+        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+  }, [batches, sortField, sortOrder]);
+
+  if (activeTab !== 'batches') return null;
+
+  const selectedBatch = batches.find(x => x.batchId === selectedBatchId);
+  const models = selectedBatch?.items || [];
+
+  const getColumnTotal = (cls: LaptopClass) => {
+    return models.reduce((sum, m) => sum + (m?.counts?.[cls] || 0), 0);
+  };
+
+  const getRowTotal = (counts: Record<LaptopClass, number>) => {
+    if (!counts) return 0;
+    return Object.values(counts).reduce((sum, count) => sum + (count || 0), 0);
+  };
+
+  const grandTotal = models.reduce((sum, m) => sum + getRowTotal(m?.counts), 0);
+
+  const getBatchTotal = (batch: Batch, cls: LaptopClass | 'UNCLASSIFIED') => {
+    return batch.items?.reduce((sum, m) => sum + (m?.counts?.[cls as LaptopClass] || 0), 0) || 0;
+  };
+
+  const handleSort = (field: 'batchId' | 'createdAt') => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const SortIcon = ({ field }: { field: 'batchId' | 'createdAt' }) => {
+    if (sortField !== field) return null;
+    return sortOrder === 'asc' ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />;
+  };
+
   return (
-    <div className={cn(
-      "lg:col-span-12 space-y-8",
-      activeTab !== 'batches' && "hidden"
-    )}>
+    <div className="lg:col-span-12 space-y-8 animate-in fade-in duration-500">
       <section>
         <div className="flex items-center justify-between mb-6 px-2">
           <h2 className="text-[28px] font-bold text-black tracking-tight leading-none">{t.batchStockLevels}</h2>
@@ -43,34 +91,60 @@ export const Batches: React.FC<BatchesProps> = ({
           </select>
         </div>
 
-        {selectedBatchId ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
-            {(() => {
-              const b = batches.find(x => x.batchId === selectedBatchId);
-              return (
-                <>
-                  <div className="glass-panel p-6 rounded-[24px] hover:scale-[1.02] transition-transform group relative overflow-hidden">
-                    <div className="absolute inset-0 bg-blue-500/5"></div>
-                    <div className="relative z-10">
-                      <div className="text-[11px] font-semibold text-blue-500 uppercase tracking-widest mb-2">{t.unclassified}</div>
-                      <div className="text-[34px] font-bold text-black tracking-tight tabular-nums leading-none">
-                        {b ? b.unclassified : 0}
-                      </div>
-                      <div className="text-[11px] text-gray-400 mt-2 font-medium">{t.inBatch} {selectedBatchId}</div>
-                    </div>
-                  </div>
-                  {CLASSES.map((cls) => (
-                    <div key={cls} className="glass-panel p-6 rounded-[24px] hover:scale-[1.02] transition-transform group">
-                      <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2 group-hover:text-blue-500 transition-colors">{t.class} {cls}</div>
-                      <div className="text-[34px] font-bold text-black tracking-tight tabular-nums leading-none">
-                        {b ? (b as any)[getStockKey(cls)] : 0}
-                      </div>
-                      <div className="text-[11px] text-gray-400 mt-2 font-medium">{t.inBatch} {selectedBatchId}</div>
-                    </div>
-                  ))}
-                </>
-              );
-            })()}
+        {loading ? (
+          <div className="glass-panel rounded-[32px] overflow-hidden p-6">
+            <Skeleton className="w-full h-32" />
+          </div>
+        ) : selectedBatchId ? (
+          <div className="glass-panel rounded-[32px] overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse whitespace-nowrap">
+                <thead>
+                  <tr className="border-b border-black/5 bg-black/[0.02]">
+                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.brandLabel}</th>
+                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.seriesLabel}</th>
+                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.modelLabel}</th>
+                    <th className="px-6 py-4 text-[13px] font-semibold text-blue-500 uppercase tracking-wider">{t.unclassified}</th>
+                    {CLASSES.map(cls => (
+                      <th key={cls} className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.class} {cls}</th>
+                    ))}
+                    <th className="px-6 py-4 text-[13px] font-bold text-black uppercase tracking-wider">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/5">
+                  {models.length === 0 ? (
+                    <tr key="empty-batch">
+                      <td colSpan={CLASSES.length + 5} className="px-6 py-12 text-center text-gray-400 text-[15px]">
+                        No models in this batch.
+                      </td>
+                    </tr>
+                  ) : (
+                    [
+                      ...models.map(m => (
+                        <tr key={`${m.brand}-${m.series}-${m.model}`} className="hover:bg-black/[0.02] transition-colors">
+                          <td className="px-6 py-4 font-medium text-black">{m.brand}</td>
+                          <td className="px-6 py-4 text-gray-600">{m.series}</td>
+                          <td className="px-6 py-4 text-gray-600">{m.model}</td>
+                          <td className="px-6 py-4 font-semibold text-blue-600 tabular-nums">{m?.counts?.['UNCLASSIFIED'] || 0}</td>
+                          {CLASSES.map(cls => (
+                            <td key={cls} className="px-6 py-4 text-gray-600 tabular-nums">{m?.counts?.[cls] || 0}</td>
+                          ))}
+                          <td className="px-6 py-4 font-bold text-black tabular-nums">{getRowTotal(m?.counts)}</td>
+                        </tr>
+                      )),
+                      <tr key="batch-total" className="bg-black/[0.03] border-t-2 border-black/10">
+                        <td colSpan={3} className="px-6 py-4 font-bold text-black uppercase tracking-wider text-[13px]">Batch Total</td>
+                        <td className="px-6 py-4 font-bold text-blue-600 tabular-nums">{getColumnTotal('UNCLASSIFIED')}</td>
+                        {CLASSES.map(cls => (
+                          <td key={cls} className="px-6 py-4 font-bold text-black tabular-nums">{getColumnTotal(cls)}</td>
+                        ))}
+                        <td className="px-6 py-4 font-black text-black tabular-nums text-[17px]">{grandTotal}</td>
+                      </tr>
+                    ]
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="glass-panel rounded-[32px] border-dashed border-black/10 p-12 text-center">
@@ -88,8 +162,24 @@ export const Batches: React.FC<BatchesProps> = ({
           <table className="w-full text-left">
             <thead>
               <tr className="bg-black/[0.02]">
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.batchId}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.created}</th>
+                <th 
+                  className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest cursor-pointer hover:text-black transition-colors"
+                  onClick={() => handleSort('batchId')}
+                >
+                  <div className="flex items-center">
+                    {t.batchId}
+                    <SortIcon field="batchId" />
+                  </div>
+                </th>
+                <th 
+                  className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest cursor-pointer hover:text-black transition-colors"
+                  onClick={() => handleSort('createdAt')}
+                >
+                  <div className="flex items-center">
+                    {t.created}
+                    <SortIcon field="createdAt" />
+                  </div>
+                </th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">{t.unclassified}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">A</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">B</th>
@@ -101,42 +191,58 @@ export const Batches: React.FC<BatchesProps> = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
-              {batches.map((b) => (
-                <tr key={b.id} className="hover:bg-black/[0.02] transition-colors">
-                  <td className="px-8 py-4">
-                    <p className="text-[15px] font-semibold text-blue-600">{b.batchId}</p>
-                  </td>
-                  <td className="px-8 py-4 whitespace-nowrap">
-                    <p className="text-[13px] font-medium text-gray-500">{format(new Date(b.createdAt), 'MMM d, yyyy')}</p>
-                  </td>
-                  <td className="px-8 py-4 text-center font-semibold text-blue-900 bg-blue-500/5">{b.unclassified}</td>
-                  <td className="px-8 py-4 text-center font-semibold text-black">{b.classA}</td>
-                  <td className="px-8 py-4 text-center font-semibold text-black">{b.classB}</td>
-                  <td className="px-8 py-4 text-center font-semibold text-black">{b.classBMinus}</td>
-                  <td className="px-8 py-4 text-center font-semibold text-black">{b.classC}</td>
-                  <td className="px-8 py-4 text-center font-semibold text-black">{b.classCMinus}</td>
-                  <td className="px-8 py-4 text-center font-semibold text-black">{b.classD}</td>
-                  <td className="px-8 py-4 text-right">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingBatch(b);
-                        setNewBatchName(b.batchId);
-                      }}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors active:scale-95"
-                      title={t.editBatchName}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {batches.length === 0 && (
-                <tr>
+              {loading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={`skeleton-${i}`}>
+                    <td className="px-8 py-4"><Skeleton className="w-20 h-5" /></td>
+                    <td className="px-8 py-4"><Skeleton className="w-24 h-4" /></td>
+                    <td className="px-8 py-4 text-center"><Skeleton className="w-10 h-5 mx-auto" /></td>
+                    <td className="px-8 py-4 text-center"><Skeleton className="w-10 h-5 mx-auto" /></td>
+                    <td className="px-8 py-4 text-center"><Skeleton className="w-10 h-5 mx-auto" /></td>
+                    <td className="px-8 py-4 text-center"><Skeleton className="w-10 h-5 mx-auto" /></td>
+                    <td className="px-8 py-4 text-center"><Skeleton className="w-10 h-5 mx-auto" /></td>
+                    <td className="px-8 py-4 text-center"><Skeleton className="w-10 h-5 mx-auto" /></td>
+                    <td className="px-8 py-4 text-center"><Skeleton className="w-10 h-5 mx-auto" /></td>
+                    <td className="px-8 py-4 text-right"><Skeleton className="w-8 h-8 rounded-full ml-auto" /></td>
+                  </tr>
+                ))
+              ) : batches.length === 0 ? (
+                <tr key="no-batches">
                   <td colSpan={10} className="px-8 py-12 text-center text-gray-400 font-medium text-[15px]">
                     {t.noBatches}
                   </td>
                 </tr>
+              ) : (
+                sortedBatches.map((b) => (
+                  <tr key={b.id} className="hover:bg-black/[0.02] transition-colors">
+                    <td className="px-8 py-4">
+                      <p className="text-[15px] font-semibold text-blue-600">{b.batchId}</p>
+                    </td>
+                    <td className="px-8 py-4 whitespace-nowrap">
+                      <p className="text-[13px] font-medium text-gray-500">{format(new Date(b.createdAt), 'MMM d, yyyy')}</p>
+                    </td>
+                    <td className="px-8 py-4 text-center font-semibold text-blue-900 bg-blue-500/5">{getBatchTotal(b, 'UNCLASSIFIED')}</td>
+                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'A')}</td>
+                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'B')}</td>
+                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'B-')}</td>
+                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'C')}</td>
+                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'C-')}</td>
+                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'D')}</td>
+                    <td className="px-8 py-4 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingBatch(b);
+                          setNewBatchName(b.batchId);
+                        }}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors active:scale-95"
+                        title={t.editBatchName}
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -144,4 +250,4 @@ export const Batches: React.FC<BatchesProps> = ({
       </section>
     </div>
   );
-};
+});

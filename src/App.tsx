@@ -47,7 +47,7 @@ export default function App() {
     setActionError(err);
   };
 
-  if (!isAuthReady || (user && loading)) {
+  if (!isAuthReady) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center glass-panel p-8 rounded-[2rem]">
@@ -107,12 +107,14 @@ export default function App() {
             t={t} 
             setActiveTab={setActiveTab}
             activeTab={activeTab}
+            loading={loading}
           />
 
           <History 
             transactions={transactions} 
             t={t} 
             activeTab={activeTab} 
+            loading={loading}
           />
 
           <AddTransaction 
@@ -131,6 +133,7 @@ export default function App() {
             setNewBatchName={setNewBatchName}
             t={t}
             activeTab={activeTab}
+            loading={loading}
           />
         </div>
 

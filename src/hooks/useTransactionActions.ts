@@ -11,9 +11,18 @@ import {
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { db } from '../firebase';
-import { Stock, TransactionType, Batch, LaptopClass } from '../types';
-import { getStockKey } from '../utils/stock';
+import { Stock, TransactionType, Batch, LaptopClass, ModelStock } from '../types';
+import { INITIAL_CLASS_COUNTS } from '../constants';
 import { translations, Language } from '../translations';
+
+const getModelStock = (items: ModelStock[], brand: string, series: string, model: string): ModelStock => {
+  let ms = items.find(i => i.brand === brand && i.series === series && i.model === model);
+  if (!ms) {
+    ms = { brand, series, model, counts: { ...INITIAL_CLASS_COUNTS } };
+    items.push(ms);
+  }
+  return ms;
+};
 
 export function useTransactionActions(user: User | null, stock: Stock | null, lang: Language) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -25,12 +34,15 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
   const handleAddTransaction = async (
     txType: TransactionType,
     batchId: string,
+    brand: string,
+    series: string,
+    model: string,
     fromClass: LaptopClass,
     toClass: LaptopClass,
     quantity: number,
     notes: string
   ) => {
-    if (!user || !stock) return;
+    if (!user || !stock || !brand.trim() || !series.trim() || !model.trim()) return;
 
     setIsSubmitting(true);
     setError(null);
@@ -50,13 +62,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
 
         const currentStock = stockDoc.data() as Stock;
         const newStock: Stock = { 
-          classA: Math.max(0, Number(currentStock.classA) || 0),
-          classB: Math.max(0, Number(currentStock.classB) || 0),
-          classBMinus: Math.max(0, Number(currentStock.classBMinus) || 0),
-          classC: Math.max(0, Number(currentStock.classC) || 0),
-          classCMinus: Math.max(0, Number(currentStock.classCMinus) || 0),
-          classD: Math.max(0, Number(currentStock.classD) || 0),
-          unclassified: Math.max(0, Number(currentStock.unclassified) || 0),
+          items: (currentStock.items || []).filter(i => typeof i === 'object' && i !== null),
           lastUpdated: new Date().toISOString() 
         };
 
@@ -66,13 +72,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
           currentBatchStock = {
             ...data,
             batchId: data.batchId || batchId,
-            classA: Math.max(0, Number(data.classA) || 0),
-            classB: Math.max(0, Number(data.classB) || 0),
-            classBMinus: Math.max(0, Number(data.classBMinus) || 0),
-            classC: Math.max(0, Number(data.classC) || 0),
-            classCMinus: Math.max(0, Number(data.classCMinus) || 0),
-            classD: Math.max(0, Number(data.classD) || 0),
-            unclassified: Math.max(0, Number(data.unclassified) || 0),
+            items: (data.items || []).filter(i => typeof i === 'object' && i !== null),
             createdAt: typeof data.createdAt === 'string' 
               ? data.createdAt 
               : (data.createdAt && (data.createdAt as any).toDate) 
@@ -82,54 +82,47 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         } else {
           currentBatchStock = {
             batchId,
-            classA: 0,
-            classB: 0,
-            classBMinus: 0,
-            classC: 0,
-            classCMinus: 0,
-            classD: 0,
-            unclassified: 0,
+            items: [],
             createdAt: new Date().toISOString()
           };
         }
+        
         const newBatchStock = { ...currentBatchStock };
 
+        const globalModelStock = getModelStock(newStock.items, brand, series, model);
+        const batchModelStock = getModelStock(newBatchStock.items, brand, series, model);
+
         if (txType === 'INCOMING') {
-          const key = 'unclassified';
-          (newStock[key] as number) += quantity;
-          (newBatchStock[key] as number) += quantity;
+          globalModelStock.counts['UNCLASSIFIED'] += quantity;
+          batchModelStock.counts['UNCLASSIFIED'] += quantity;
         } else if (txType === 'SALE') {
-          const key = getStockKey(fromClass);
-          if ((currentBatchStock[key] as number) < quantity) {
+          if (batchModelStock.counts[fromClass] < quantity) {
             throw new Error(t.insufficientStock(batchId, fromClass));
           }
-          if ((newStock[key] as number) < quantity) {
+          if (globalModelStock.counts[fromClass] < quantity) {
             throw new Error(`Insufficient global stock for Class ${fromClass}`);
           }
-          (newStock[key] as number) -= quantity;
-          (newBatchStock[key] as number) -= quantity;
+          globalModelStock.counts[fromClass] -= quantity;
+          batchModelStock.counts[fromClass] -= quantity;
         } else if (txType === 'REPAIR') {
-          const fromKey = getStockKey(fromClass);
-          const toKey = getStockKey(toClass);
-          if ((currentBatchStock[fromKey] as number) < quantity) {
+          if (batchModelStock.counts[fromClass] < quantity) {
             throw new Error(t.insufficientStock(batchId, fromClass));
           }
-          if ((newStock[fromKey] as number) < quantity) {
+          if (globalModelStock.counts[fromClass] < quantity) {
             throw new Error(`Insufficient global stock for Class ${fromClass}`);
           }
-          (newStock[fromKey] as number) -= quantity;
-          (newStock[toKey] as number) += quantity;
-          (newBatchStock[fromKey] as number) -= quantity;
-          (newBatchStock[toKey] as number) += quantity;
+          globalModelStock.counts[fromClass] -= quantity;
+          globalModelStock.counts[toClass] += quantity;
+          batchModelStock.counts[fromClass] -= quantity;
+          batchModelStock.counts[toClass] += quantity;
         } else if (txType === 'ADJUSTMENT') {
-          const key = getStockKey(toClass);
-          const diff = quantity - (currentBatchStock[key] as number);
-          (newStock[key] as number) += diff;
-          (newBatchStock[key] as number) += diff;
-          if ((newBatchStock[key] as number) < 0) {
+          const diff = quantity - batchModelStock.counts[toClass];
+          globalModelStock.counts[toClass] += diff;
+          batchModelStock.counts[toClass] += diff;
+          if (batchModelStock.counts[toClass] < 0) {
             throw new Error(t.adjustmentNegative(batchId, toClass));
           }
-          if ((newStock[key] as number) < 0) {
+          if (globalModelStock.counts[toClass] < 0) {
             throw new Error(`Adjustment would result in negative global stock for Class ${toClass}`);
           }
         }
@@ -141,6 +134,9 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         const txData: any = {
           type: txType,
           batchId,
+          brand,
+          series,
+          model,
           quantity,
           timestamp: new Date().toISOString(),
           userId: user.uid,
