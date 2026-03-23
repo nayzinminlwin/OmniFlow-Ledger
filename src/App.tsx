@@ -14,6 +14,7 @@ import { Dashboard } from './components/Dashboard';
 import { History } from './components/History';
 import { AddTransaction } from './components/AddTransaction';
 import { Batches } from './components/Batches';
+import { UserManagement } from './components/UserManagement';
 import { RenameBatchModal } from './components/RenameBatchModal';
 import { Toast } from './components/Toast';
 import { Batch } from './types';
@@ -22,8 +23,22 @@ export default function App() {
   const [lang, setLang] = useState<Language>('en');
   const t = translations[lang];
 
-  const { user, isAuthReady, handleLogin, handleLogout, error: authError, setError: setAuthError } = useAuth(lang);
-  const { stock, batches, transactions, loading, error: invError, setError: setInvError } = useInventory(user, isAuthReady, lang);
+  const { 
+    user, 
+    profile,
+    isAuthReady, 
+    handleLogin, 
+    handleSignUp,
+    handleGoogleLogin,
+    handleLogout, 
+    error: authError, 
+    setError: setAuthError,
+    isMotherAdmin
+  } = useAuth(lang);
+  
+  const isApproved = profile?.status === 'approved' || isMotherAdmin;
+
+  const { stock, batches, transactions, loading, error: invError, setError: setInvError } = useInventory(user, isAuthReady, lang, isApproved);
   const { 
     handleAddTransaction, 
     handleRenameBatch, 
@@ -35,10 +50,15 @@ export default function App() {
     setSuccess
   } = useTransactionActions(user, stock, lang);
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add' | 'batches'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add' | 'batches' | 'users'>('dashboard');
   const [selectedBatchId, setSelectedBatchId] = useState<string>('');
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [newBatchName, setNewBatchName] = useState('');
+
+  // Login form state
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const error = authError || invError || actionError;
   const setError = (err: string | null) => {
@@ -70,15 +90,69 @@ export default function App() {
             <p className="text-[var(--color-ios-text-secondary)] font-medium leading-relaxed px-4">{t.subtitle}</p>
           </div>
           
-          <button
-            onClick={handleLogin}
-            className="ios-button w-full flex items-center justify-center gap-3"
+          <form 
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (isSignUp) {
+                handleSignUp(username, password);
+              } else {
+                handleLogin(username, password);
+              }
+            }}
+            className="space-y-4"
           >
-            <span className="w-6 h-6 bg-white/20 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">G</span>
-            </span>
-            {t.signIn}
-          </button>
+            <div>
+              <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2 ml-1">
+                {t.username}
+              </label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="ios-input w-full"
+                placeholder="e.g. admin"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2 ml-1">
+                {t.password}
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="ios-input w-full"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="ios-button w-full mt-6"
+            >
+              {isSignUp ? t.signUp : t.login}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button 
+              onClick={() => setIsSignUp(!isSignUp)}
+              className="text-[13px] font-bold text-[var(--color-ios-blue)] hover:underline"
+            >
+              {isSignUp ? t.hasAccount : t.noAccount}
+            </button>
+          </div>
+
+          <div className="mt-8 pt-8 border-t border-black/5">
+            <button
+              onClick={handleGoogleLogin}
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-gray-200 rounded-2xl text-[14px] font-bold text-gray-700 hover:bg-gray-50 transition-all active:scale-95 shadow-sm"
+            >
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
+              Sign in as Mother Admin
+            </button>
+          </div>
           
           <p className="mt-8 text-center text-xs font-medium text-[var(--color-ios-text-secondary)] uppercase tracking-widest">
             {t.authOnly}
@@ -98,11 +172,12 @@ export default function App() {
         handleLogout={handleLogout}
         handleLogin={handleLogin}
       >
-        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} t={t} />
+        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} t={t} isMotherAdmin={isMotherAdmin} />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <Dashboard 
             stock={stock} 
+            batches={batches}
             transactions={transactions} 
             t={t} 
             setActiveTab={setActiveTab}
@@ -134,6 +209,11 @@ export default function App() {
             t={t}
             activeTab={activeTab}
             loading={loading}
+          />
+
+          <UserManagement 
+            t={t}
+            activeTab={activeTab}
           />
         </div>
 

@@ -10,7 +10,7 @@ interface LayoutProps {
   lang: Language;
   setLang: (lang: Language) => void;
   handleLogout: () => void;
-  handleLogin: () => void;
+  handleLogin: (username?: string, password?: string) => void;
   children: React.ReactNode;
 }
 
@@ -23,6 +23,8 @@ export const Layout: React.FC<LayoutProps> = ({
   handleLogin,
   children,
 }) => {
+  const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
+
   return (
     <div className="min-h-screen selection:bg-blue-200 selection:text-blue-900">
       <nav className="glass-panel sticky top-0 z-40 border-b-0 border-x-0 rounded-none">
@@ -43,10 +45,10 @@ export const Layout: React.FC<LayoutProps> = ({
               {user ? (
                 <>
                   <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-black/5 rounded-full">
-                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600">
-                      {user.displayName?.charAt(0) || 'U'}
+                    <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 uppercase">
+                      {displayName.charAt(0)}
                     </div>
-                    <span className="text-[13px] font-medium text-gray-700">{user.displayName}</span>
+                    <span className="text-[13px] font-medium text-gray-700 capitalize">{displayName}</span>
                   </div>
                   <button
                     onClick={handleLogout}
@@ -58,7 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 </>
               ) : (
                 <button
-                  onClick={handleLogin}
+                  onClick={() => handleLogin()}
                   className="ios-button py-2 px-5 text-[13px]"
                 >
                   <LogIn className="w-4 h-4" />

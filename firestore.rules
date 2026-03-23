@@ -12,7 +12,31 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && 
-             request.auth.token.email == "nayzinminlwin22@gmail.com";
+             (request.auth.token.email == "admin@repair.ledger" || 
+              isMotherAdmin());
+    }
+
+    function isMotherAdmin() {
+      return isAuthenticated() && 
+             (request.auth.token.email == "nayzinminlwin22@gmail.com" || 
+              request.auth.uid == "x5pZdinbxNR4EWH3LQQfyKvsUYj2");
+    }
+
+    function isValidUserProfile(data, uid) {
+      return data.keys().hasAll(['uid', 'username', 'email', 'status', 'role', 'createdAt']) &&
+             data.uid == uid &&
+             validString(data.username, 50) &&
+             validString(data.email, 100) &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             data.role in ['admin', 'user'] &&
+             data.createdAt is string;
+    }
+
+    function isApproved() {
+      return isAuthenticated() && 
+             (isMotherAdmin() || 
+              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved'));
     }
 
     function isValidClass(className) {
@@ -65,20 +89,28 @@ service cloud.firestore {
     // Rules
     // ===============================================================
 
+    match /users/{uId} {
+      allow get: if isAuthenticated();
+      allow list: if isMotherAdmin();
+      allow create: if isAuthenticated() && request.auth.uid == uId && isValidUserProfile(request.resource.data, uId) && 
+                    (request.resource.data.status == 'pending' || isMotherAdmin());
+      allow update: if isMotherAdmin() && isValidUserProfile(request.resource.data, uId);
+    }
+
     match /inventory/current {
-      allow read: if isAuthenticated();
-      allow write: if isAdmin() || (isAuthenticated() && isValidStock(request.resource.data));
+      allow read: if isApproved();
+      allow write: if isAdmin() || (isApproved() && isValidStock(request.resource.data));
     }
 
     match /batches/{batchId} {
-      allow read: if isAuthenticated();
-      allow create, update: if isAdmin() || (isAuthenticated() && isValidBatch(request.resource.data));
+      allow read: if isApproved();
+      allow create, update: if isAdmin() || (isApproved() && isValidBatch(request.resource.data));
       allow delete: if isAdmin();
     }
 
     match /transactions/{transactionId} {
-      allow read: if isAuthenticated();
-      allow create: if isAdmin() || (isAuthenticated() && isValidTransaction(request.resource.data));
+      allow read: if isApproved();
+      allow create: if isAdmin() || (isApproved() && isValidTransaction(request.resource.data));
       allow update, delete: if isAdmin();
     }
   }

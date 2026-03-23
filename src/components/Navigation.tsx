@@ -1,17 +1,18 @@
 import React, { memo } from 'react';
-import { LayoutDashboard, Edit2, History, Settings } from 'lucide-react';
+import { LayoutDashboard, Edit2, History, Settings, Users } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface NavigationProps {
-  activeTab: 'dashboard' | 'history' | 'add' | 'batches';
-  setActiveTab: (tab: 'dashboard' | 'history' | 'add' | 'batches') => void;
+  activeTab: 'dashboard' | 'history' | 'add' | 'batches' | 'users';
+  setActiveTab: (tab: 'dashboard' | 'history' | 'add' | 'batches' | 'users') => void;
   t: any;
+  isMotherAdmin?: boolean;
 }
 
-export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiveTab, t }) => {
+export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiveTab, t, isMotherAdmin }) => {
   return (
     <div className="flex justify-center mb-8">
-      <div className="flex bg-black/5 p-1 rounded-xl shadow-inner overflow-x-auto no-scrollbar w-full max-w-2xl">
+      <div className="flex bg-black/5 p-1 rounded-xl shadow-inner overflow-x-auto no-scrollbar w-full max-w-3xl">
         <button
           onClick={() => setActiveTab('dashboard')}
           className={cn(
@@ -52,6 +53,18 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
           <History className="w-4 h-4" />
           {t.ledger}
         </button>
+        {isMotherAdmin && (
+          <button
+            onClick={() => setActiveTab('users')}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-[13px] font-medium transition-all whitespace-nowrap",
+              activeTab === 'users' ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-700"
+            )}
+          >
+            <Users className="w-4 h-4" />
+            {t.userManagement}
+          </button>
+        )}
       </div>
     </div>
   );

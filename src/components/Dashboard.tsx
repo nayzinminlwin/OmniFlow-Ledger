@@ -6,15 +6,18 @@ import {
   RefreshCw, 
   ChevronRight, 
   ArrowRightLeft, 
-  Settings
+  Settings,
+  FileSpreadsheet
 } from 'lucide-react';
-import { Stock, Transaction, LaptopClass } from '../types';
+import * as XLSX from 'xlsx';
+import { Stock, Transaction, LaptopClass, Batch } from '../types';
 import { CLASSES } from '../constants';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
 
 interface DashboardProps {
   stock: Stock | null;
+  batches: Batch[];
   transactions: Transaction[];
   t: any;
   setActiveTab: (tab: 'dashboard' | 'history' | 'add' | 'batches') => void;
@@ -24,6 +27,7 @@ interface DashboardProps {
 
 export const Dashboard: React.FC<DashboardProps> = memo(({ 
   stock, 
+  batches,
   transactions, 
   t, 
   setActiveTab,
@@ -43,15 +47,75 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
 
   const grandTotal = models.reduce((sum, m) => sum + getRowTotal(m?.counts), 0);
 
+  const handleExport = () => {
+    if (!batches.length) return;
+
+    const exportData: any[] = [];
+
+    // Iterate through each batch to include Batch ID
+    batches.forEach(batch => {
+      batch.items.forEach(m => {
+        const rowTotal = getRowTotal(m.counts);
+        if (rowTotal === 0) return; // Skip empty rows in this batch
+
+        const row: any = {
+          [t.batchId]: batch.batchId,
+          [t.brandLabel]: m.brand,
+          [t.seriesLabel]: m.series,
+          [t.modelLabel]: m.model,
+          [t.unclassified]: m.counts?.['UNCLASSIFIED'] || 0
+        };
+        
+        CLASSES.forEach(cls => {
+          row[`${t.class} ${cls}`] = m.counts?.[cls] || 0;
+        });
+        
+        row['Total'] = rowTotal;
+        exportData.push(row);
+      });
+    });
+
+    // Add a separator or just the Grand Total at the end
+    exportData.push({}); // Empty row for separation
+    
+    const totalRow: any = {
+      [t.batchId]: 'GRAND TOTAL',
+      [t.brandLabel]: '',
+      [t.seriesLabel]: '',
+      [t.modelLabel]: '',
+      [t.unclassified]: getColumnTotal('UNCLASSIFIED')
+    };
+    CLASSES.forEach(cls => {
+      totalRow[`${t.class} ${cls}`] = getColumnTotal(cls);
+    });
+    totalRow['Total'] = grandTotal;
+    exportData.push(totalRow);
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory_By_Batch");
+    
+    const fileName = `Inventory_By_Batch_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+  };
+
   return (
     <div className={cn(
       "lg:col-span-12 space-y-8 animate-in fade-in duration-500",
       activeTab === 'dashboard' ? "block" : "hidden"
     )}>
       <section>
-        <div className="flex items-center justify-between mb-6 px-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 px-2 gap-4">
           <div className="flex items-center gap-4">
             <h2 className="text-[28px] font-bold text-black tracking-tight leading-none">{t.currentInventory}</h2>
+            <button 
+              onClick={handleExport}
+              disabled={!batches.length || loading}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-[14px] font-bold hover:bg-green-700 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-sm"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              {t.export}
+            </button>
           </div>
           <span className="text-[13px] font-medium text-gray-500 uppercase tracking-wider">
             {t.lastUpdated} {stock ? format(new Date(stock.lastUpdated), 'HH:mm:ss') : loading ? <Skeleton className="w-16 h-4 inline-block" /> : t.never}

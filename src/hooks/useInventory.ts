@@ -16,7 +16,7 @@ import { INITIAL_STOCK } from '../constants';
 import { handleFirestoreError, OperationType } from '../services/firestore';
 import { translations, Language } from '../translations';
 
-export function useInventory(user: User | null, isAuthReady: boolean, lang: Language) {
+export function useInventory(user: User | null, isAuthReady: boolean, lang: Language, isApproved: boolean) {
   const [stock, setStock] = useState<Stock | null>(null);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -32,7 +32,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
 
   // Test connection
   useEffect(() => {
-    if (!isAuthReady || !user) return;
+    if (!isAuthReady || !user || !isApproved) return;
     
     async function testConnection() {
       try {
@@ -40,15 +40,19 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       } catch (err) {
         if (err instanceof Error && err.message.includes('the client is offline')) {
           setError(t.firestoreOffline);
+        } else {
+          handleFirestoreError(err, OperationType.GET, 'inventory/current');
         }
       }
     }
     testConnection();
-  }, [isAuthReady, user, t.firestoreOffline]);
+  }, [isAuthReady, user, isApproved, t.firestoreOffline]);
 
   useEffect(() => {
-    if (!isAuthReady || !user) {
-      if (isAuthReady && !user) setLoadingStates({ stock: false, batches: false, transactions: false });
+    if (!isAuthReady || !user || !isApproved) {
+      if (isAuthReady && (!user || !isApproved)) {
+        setLoadingStates({ stock: false, batches: false, transactions: false });
+      }
       return;
     }
 
@@ -64,8 +68,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       }
       setLoadingStates(prev => ({ ...prev, stock: false }));
     }, (err) => {
-      console.error('Stock snapshot error:', err);
-      setError(t.firestoreOffline); // Or a more specific error
+      handleFirestoreError(err, OperationType.GET, 'inventory/current');
       setLoadingStates(prev => ({ ...prev, stock: false }));
     });
 
@@ -77,7 +80,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       setBatches(b);
       setLoadingStates(prev => ({ ...prev, batches: false }));
     }, (err) => {
-      console.error('Batches snapshot error:', err);
+      handleFirestoreError(err, OperationType.LIST, 'batches');
       setLoadingStates(prev => ({ ...prev, batches: false }));
     });
 
@@ -89,7 +92,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       setTransactions(txs);
       setLoadingStates(prev => ({ ...prev, transactions: false }));
     }, (err) => {
-      console.error('Transactions snapshot error:', err);
+      handleFirestoreError(err, OperationType.LIST, 'transactions');
       setLoadingStates(prev => ({ ...prev, transactions: false }));
     });
 
@@ -98,7 +101,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       unsubBatches();
       unsubTx();
     };
-  }, [isAuthReady, user]);
+  }, [isAuthReady, user, isApproved]);
 
   return { stock, batches, transactions, loading, error, setError };
 }

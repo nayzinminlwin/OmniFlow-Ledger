@@ -73,6 +73,20 @@
         "notes": { "type": "string" }
       },
       "required": ["type", "batchId", "brand", "series", "model", "quantity", "timestamp", "userId"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User profile and approval status.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "username": { "type": "string" },
+        "email": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "username", "email", "status", "role", "createdAt"]
     }
   },
   "firestore": {
@@ -87,6 +101,10 @@
     "/transactions/{transactionId}": {
       "schema": "Transaction",
       "description": "Historical log of all stock movements."
+    },
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "User profiles and approval status."
     }
   }
 }
