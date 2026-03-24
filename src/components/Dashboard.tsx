@@ -47,6 +47,13 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
 
   const grandTotal = models.reduce((sum, m) => sum + getRowTotal(m?.counts), 0);
 
+  const getClassifiedRowTotal = (counts: Record<LaptopClass, number>) => {
+    if (!counts) return 0;
+    return CLASSES.reduce((sum, cls) => sum + (counts[cls] || 0), 0);
+  };
+
+  const getClassifiedGrandTotal = models.reduce((sum, m) => sum + getClassifiedRowTotal(m?.counts), 0);
+
   const handleExport = () => {
     if (!batches.length) return;
 
@@ -72,6 +79,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
           row[`${t.class} ${cls}`] = m.counts?.[cls] || 0;
         });
         
+        row['Classified'] = getClassifiedRowTotal(m.counts);
         row['Total'] = rowTotal;
         exportData.push(row);
       });
@@ -90,6 +98,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
     CLASSES.forEach(cls => {
       totalRow[`${t.class} ${cls}`] = getColumnTotal(cls);
     });
+    totalRow['Classified'] = getClassifiedGrandTotal;
     totalRow['Total'] = grandTotal;
     exportData.push(totalRow);
 
@@ -141,6 +150,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                   {CLASSES.map(cls => (
                     <th key={cls} className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.class} {cls}</th>
                   ))}
+                  <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">Classified</th>
                   <th className="px-6 py-4 text-[13px] font-bold text-black uppercase tracking-wider">Total</th>
                 </tr>
               </thead>
@@ -171,6 +181,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                         {CLASSES.map(cls => (
                           <td key={cls} className="px-6 py-4 text-gray-600 tabular-nums">{m?.counts?.[cls] || 0}</td>
                         ))}
+                        <td className="px-6 py-4 font-semibold text-gray-700 tabular-nums">{getClassifiedRowTotal(m?.counts)}</td>
                         <td className="px-6 py-4 font-bold text-black tabular-nums">{getRowTotal(m?.counts)}</td>
                       </tr>
                     )),
@@ -180,6 +191,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                       {CLASSES.map(cls => (
                         <td key={cls} className="px-6 py-4 font-bold text-black tabular-nums">{getColumnTotal(cls)}</td>
                       ))}
+                      <td className="px-6 py-4 font-bold text-gray-700 tabular-nums">{getClassifiedGrandTotal}</td>
                       <td className="px-6 py-4 font-black text-black tabular-nums text-[17px]">{grandTotal}</td>
                     </tr>
                   ]

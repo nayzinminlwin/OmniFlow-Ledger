@@ -58,6 +58,13 @@ export const Batches: React.FC<BatchesProps> = memo(({
 
   const grandTotal = models.reduce((sum, m) => sum + getRowTotal(m?.counts), 0);
 
+  const getClassifiedRowTotal = (counts: Record<LaptopClass, number>) => {
+    if (!counts) return 0;
+    return CLASSES.reduce((sum, cls) => sum + (counts[cls] || 0), 0);
+  };
+
+  const getClassifiedGrandTotal = models.reduce((sum, m) => sum + getClassifiedRowTotal(m?.counts), 0);
+
   const getBatchTotal = (batch: Batch, cls: LaptopClass | 'UNCLASSIFIED') => {
     return batch.items?.reduce((sum, m) => sum + (m?.counts?.[cls as LaptopClass] || 0), 0) || 0;
   };
@@ -108,6 +115,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
                     {CLASSES.map(cls => (
                       <th key={cls} className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.class} {cls}</th>
                     ))}
+                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">Classified</th>
                     <th className="px-6 py-4 text-[13px] font-bold text-black uppercase tracking-wider">Total</th>
                   </tr>
                 </thead>
@@ -129,6 +137,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
                           {CLASSES.map(cls => (
                             <td key={cls} className="px-6 py-4 text-gray-600 tabular-nums">{m?.counts?.[cls] || 0}</td>
                           ))}
+                          <td className="px-6 py-4 font-semibold text-gray-700 tabular-nums">{getClassifiedRowTotal(m?.counts)}</td>
                           <td className="px-6 py-4 font-bold text-black tabular-nums">{getRowTotal(m?.counts)}</td>
                         </tr>
                       )),
@@ -138,6 +147,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
                         {CLASSES.map(cls => (
                           <td key={cls} className="px-6 py-4 font-bold text-black tabular-nums">{getColumnTotal(cls)}</td>
                         ))}
+                        <td className="px-6 py-4 font-bold text-gray-700 tabular-nums">{getClassifiedGrandTotal}</td>
                         <td className="px-6 py-4 font-black text-black tabular-nums text-[17px]">{grandTotal}</td>
                       </tr>
                     ]
@@ -187,6 +197,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">C</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">C-</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">D</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">Classified</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-right"></th>
               </tr>
             </thead>
@@ -228,6 +239,9 @@ export const Batches: React.FC<BatchesProps> = memo(({
                     <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'C')}</td>
                     <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'C-')}</td>
                     <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'D')}</td>
+                    <td className="px-8 py-4 text-center font-bold text-gray-700 bg-gray-500/5">
+                      {CLASSES.reduce((sum, cls) => sum + getBatchTotal(b, cls), 0)}
+                    </td>
                     <td className="px-8 py-4 text-right">
                       <button
                         onClick={(e) => {

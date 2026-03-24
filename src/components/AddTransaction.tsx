@@ -54,6 +54,13 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
     localStorage.setItem('last_isNewModel', String(isNewModel));
   }, [txType, batchId, brand, series, model, isNewBrand, isNewSeries, isNewModel]);
 
+  const handleTxTypeChange = (type: TransactionType) => {
+    setTxType(type);
+    if (type !== 'ADJUSTMENT' && toClass === 'UNCLASSIFIED') {
+      setToClass('A');
+    }
+  };
+
   const currentBatch = useMemo(() => batches.find(b => b.batchId === batchId), [batches, batchId]);
   
   const existingBrands = useMemo(() => {
@@ -206,7 +213,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     <button
                       key={type}
                       type="button"
-                      onClick={() => setTxType(type)}
+                      onClick={() => handleTxTypeChange(type)}
                       className={cn(
                         "py-3 px-2 rounded-xl text-[13px] font-bold transition-all",
                         txType === type 
@@ -371,6 +378,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     onChange={(e) => setToClass(e.target.value as LaptopClass)}
                     className="ios-input w-full"
                   >
+                    {txType === 'ADJUSTMENT' && <option value="UNCLASSIFIED">{t.unclassified}</option>}
                     {CLASSES.map(c => <option key={c} value={c}>{t.class} {c}</option>)}
                   </select>
                 </div>
