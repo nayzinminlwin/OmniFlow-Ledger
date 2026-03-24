@@ -54,6 +54,8 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
 
     // Iterate through each batch to include Batch ID
     batches.forEach(batch => {
+      if (!batch.items || !Array.isArray(batch.items)) return;
+      
       batch.items.forEach(m => {
         const rowTotal = getRowTotal(m.counts);
         if (rowTotal === 0) return; // Skip empty rows in this batch
