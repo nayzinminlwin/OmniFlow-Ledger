@@ -83,7 +83,8 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
           currentBatchStock = {
             batchId,
             items: [],
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            active: true
           };
         }
         
@@ -134,6 +135,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         const txData: any = {
           type: txType,
           batchId,
+          batchActive: true,
           brand,
           series,
           model,
@@ -235,5 +237,92 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
     }
   };
 
-  return { handleAddTransaction, handleRenameBatch, isSubmitting, isRenaming, error, setError, success, setSuccess };
+  const handleDeleteBatch = async (batchId: string, setSelectedBatchId: (id: string) => void) => {
+    if (!user || !batchId) return;
+
+    if (!window.confirm(t.confirmDeleteBatch)) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const batchRef = doc(db, 'batches', batchId);
+      const batchDoc = await getDoc(batchRef);
+      
+      if (!batchDoc.exists()) {
+        throw new Error(t.batchNotFound);
+      }
+
+      await runTransaction(db, async (transaction) => {
+        const stockRef = doc(db, 'inventory', 'current');
+        const stockDoc = await transaction.get(stockRef);
+        
+        if (!stockDoc.exists()) {
+          throw new Error(t.globalStockMissing);
+        }
+
+        const currentStock = stockDoc.data() as Stock;
+        const currentBatchData = batchDoc.data() as Batch;
+        
+        // Subtract batch items from global stock
+        const newStockItems = [...currentStock.items];
+        currentBatchData.items.forEach(batchItem => {
+          const globalItem = newStockItems.find(gi => 
+            gi.brand === batchItem.brand && 
+            gi.series === batchItem.series && 
+            gi.model === batchItem.model
+          );
+          
+          if (globalItem) {
+            Object.keys(batchItem.counts).forEach(cls => {
+              globalItem.counts[cls as LaptopClass] -= batchItem.counts[cls as LaptopClass];
+            });
+          }
+        });
+
+        transaction.update(stockRef, { 
+          items: newStockItems,
+          lastUpdated: new Date().toISOString()
+        });
+        
+        // Soft delete: set active to false
+        transaction.update(batchRef, { active: false });
+
+        // Update all transactions for this batch to be inactive
+        const txQuery = query(collection(db, 'transactions'), where('batchId', '==', batchId));
+        const txSnaps = await getDocs(txQuery);
+        txSnaps.docs.forEach(txDoc => {
+          transaction.update(txDoc.ref, { batchActive: false });
+        });
+
+        // Record a deletion transaction
+        const txRef = doc(collection(db, 'transactions'));
+        transaction.set(txRef, {
+          type: 'ADJUSTMENT',
+          batchId,
+          batchActive: false,
+          brand: 'BATCH',
+          series: 'DELETION',
+          model: 'ALL',
+          quantity: 0,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes: `Batch ${batchId} deleted (soft delete)`
+        });
+      });
+
+      setSelectedBatchId('');
+      setSuccess(t.deleteSuccess);
+      return true;
+    } catch (err: any) {
+      console.error('Delete failed:', err);
+      setError(err.message || t.deleteFailed);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { handleAddTransaction, handleRenameBatch, handleDeleteBatch, isSubmitting, isRenaming, error, setError, success, setSuccess };
 }

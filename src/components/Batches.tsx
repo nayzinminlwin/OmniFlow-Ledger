@@ -1,6 +1,6 @@
 import React, { memo, useState, useMemo } from 'react';
 import { format } from 'date-fns';
-import { Settings, Edit2, ChevronUp, ChevronDown } from 'lucide-react';
+import { Settings, Edit2, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 import { Batch, LaptopClass } from '../types';
 import { CLASSES } from '../constants';
 import { cn } from '../lib/utils';
@@ -14,6 +14,7 @@ interface BatchesProps {
   batches: Batch[];
   setEditingBatch: (batch: Batch) => void;
   setNewBatchName: (name: string) => void;
+  onDeleteBatch: (batchId: string, setSelectedBatchId: (id: string) => void) => Promise<boolean>;
   loading?: boolean;
 }
 
@@ -25,18 +26,28 @@ export const Batches: React.FC<BatchesProps> = memo(({
   batches,
   setEditingBatch,
   setNewBatchName,
+  onDeleteBatch,
   loading = false,
 }) => {
   const [sortField, setSortField] = useState<'batchId' | 'createdAt'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
+  const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return format(d, formatStr);
+  };
+
   const sortedBatches = useMemo(() => {
     return [...batches].sort((a, b) => {
       let comparison = 0;
       if (sortField === 'batchId') {
-        comparison = a.batchId.localeCompare(b.batchId);
+        comparison = (a.batchId || '').localeCompare(b.batchId || '');
       } else {
-        comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        comparison = (isNaN(dateA) ? 0 : dateA) - (isNaN(dateB) ? 0 : dateB);
       }
       return sortOrder === 'asc' ? comparison : -comparison;
     });
@@ -230,7 +241,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
                       <p className="text-[15px] font-semibold text-blue-600">{b.batchId}</p>
                     </td>
                     <td className="px-8 py-4 whitespace-nowrap">
-                      <p className="text-[13px] font-medium text-gray-500">{format(new Date(b.createdAt), 'MMM d, yyyy')}</p>
+                      <p className="text-[13px] font-medium text-gray-500">{safeFormatDate(b.createdAt, 'MMM d, yyyy')}</p>
                     </td>
                     <td className="px-8 py-4 text-center font-semibold text-blue-900 bg-blue-500/5">{getBatchTotal(b, 'UNCLASSIFIED')}</td>
                     <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'A')}</td>
@@ -243,17 +254,29 @@ export const Batches: React.FC<BatchesProps> = memo(({
                       {CLASSES.reduce((sum, cls) => sum + getBatchTotal(b, cls), 0)}
                     </td>
                     <td className="px-8 py-4 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingBatch(b);
-                          setNewBatchName(b.batchId);
-                        }}
-                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors active:scale-95"
-                        title={t.editBatchName}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingBatch(b);
+                            setNewBatchName(b.batchId);
+                          }}
+                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors active:scale-95"
+                          title={t.editBatchName}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteBatch(b.batchId, setSelectedBatchId);
+                          }}
+                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors active:scale-95"
+                          title={t.deleteBatch || 'Delete Batch'}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))

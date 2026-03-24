@@ -21,6 +21,7 @@ export interface Batch {
   batchId: string;
   items: ModelStock[];
   createdAt: string;
+  active?: boolean;
 }
 
 export type TransactionType = 'INCOMING' | 'REPAIR' | 'SALE' | 'ADJUSTMENT';
@@ -29,6 +30,7 @@ export interface Transaction {
   id?: string;
   type: TransactionType;
   batchId: string;
+  batchActive?: boolean;
   brand: string;
   series: string;
   model: string;
@@ -38,4 +40,13 @@ export interface Transaction {
   timestamp: string;
   userId: string;
   notes?: string;
+}
+
+export interface UserProfile {
+  uid: string;
+  username: string;
+  email: string;
+  status: 'pending' | 'approved' | 'rejected';
+  role: 'admin' | 'user';
+  createdAt: string;
 }

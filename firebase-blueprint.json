@@ -27,7 +27,8 @@
             "$ref": "ModelStock"
           }
         },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "active": { "type": "boolean", "description": "Whether the batch is active and visible." }
       },
       "required": ["batchId", "items", "createdAt"]
     },
@@ -62,6 +63,7 @@
       "properties": {
         "type": { "type": "string", "enum": ["INCOMING", "REPAIR", "SALE", "ADJUSTMENT"], "description": "Type of transaction" },
         "batchId": { "type": "string", "description": "The batch this transaction belongs to" },
+        "batchActive": { "type": "boolean", "description": "Whether the associated batch is active. Used to hide transactions for deleted batches." },
         "brand": { "type": "string" },
         "series": { "type": "string" },
         "model": { "type": "string", "description": "The laptop model involved in the transaction" },

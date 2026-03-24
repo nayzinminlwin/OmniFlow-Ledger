@@ -68,6 +68,7 @@ export const translations = {
     type: 'Type',
     movement: 'Movement',
     qty: 'Qty',
+    user: 'User',
     renameBatch: 'Rename Batch',
     renameWarning: 'Warning: This is a fatal operation. Renaming a batch will update the batch record and all associated transactions.',
     newBatchName: 'New Batch Name',
@@ -94,6 +95,7 @@ export const translations = {
     transactionFailed: 'Failed to process transaction.',
     loginFailed: 'Failed to log in with Google.',
     renameFailed: 'Failed to rename batch.',
+    deleteFailed: 'Failed to delete batch.',
     initClass: 'INIT CLASS',
     export: 'Export',
     firestoreOffline: 'Firestore is offline. Please check your configuration.',
@@ -107,7 +109,9 @@ export const translations = {
     requestSentTitle: 'Request Submitted',
     requestSentMessage: 'Your access request has been successfully sent to the Ultimate Admin. You will be able to access the system once your account is approved.',
     backToLogin: 'Back to Login',
-    accountApprovedToast: 'Welcome back! Your account has been approved and you now have full access.'
+    accountApprovedToast: 'Welcome back! Your account has been approved and you now have full access.',
+    confirmDeleteBatch: 'Are you sure you want to delete this batch? This will subtract all items in this batch from the global inventory and hide the batch record. This action cannot be undone.',
+    deleteSuccess: 'Batch deleted successfully!'
   },
   ms: {
     brand: 'Lejar Pembaikan Pro',
@@ -176,6 +180,7 @@ export const translations = {
     type: 'Jenis',
     movement: 'Pergerakan',
     qty: 'Kuantiti',
+    user: 'Pengguna',
     renameBatch: 'Tukar Nama Batch',
     renameWarning: 'Amaran: Ini adalah operasi kritikal. Menamakan semula batch akan mengemas kini rekod batch dan semua transaksi yang berkaitan.',
     newBatchName: 'Nama Batch Baru',
@@ -202,6 +207,7 @@ export const translations = {
     transactionFailed: 'Gagal memproses transaksi.',
     loginFailed: 'Gagal log masuk dengan Google.',
     renameFailed: 'Gagal menamakan semula batch.',
+    deleteFailed: 'Gagal memadam batch.',
     initClass: 'INIT KELAS',
     export: 'Eksport',
     firestoreOffline: 'Firestore di luar talian. Sila semak konfigurasi anda.',
@@ -215,7 +221,9 @@ export const translations = {
     requestSentTitle: 'Permintaan Dihantar',
     requestSentMessage: 'Permintaan akses anda telah berjaya dihantar kepada Ultimate Admin. Anda akan dapat mengakses sistem setelah akaun anda diluluskan.',
     backToLogin: 'Kembali ke Log Masuk',
-    accountApprovedToast: 'Selamat kembali! Akaun anda telah diluluskan dan anda kini mempunyai akses penuh.'
+    accountApprovedToast: 'Selamat kembali! Akaun anda telah diluluskan dan anda kini mempunyai akses penuh.',
+    confirmDeleteBatch: 'Adakah anda pasti mahu memadam batch ini? Ini akan menolak semua item dalam batch ini daripada inventori global dan menyembunyikan rekod batch. Tindakan ini tidak boleh diubah.',
+    deleteSuccess: 'Batch berjaya dipadam!'
   },
   zh: {
     brand: '专业维修分类账',
@@ -284,6 +292,7 @@ export const translations = {
     type: '类型',
     movement: '变动',
     qty: '数量',
+    user: '用户',
     renameBatch: '重命名批次',
     renameWarning: '警告：这是一项致命操作。重命名批次将更新批次记录及所有相关交易。',
     newBatchName: '新批次名称',
@@ -323,6 +332,9 @@ export const translations = {
     requestSentTitle: '申请已提交',
     requestSentMessage: '您的访问申请已成功发送给 Ultimate Admin。账号审核通过后，您即可访问系统。',
     backToLogin: '返回登录',
-    accountApprovedToast: '欢迎回来！您的账号已获批准，现在拥有完整访问权限。'
+    accountApprovedToast: '欢迎回来！您的账号已获批准，现在拥有完整访问权限。',
+    confirmDeleteBatch: '您确定要删除此批次吗？这将从全局库存中扣除此批次中的所有项目并隐藏批次记录。此操作无法撤销。',
+    deleteSuccess: '批次删除成功！',
+    deleteFailed: '删除批次失败。'
   }
 };

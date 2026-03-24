@@ -1,19 +1,27 @@
 import React, { memo } from 'react';
 import { format } from 'date-fns';
 import { ArrowRightLeft } from 'lucide-react';
-import { Transaction } from '../types';
+import { Transaction, UserProfile } from '../types';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
 
 interface HistoryProps {
   transactions: Transaction[];
+  users: Record<string, UserProfile>;
   t: any;
   activeTab: string;
   loading?: boolean;
 }
 
-export const History: React.FC<HistoryProps> = memo(({ transactions, t, activeTab, loading = false }) => {
+export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, activeTab, loading = false }) => {
   if (activeTab !== 'history') return null;
+
+  const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return format(d, formatStr);
+  };
 
   return (
     <div className="lg:col-span-12 animate-in fade-in duration-500">
@@ -36,6 +44,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, t, activeTa
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.type}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.movement}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-right">{t.qty}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.user}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.notes}</th>
               </tr>
             </thead>
@@ -57,20 +66,10 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, t, activeTa
                 <tr key={tx.id} className="hover:bg-black/[0.02] transition-colors">
                   <td className="px-8 py-4 whitespace-nowrap">
                     <p className="text-[15px] font-semibold text-black">
-                      {tx.timestamp ? (
-                        (() => {
-                          const d = new Date(tx.timestamp);
-                          return isNaN(d.getTime()) ? 'Invalid Date' : format(d, 'MMM d, yyyy');
-                        })()
-                      ) : 'N/A'}
+                      {safeFormatDate(tx.timestamp, 'MMM d, yyyy')}
                     </p>
                     <p className="text-[13px] text-gray-500 font-medium mt-0.5">
-                      {tx.timestamp ? (
-                        (() => {
-                          const d = new Date(tx.timestamp);
-                          return isNaN(d.getTime()) ? '' : format(d, 'HH:mm:ss');
-                        })()
-                      ) : ''}
+                      {safeFormatDate(tx.timestamp, 'HH:mm:ss')}
                     </p>
                   </td>
                   <td className="px-8 py-4">
@@ -120,6 +119,11 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, t, activeTa
                     </p>
                   </td>
                   <td className="px-8 py-4">
+                    <p className="text-[15px] font-medium text-gray-700">
+                      {users[tx.userId]?.username || tx.userId || 'Unknown'}
+                    </p>
+                  </td>
+                  <td className="px-8 py-4">
                     <p className="text-[13px] text-gray-500 italic max-w-xs truncate">{tx.notes || '-'}</p>
                   </td>
                 </tr>
@@ -127,7 +131,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, t, activeTa
             )}
             {!loading && transactions.length === 0 && (
                 <tr>
-                  <td colSpan={9} className="px-8 py-12 text-center text-gray-400 font-medium text-[15px]">
+                  <td colSpan={10} className="px-8 py-12 text-center text-gray-400 font-medium text-[15px]">
                     {t.noTransactions}
                   </td>
                 </tr>

@@ -110,6 +110,13 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
     XLSX.writeFile(workbook, fileName);
   };
 
+  const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
+    if (!dateStr) return 'N/A';
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return 'Invalid Date';
+    return format(d, formatStr);
+  };
+
   return (
     <div className={cn(
       "lg:col-span-12 space-y-8 animate-in fade-in duration-500",
@@ -130,10 +137,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
           </div>
           <span className="text-[13px] font-medium text-gray-500 uppercase tracking-wider">
             {t.lastUpdated} {stock && stock.lastUpdated ? (
-              (() => {
-                const d = new Date(stock.lastUpdated);
-                return isNaN(d.getTime()) ? 'Invalid Date' : format(d, 'HH:mm:ss');
-              })()
+              safeFormatDate(stock.lastUpdated, 'HH:mm:ss')
             ) : loading ? <Skeleton className="w-16 h-4 inline-block" /> : t.never}
           </span>
         </div>
@@ -254,12 +258,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                     )}
                   </p>
                   <p className="text-[13px] text-gray-500 font-medium mt-0.5">
-                    {tx.brand} {tx.series} {tx.model} • {tx.timestamp ? (
-                      (() => {
-                        const d = new Date(tx.timestamp);
-                        return isNaN(d.getTime()) ? 'Invalid Date' : format(d, 'MMM d, HH:mm');
-                      })()
-                    ) : 'N/A'}
+                    {tx.brand} {tx.series} {tx.model} • {safeFormatDate(tx.timestamp, 'MMM d, HH:mm')}
                   </p>
                 </div>
               </div>

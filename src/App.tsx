@@ -43,10 +43,11 @@ export default function App() {
   
   const isApproved = profile?.status === 'approved' || isUltimateAdmin;
 
-  const { stock, batches, transactions, loading, error: invError, setError: setInvError } = useInventory(user, isAuthReady, lang, isApproved);
+  const { stock, batches, transactions, users, loading, error: invError, setError: setInvError } = useInventory(user, isAuthReady, lang, isApproved);
   const { 
     handleAddTransaction, 
     handleRenameBatch, 
+    handleDeleteBatch,
     isSubmitting, 
     isRenaming, 
     error: actionError, 
@@ -164,6 +165,7 @@ export default function App() {
 
           <History 
             transactions={transactions} 
+            users={users}
             t={t} 
             activeTab={activeTab} 
             loading={loading}
@@ -183,6 +185,7 @@ export default function App() {
             setSelectedBatchId={setSelectedBatchId}
             setEditingBatch={setEditingBatch}
             setNewBatchName={setNewBatchName}
+            onDeleteBatch={handleDeleteBatch}
             t={t}
             activeTab={activeTab}
             loading={loading}
