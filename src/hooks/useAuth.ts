@@ -77,11 +77,27 @@ export function useAuth(lang: Language) {
               handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
             }
           } else {
-            console.log("No profile found for non-mother admin, signing out...");
-            // No profile found for non-mother admin
-            setUser(null);
-            setProfile(null);
-            await signOut(auth);
+            console.log("No profile found for non-mother admin, creating pending profile...");
+            // Auto-create pending profile for new Google login users
+            const newProfile: UserProfile = {
+              uid: user.uid,
+              username: user.displayName || user.email?.split('@')[0] || 'User',
+              email: user.email || '',
+              status: 'pending',
+              role: 'user',
+              createdAt: new Date().toISOString()
+            };
+            try {
+              await setDoc(doc(db, 'users', user.uid), newProfile);
+              console.log("Pending profile created successfully");
+              setUser(null);
+              setProfile(null);
+              setError(t.pendingApproval);
+              await signOut(auth);
+            } catch (err) {
+              console.error("Error creating pending profile:", err);
+              handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
+            }
           }
         } catch (err) {
           console.error("Error in profile fetch/create:", err);

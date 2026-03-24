@@ -62,16 +62,22 @@ service cloud.firestore {
              modelStock.counts['UNCLASSIFIED'] is number;
     }
 
+    function isValidModelStockList(items) {
+      return items is list && items.size() <= 1000;
+      // Note: Deep inspection of list items is complex in rules, 
+      // but limiting the size prevents massive payloads.
+    }
+
     function isValidStock(data) {
       return data.keys().hasAll(['items', 'lastUpdated']) &&
-             data.items is list &&
+             isValidModelStockList(data.items) &&
              data.lastUpdated is string;
     }
 
     function isValidBatch(data) {
       return data.keys().hasAll(['batchId', 'items', 'createdAt']) &&
              validString(data.batchId, 50) &&
-             data.items is list &&
+             isValidModelStockList(data.items) &&
              data.createdAt is string;
     }
 
@@ -80,9 +86,15 @@ service cloud.firestore {
              data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT'] &&
              validString(data.batchId, 50) &&
              validString(data.model, 100) &&
+             (!('brand' in data) || validString(data.brand, 100)) &&
+             (!('series' in data) || validString(data.series, 100)) &&
              data.quantity is number &&
+             data.quantity >= 0 &&
              data.timestamp is string &&
-             data.userId == request.auth.uid;
+             data.userId == request.auth.uid &&
+             (!('notes' in data) || validString(data.notes, 500)) &&
+             (!('fromClass' in data) || isValidClass(data.fromClass)) &&
+             (!('toClass' in data) || isValidClass(data.toClass));
     }
 
     // ===============================================================
@@ -93,7 +105,7 @@ service cloud.firestore {
       allow get: if isAuthenticated();
       allow list: if isMotherAdmin();
       allow create: if isAuthenticated() && request.auth.uid == uId && isValidUserProfile(request.resource.data, uId) && 
-                    (request.resource.data.status == 'pending' || isMotherAdmin());
+                    ((request.resource.data.status == 'pending' && request.resource.data.role == 'user') || isMotherAdmin());
       allow update: if isMotherAdmin() && isValidUserProfile(request.resource.data, uId);
     }
 

@@ -177,7 +177,6 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
     setSuccess(null);
 
     try {
-      const batch = writeBatch(db);
       const oldBatchRef = doc(db, 'batches', oldBatchId);
       const oldBatchSnap = await getDoc(oldBatchRef);
       if (!oldBatchSnap.exists()) throw new Error(t.batchNotFound);
@@ -188,16 +187,40 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
       
       const batchData = oldBatchSnap.data();
       batchData.batchId = newId;
-      batch.set(newBatchRef, batchData);
-      batch.delete(oldBatchRef);
       
       const txQuery = query(collection(db, 'transactions'), where('batchId', '==', oldBatchId));
       const txSnaps = await getDocs(txQuery);
-      txSnaps.forEach((txDoc) => {
-        batch.update(txDoc.ref, { batchId: newId });
-      });
       
-      await batch.commit();
+      // Firestore batches are limited to 500 operations.
+      // We have 2 ops for the batch document itself (set new, delete old).
+      // So we can process up to 498 transactions per batch.
+      const CHUNK_SIZE = 490;
+      const txDocs = txSnaps.docs;
+      
+      for (let i = 0; i < txDocs.length; i += CHUNK_SIZE) {
+        const chunk = txDocs.slice(i, i + CHUNK_SIZE);
+        const currentBatch = writeBatch(db);
+        
+        if (i === 0) {
+          // Only do the batch rename in the first chunk
+          currentBatch.set(newBatchRef, batchData);
+          currentBatch.delete(oldBatchRef);
+        }
+        
+        chunk.forEach((txDoc) => {
+          currentBatch.update(txDoc.ref, { batchId: newId });
+        });
+        
+        await currentBatch.commit();
+      }
+      
+      if (txDocs.length === 0) {
+        // If there were no transactions, we still need to commit the batch rename
+        const emptyBatch = writeBatch(db);
+        emptyBatch.set(newBatchRef, batchData);
+        emptyBatch.delete(oldBatchRef);
+        await emptyBatch.commit();
+      }
       if (selectedBatchId === oldBatchId) {
         setSelectedBatchId(newId);
       }
