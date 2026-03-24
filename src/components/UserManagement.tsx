@@ -17,6 +17,7 @@ interface UserManagementProps {
 export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, isOriginalAdmin }) => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeTab !== 'users') return;
@@ -38,6 +39,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
 
   const handleUpdateStatus = async (uid: string, status: 'approved' | 'rejected') => {
     try {
+      setActionLoading(uid);
       const updateData: any = { status };
       if (status === 'approved') {
         updateData.notifiedApproved = false;
@@ -45,14 +47,19 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
       await updateDoc(doc(db, 'users', uid), updateData);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const handleToggleUltimateAdmin = async (uid: string, currentStatus: boolean) => {
     try {
+      setActionLoading(uid);
       await updateDoc(doc(db, 'users', uid), { isUltimateAdmin: !currentStatus });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -126,17 +133,19 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
                       <>
                         <button
                           onClick={() => handleUpdateStatus(user.uid, 'approved')}
-                          className="p-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all active:scale-95 shadow-sm"
+                          disabled={actionLoading === user.uid}
+                          className="p-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                           title={t.approve}
                         >
-                          <Check className="w-5 h-5" />
+                          {actionLoading === user.uid ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check className="w-5 h-5" />}
                         </button>
                         <button
                           onClick={() => handleUpdateStatus(user.uid, 'rejected')}
-                          className="p-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all active:scale-95 shadow-sm"
+                          disabled={actionLoading === user.uid}
+                          className="p-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                           title={t.reject}
                         >
-                          <X className="w-5 h-5" />
+                          {actionLoading === user.uid ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <X className="w-5 h-5" />}
                         </button>
                       </>
                     )}
@@ -146,21 +155,23 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
                         {isOriginalAdmin && (
                           <button
                             onClick={() => handleToggleUltimateAdmin(user.uid, !!user.isUltimateAdmin)}
+                            disabled={actionLoading === user.uid}
                             className={cn(
-                              "p-2 rounded-xl transition-all active:scale-95 shadow-sm",
+                              "p-2 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-50",
                               user.isUltimateAdmin ? "bg-orange-100 text-orange-600 hover:bg-orange-200" : "bg-purple-600 text-white hover:bg-purple-700"
                             )}
                             title={user.isUltimateAdmin ? t.removeUltimate : t.makeUltimate}
                           >
-                            {user.isUltimateAdmin ? <ShieldOff className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
+                            {actionLoading === user.uid ? <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : (user.isUltimateAdmin ? <ShieldOff className="w-5 h-5" /> : <Shield className="w-5 h-5" />)}
                           </button>
                         )}
                         <button
                           onClick={() => handleUpdateStatus(user.uid, 'rejected')}
-                          className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-all active:scale-95 shadow-sm"
+                          disabled={actionLoading === user.uid}
+                          className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                           title={t.revoke}
                         >
-                          <UserMinus className="w-5 h-5" />
+                          {actionLoading === user.uid ? <div className="w-5 h-5 border-2 border-red-600/30 border-t-red-600 rounded-full animate-spin" /> : <UserMinus className="w-5 h-5" />}
                         </button>
                       </>
                     )}
@@ -168,10 +179,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
                     {user.status === 'rejected' && !user.isOriginalAdmin && (
                       <button
                         onClick={() => handleUpdateStatus(user.uid, 'approved')}
-                        className="p-2 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-all active:scale-95 shadow-sm"
+                        disabled={actionLoading === user.uid}
+                        className="p-2 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                         title={t.regrant}
                       >
-                        <UserPlus className="w-5 h-5" />
+                        {actionLoading === user.uid ? <div className="w-5 h-5 border-2 border-green-600/30 border-t-green-600 rounded-full animate-spin" /> : <UserPlus className="w-5 h-5" />}
                       </button>
                     )}
                   </div>

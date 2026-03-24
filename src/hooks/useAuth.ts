@@ -6,7 +6,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { Language } from '../translations';
 import { translations } from '../translations';
@@ -36,32 +36,11 @@ export function useAuth(lang: Language) {
 
   const bootstrapAdminEmails = ["tpl.pauline.pts2026@gmail.com"];
   const originalAdminEmail = "tpl.pauline.pts2026@gmail.com";
-  const userToDemote = "nayzinminlwin22@gmail.com";
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('Auth state changed:', user?.email, 'Verified:', user?.emailVerified);
       if (user) {
-        // One-time demotion logic for the user
-        if (user.email === userToDemote) {
-          try {
-            const profileDoc = await getDoc(doc(db, 'users', user.uid));
-            if (profileDoc.exists()) {
-              console.log("Removing user from DB as requested...");
-              await deleteDoc(doc(db, 'users', user.uid));
-              // After deleting, sign out
-              setIsLoggingIn(false);
-              await signOut(auth);
-              setRequestSent(true);
-              setUser(null);
-              setProfile(null);
-              return;
-            }
-          } catch (err) {
-            console.error("Error during demotion:", err);
-          }
-        }
-
         const isBootstrapAdmin = bootstrapAdminEmails.includes(user.email || "") && user.emailVerified;
         const isOriginalByEmail = user.email === originalAdminEmail && user.emailVerified;
         try {
@@ -90,6 +69,9 @@ export function useAuth(lang: Language) {
               setUser(null);
               setProfile(null);
               setError(profileData.status === 'pending' ? t.pendingApproval : t.rejectedApproval);
+              if (profileData.status === 'pending') {
+                setRequestSent(true);
+              }
               await signOut(auth);
             } else {
               console.log("User approved or Ultimate Admin, setting user state");
