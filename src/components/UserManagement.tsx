@@ -21,7 +21,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab }) 
 
     const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
       const usersList = snapshot.docs.map(doc => doc.data() as UserProfile);
-      setUsers(usersList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setUsers(usersList.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      }));
       setLoading(false);
     }, (err) => {
       handleFirestoreError(err, OperationType.LIST, 'users');
@@ -75,7 +79,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab }) 
                     <div className="flex items-center gap-2 mt-1">
                       <Clock className="w-3 h-3 text-gray-400" />
                       <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                        {format(new Date(user.createdAt), 'MMM dd, yyyy HH:mm')}
+                        {user.createdAt ? (
+                          (() => {
+                            const d = new Date(user.createdAt);
+                            return isNaN(d.getTime()) ? 'Invalid Date' : format(d, 'MMM dd, yyyy HH:mm');
+                          })()
+                        ) : 'N/A'}
                       </span>
                     </div>
                   </div>

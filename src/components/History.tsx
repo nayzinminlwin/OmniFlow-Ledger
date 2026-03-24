@@ -56,8 +56,22 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, t, activeTa
                 transactions.map((tx) => (
                 <tr key={tx.id} className="hover:bg-black/[0.02] transition-colors">
                   <td className="px-8 py-4 whitespace-nowrap">
-                    <p className="text-[15px] font-semibold text-black">{format(new Date(tx.timestamp), 'MMM d, yyyy')}</p>
-                    <p className="text-[13px] text-gray-500 font-medium mt-0.5">{format(new Date(tx.timestamp), 'HH:mm:ss')}</p>
+                    <p className="text-[15px] font-semibold text-black">
+                      {tx.timestamp ? (
+                        (() => {
+                          const d = new Date(tx.timestamp);
+                          return isNaN(d.getTime()) ? 'Invalid Date' : format(d, 'MMM d, yyyy');
+                        })()
+                      ) : 'N/A'}
+                    </p>
+                    <p className="text-[13px] text-gray-500 font-medium mt-0.5">
+                      {tx.timestamp ? (
+                        (() => {
+                          const d = new Date(tx.timestamp);
+                          return isNaN(d.getTime()) ? '' : format(d, 'HH:mm:ss');
+                        })()
+                      ) : ''}
+                    </p>
                   </td>
                   <td className="px-8 py-4">
                     <p className="text-[15px] font-semibold text-blue-600">{tx.batchId}</p>

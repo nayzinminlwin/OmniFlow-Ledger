@@ -120,7 +120,12 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
             </button>
           </div>
           <span className="text-[13px] font-medium text-gray-500 uppercase tracking-wider">
-            {t.lastUpdated} {stock ? format(new Date(stock.lastUpdated), 'HH:mm:ss') : loading ? <Skeleton className="w-16 h-4 inline-block" /> : t.never}
+            {t.lastUpdated} {stock && stock.lastUpdated ? (
+              (() => {
+                const d = new Date(stock.lastUpdated);
+                return isNaN(d.getTime()) ? 'Invalid Date' : format(d, 'HH:mm:ss');
+              })()
+            ) : loading ? <Skeleton className="w-16 h-4 inline-block" /> : t.never}
           </span>
         </div>
         
@@ -237,7 +242,12 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                     )}
                   </p>
                   <p className="text-[13px] text-gray-500 font-medium mt-0.5">
-                    {tx.brand} {tx.series} {tx.model} • {format(new Date(tx.timestamp), 'MMM d, HH:mm')}
+                    {tx.brand} {tx.series} {tx.model} • {tx.timestamp ? (
+                      (() => {
+                        const d = new Date(tx.timestamp);
+                        return isNaN(d.getTime()) ? 'Invalid Date' : format(d, 'MMM d, HH:mm');
+                      })()
+                    ) : 'N/A'}
                   </p>
                 </div>
               </div>
