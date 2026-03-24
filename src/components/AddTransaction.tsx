@@ -1,5 +1,5 @@
 import React, { useState, useMemo, memo } from 'react';
-import { RefreshCw, CheckCircle2 } from 'lucide-react';
+import { RefreshCw, CheckCircle2, X } from 'lucide-react';
 import { Batch, LaptopClass, TransactionType } from '../types';
 import { CLASSES } from '../constants';
 import { cn } from '../lib/utils';
@@ -29,18 +29,30 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
   batches,
   isSubmitting,
 }) => {
-  const [txType, setTxType] = useState<TransactionType>('INCOMING');
-  const [batchId, setBatchId] = useState('');
-  const [brand, setBrand] = useState('');
-  const [series, setSeries] = useState('');
-  const [model, setModel] = useState('');
-  const [isNewBrand, setIsNewBrand] = useState(false);
-  const [isNewSeries, setIsNewSeries] = useState(false);
-  const [isNewModel, setIsNewModel] = useState(false);
+  const [txType, setTxType] = useState<TransactionType>(() => (localStorage.getItem('last_txType') as TransactionType) || 'INCOMING');
+  const [batchId, setBatchId] = useState(() => localStorage.getItem('last_batchId') || '');
+  const [brand, setBrand] = useState(() => localStorage.getItem('last_brand') || '');
+  const [series, setSeries] = useState(() => localStorage.getItem('last_series') || '');
+  const [model, setModel] = useState(() => localStorage.getItem('last_model') || '');
+  const [isNewBrand, setIsNewBrand] = useState(() => localStorage.getItem('last_isNewBrand') === 'true');
+  const [isNewSeries, setIsNewSeries] = useState(() => localStorage.getItem('last_isNewSeries') === 'true');
+  const [isNewModel, setIsNewModel] = useState(() => localStorage.getItem('last_isNewModel') === 'true');
   const [fromClass, setFromClass] = useState<LaptopClass>('D');
   const [toClass, setToClass] = useState<LaptopClass>('A');
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
+
+  // Persist values to localStorage
+  React.useEffect(() => {
+    localStorage.setItem('last_txType', txType);
+    localStorage.setItem('last_batchId', batchId);
+    localStorage.setItem('last_brand', brand);
+    localStorage.setItem('last_series', series);
+    localStorage.setItem('last_model', model);
+    localStorage.setItem('last_isNewBrand', String(isNewBrand));
+    localStorage.setItem('last_isNewSeries', String(isNewSeries));
+    localStorage.setItem('last_isNewModel', String(isNewModel));
+  }, [txType, batchId, brand, series, model, isNewBrand, isNewSeries, isNewModel]);
 
   const currentBatch = useMemo(() => batches.find(b => b.batchId === batchId), [batches, batchId]);
   
@@ -148,15 +160,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
     if (!brand.trim() || !series.trim() || !model.trim()) return;
     const success = await onAddTransaction(txType, batchId, brand.trim(), series.trim(), model.trim(), fromClass, toClass, quantity, notes);
     if (success) {
-      // Reset form
-      setTxType('INCOMING');
-      setBatchId('');
-      setBrand('');
-      setSeries('');
-      setModel('');
-      setIsNewBrand(false);
-      setIsNewSeries(false);
-      setIsNewModel(false);
+      // Reset only quantity and notes, keeping batch and model info for faster workflow
       setQuantity(1);
       setNotes('');
     }
@@ -232,22 +236,22 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
                   </select>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="relative flex items-center">
                     <input
                       type="text"
                       placeholder={t.newBrand}
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
-                      className="ios-input flex-1 text-[15px] py-3"
+                      className="ios-input w-full text-[15px] py-3 pr-10"
                       autoFocus
                       required
                     />
                     <button 
                       type="button" 
                       onClick={() => handleBrandChange('')}
-                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                      className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                     >
-                      ✕
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 )}
@@ -268,22 +272,22 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     <option value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
                   </select>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="relative flex items-center">
                     <input
                       type="text"
                       placeholder={t.newSeries}
                       value={series}
                       onChange={(e) => setSeries(e.target.value)}
-                      className="ios-input flex-1 text-[15px] py-3"
-                      autoFocus
+                      className="ios-input w-full text-[15px] py-3 pr-10"
+                      autoFocus={!isNewBrand}
                       required
                     />
                     <button 
                       type="button" 
                       onClick={() => handleSeriesChange('')}
-                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                      className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                     >
-                      ✕
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 )}
@@ -304,22 +308,22 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     <option value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
                   </select>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="relative flex items-center">
                     <input
                       type="text"
                       placeholder={t.newModel}
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
-                      className="ios-input flex-1 text-[15px] py-3"
-                      autoFocus
+                      className="ios-input w-full text-[15px] py-3 pr-10"
+                      autoFocus={!isNewBrand && !isNewSeries}
                       required
                     />
                     <button 
                       type="button" 
                       onClick={() => handleModelChange('')}
-                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                      className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                     >
-                      ✕
+                      <X className="w-4 h-4" />
                     </button>
                   </div>
                 )}
