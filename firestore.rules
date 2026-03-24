@@ -13,12 +13,13 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && 
              (request.auth.token.email == "admin@repair.ledger" || 
-              isMotherAdmin());
+              isUltimateAdmin());
     }
 
-    function isMotherAdmin() {
+    function isUltimateAdmin() {
       return isAuthenticated() && 
              (request.auth.token.email == "nayzinminlwin22@gmail.com" || 
+              request.auth.token.email == "tpl.pauline.pts2026@gmail.com" || 
               request.auth.uid == "x5pZdinbxNR4EWH3LQQfyKvsUYj2");
     }
 
@@ -34,7 +35,7 @@ service cloud.firestore {
 
     function isApproved() {
       return isAuthenticated() && 
-             (isMotherAdmin() || 
+             (isUltimateAdmin() || 
               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved'));
     }
@@ -103,10 +104,10 @@ service cloud.firestore {
 
     match /users/{uId} {
       allow get: if isAuthenticated();
-      allow list: if isMotherAdmin();
+      allow list: if isUltimateAdmin();
       allow create: if isAuthenticated() && request.auth.uid == uId && isValidUserProfile(request.resource.data, uId) && 
-                    ((request.resource.data.status == 'pending' && request.resource.data.role == 'user') || isMotherAdmin());
-      allow update: if isMotherAdmin() && isValidUserProfile(request.resource.data, uId);
+                    ((request.resource.data.status == 'pending' && request.resource.data.role == 'user') || isUltimateAdmin());
+      allow update: if isUltimateAdmin() && isValidUserProfile(request.resource.data, uId);
     }
 
     match /inventory/current {

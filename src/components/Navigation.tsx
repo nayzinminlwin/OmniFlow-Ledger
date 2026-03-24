@@ -6,10 +6,10 @@ interface NavigationProps {
   activeTab: 'dashboard' | 'history' | 'add' | 'batches' | 'users';
   setActiveTab: (tab: 'dashboard' | 'history' | 'add' | 'batches' | 'users') => void;
   t: any;
-  isMotherAdmin?: boolean;
+  isUltimateAdmin?: boolean;
 }
 
-export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiveTab, t, isMotherAdmin }) => {
+export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiveTab, t, isUltimateAdmin }) => {
   return (
     <div className="flex justify-center mb-8">
       <div className="flex bg-black/5 p-1 rounded-xl shadow-inner overflow-x-auto no-scrollbar w-full max-w-3xl">
@@ -53,7 +53,7 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
           <History className="w-4 h-4" />
           {t.ledger}
         </button>
-        {isMotherAdmin && (
+        {isUltimateAdmin && (
           <button
             onClick={() => setActiveTab('users')}
             className={cn(

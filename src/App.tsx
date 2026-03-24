@@ -31,10 +31,10 @@ export default function App() {
     handleLogout, 
     error: authError, 
     setError: setAuthError,
-    isMotherAdmin
+    isUltimateAdmin
   } = useAuth(lang);
   
-  const isApproved = profile?.status === 'approved' || isMotherAdmin;
+  const isApproved = profile?.status === 'approved' || isUltimateAdmin;
 
   const { stock, batches, transactions, loading, error: invError, setError: setInvError } = useInventory(user, isAuthReady, lang, isApproved);
   const { 
@@ -93,7 +93,7 @@ export default function App() {
             </button>
 
             <p className="text-center text-[13px] font-medium text-gray-500 leading-relaxed">
-              {t.pendingApprovalNotice || 'New accounts require approval from the Mother Admin before access is granted.'}
+              {t.pendingApprovalNotice || 'New accounts require approval from the Ultimate Admin before access is granted.'}
             </p>
           </div>
           
@@ -114,7 +114,7 @@ export default function App() {
         setLang={setLang}
         handleLogout={handleLogout}
       >
-        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} t={t} isMotherAdmin={isMotherAdmin} />
+        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} t={t} isUltimateAdmin={isUltimateAdmin} />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <Dashboard 

@@ -28,13 +28,13 @@ export function useAuth(lang: Language) {
   const [error, setError] = useState<string | null>(null);
   const t = translations[lang];
 
-  const motherAdminEmail = "nayzinminlwin22@gmail.com";
+  const ultimateAdminEmails = ["nayzinminlwin22@gmail.com", "tpl.pauline.pts2026@gmail.com"];
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('Auth state changed:', user?.email, 'Verified:', user?.emailVerified);
       if (user) {
-        const isMotherAdmin = user.email === motherAdminEmail && user.emailVerified;
+        const isUltimateAdmin = ultimateAdminEmails.includes(user.email || "") && user.emailVerified;
         try {
           console.log("Fetching profile for UID:", user.uid);
           const profileDoc = await getDoc(doc(db, 'users', user.uid));
@@ -43,23 +43,23 @@ export function useAuth(lang: Language) {
             console.log("Profile found:", profileData.status);
             setProfile(profileData);
             
-            // If not approved and not mother admin, sign out
-            if (profileData.status !== 'approved' && !isMotherAdmin) {
+            // If not approved and not ultimate admin, sign out
+            if (profileData.status !== 'approved' && !isUltimateAdmin) {
               console.log("User not approved, signing out...");
               setUser(null);
               setProfile(null);
               setError(profileData.status === 'pending' ? t.pendingApproval : t.rejectedApproval);
               await signOut(auth);
             } else {
-              console.log("User approved or Mother Admin, setting user state");
+              console.log("User approved or Ultimate Admin, setting user state");
               setUser(user);
             }
-          } else if (isMotherAdmin) {
-            console.log("Mother Admin profile missing, creating...");
-            // Auto-create profile for mother admin if it doesn't exist
+          } else if (isUltimateAdmin) {
+            console.log("Ultimate Admin profile missing, creating...");
+            // Auto-create profile for ultimate admin if it doesn't exist
             const newProfile: UserProfile = {
               uid: user.uid,
-              username: 'Mother Admin',
+              username: 'Ultimate Admin',
               email: user.email!,
               status: 'approved',
               role: 'admin',
@@ -67,15 +67,15 @@ export function useAuth(lang: Language) {
             };
             try {
               await setDoc(doc(db, 'users', user.uid), newProfile);
-              console.log("Mother Admin profile created successfully");
+              console.log("Ultimate Admin profile created successfully");
               setProfile(newProfile);
               setUser(user);
             } catch (err) {
-              console.error("Error creating Mother Admin profile:", err);
+              console.error("Error creating Ultimate Admin profile:", err);
               handleFirestoreError(err, OperationType.WRITE, `users/${user.uid}`);
             }
           } else {
-            console.log("No profile found for non-mother admin, creating pending profile...");
+            console.log("No profile found for non-ultimate admin, creating pending profile...");
             // Auto-create pending profile for new Google login users
             const newProfile: UserProfile = {
               uid: user.uid,
@@ -131,6 +131,6 @@ export function useAuth(lang: Language) {
     handleLogout, 
     error, 
     setError,
-    isMotherAdmin: user?.email === motherAdminEmail && user?.emailVerified
+    isUltimateAdmin: ultimateAdminEmails.includes(user?.email || "") && user?.emailVerified
   };
 }
