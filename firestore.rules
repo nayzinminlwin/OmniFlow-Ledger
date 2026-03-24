@@ -16,13 +16,20 @@ service cloud.firestore {
               isUltimateAdmin());
     }
 
+    function isOriginalAdmin() {
+      return isAuthenticated() && 
+             (request.auth.token.email == "tpl.pauline.pts2026@gmail.com" || 
+              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isOriginalAdmin', false) == true));
+    }
+
     function isUltimateAdmin() {
       return isAuthenticated() && 
              (request.auth.token.email == "nayzinminlwin22@gmail.com" || 
-              request.auth.token.email == "tpl.pauline.pts2026@gmail.com" || 
+              isOriginalAdmin() ||
               request.auth.uid == "x5pZdinbxNR4EWH3LQQfyKvsUYj2" ||
               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isUltimateAdmin == true));
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isUltimateAdmin', false) == true));
     }
 
     function isValidUserProfile(data, uid) {
@@ -33,8 +40,9 @@ service cloud.firestore {
              data.status in ['pending', 'approved', 'rejected'] &&
              data.role in ['admin', 'user'] &&
              (!('isUltimateAdmin' in data) || data.isUltimateAdmin is bool) &&
+             (!('isOriginalAdmin' in data) || data.isOriginalAdmin is bool) &&
              (!('notifiedApproved' in data) || data.notifiedApproved is bool) &&
-             data.createdAt is string;
+              data.createdAt is string;
     }
 
     function isApproved() {
@@ -111,7 +119,10 @@ service cloud.firestore {
       allow list: if isUltimateAdmin();
       allow create: if isAuthenticated() && request.auth.uid == uId && isValidUserProfile(request.resource.data, uId) && 
                     ((request.resource.data.status == 'pending' && request.resource.data.role == 'user') || isUltimateAdmin());
-      allow update: if (isUltimateAdmin() && isValidUserProfile(request.resource.data, uId)) ||
+      allow update: if (isOriginalAdmin() && isValidUserProfile(request.resource.data, uId)) ||
+                    (isUltimateAdmin() && isValidUserProfile(request.resource.data, uId) && 
+                     !resource.data.get('isOriginalAdmin', false) &&
+                     !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isUltimateAdmin', 'isOriginalAdmin'])) ||
                     (isAuthenticated() && request.auth.uid == uId && 
                      request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notifiedApproved']) &&
                      request.resource.data.notifiedApproved == true);

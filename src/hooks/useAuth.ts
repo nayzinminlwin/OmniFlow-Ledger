@@ -20,6 +20,7 @@ export interface UserProfile {
   role: 'admin' | 'user';
   createdAt: string;
   isUltimateAdmin?: boolean;
+  isOriginalAdmin?: boolean;
   notifiedApproved?: boolean;
 }
 
@@ -32,13 +33,15 @@ export function useAuth(lang: Language) {
   const [requestSent, setRequestSent] = useState(false);
   const t = translations[lang];
 
-  const ultimateAdminEmails = ["nayzinminlwin22@gmail.com", "tpl.pauline.pts2026@gmail.com"];
+  const bootstrapAdminEmails = ["nayzinminlwin22@gmail.com", "tpl.pauline.pts2026@gmail.com"];
+  const originalAdminEmail = "tpl.pauline.pts2026@gmail.com";
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('Auth state changed:', user?.email, 'Verified:', user?.emailVerified);
       if (user) {
-        const isBootstrapAdmin = ultimateAdminEmails.includes(user.email || "") && user.emailVerified;
+        const isBootstrapAdmin = bootstrapAdminEmails.includes(user.email || "") && user.emailVerified;
+        const isOriginalByEmail = user.email === originalAdminEmail && user.emailVerified;
         try {
           console.log("Fetching profile for UID:", user.uid);
           const profileDoc = await getDoc(doc(db, 'users', user.uid));
@@ -47,7 +50,7 @@ export function useAuth(lang: Language) {
             console.log("Profile found:", profileData.status);
             setProfile(profileData);
             
-            const isUltimateAdmin = isBootstrapAdmin || profileData.isUltimateAdmin === true;
+            const isUltimateAdmin = isBootstrapAdmin || profileData.isUltimateAdmin === true || profileData.isOriginalAdmin === true;
             
             // If approved and not yet notified, set success message and update profile
             if (profileData.status === 'approved' && profileData.notifiedApproved === false) {
@@ -75,11 +78,12 @@ export function useAuth(lang: Language) {
             // Auto-create profile for ultimate admin if it doesn't exist
             const newProfile: UserProfile = {
               uid: user.uid,
-              username: 'Ultimate Admin',
+              username: isOriginalByEmail ? 'Original Admin' : 'Ultimate Admin',
               email: user.email!,
               status: 'approved',
               role: 'admin',
               isUltimateAdmin: true,
+              isOriginalAdmin: isOriginalByEmail,
               notifiedApproved: true,
               createdAt: new Date().toISOString()
             };
@@ -154,6 +158,7 @@ export function useAuth(lang: Language) {
     setSuccess,
     requestSent,
     setRequestSent,
-    isUltimateAdmin: ultimateAdminEmails.includes(user?.email || "") || profile?.isUltimateAdmin === true
+    isUltimateAdmin: bootstrapAdminEmails.includes(user?.email || "") || profile?.isUltimateAdmin === true || profile?.isOriginalAdmin === true,
+    isOriginalAdmin: user?.email === originalAdminEmail || profile?.isOriginalAdmin === true
   };
 }

@@ -36,7 +36,8 @@ export default function App() {
     setSuccess: setAuthSuccess,
     requestSent,
     setRequestSent,
-    isUltimateAdmin
+    isUltimateAdmin,
+    isOriginalAdmin
   } = useAuth(lang);
   
   const isApproved = profile?.status === 'approved' || isUltimateAdmin;
@@ -189,6 +190,7 @@ export default function App() {
           <UserManagement 
             t={t}
             activeTab={activeTab}
+            isOriginalAdmin={isOriginalAdmin}
           />
         </div>
 
