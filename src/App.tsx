@@ -18,6 +18,7 @@ import { UserManagement } from './components/UserManagement';
 import { RenameBatchModal } from './components/RenameBatchModal';
 import { Toast } from './components/Toast';
 import { Batch } from './types';
+import { Check } from 'lucide-react';
 
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
@@ -31,6 +32,10 @@ export default function App() {
     handleLogout, 
     error: authError, 
     setError: setAuthError,
+    success: authSuccess,
+    setSuccess: setAuthSuccess,
+    requestSent,
+    setRequestSent,
     isUltimateAdmin
   } = useAuth(lang);
   
@@ -44,8 +49,8 @@ export default function App() {
     isRenaming, 
     error: actionError, 
     setError: setActionError,
-    success,
-    setSuccess
+    success: actionSuccess,
+    setSuccess: setActionSuccess
   } = useTransactionActions(user, stock, lang);
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add' | 'batches' | 'users'>('dashboard');
@@ -60,6 +65,12 @@ export default function App() {
     setActionError(err);
   };
 
+  const success = authSuccess || actionSuccess;
+  const setSuccess = (msg: string | null) => {
+    setAuthSuccess(msg);
+    setActionSuccess(msg);
+  };
+
   if (!isAuthReady) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -72,6 +83,28 @@ export default function App() {
   }
 
   if (!user) {
+    if (requestSent) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-4">
+          <div className="max-w-md w-full glass-panel p-10 rounded-[2.5rem] text-center">
+            <div className="w-20 h-20 bg-green-500 rounded-[1.5rem] flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30">
+              <Check className="text-white w-10 h-10" />
+            </div>
+            <h1 className="text-3xl font-semibold text-[var(--color-ios-text)] mb-4 tracking-tight">{t.requestSentTitle}</h1>
+            <p className="text-[var(--color-ios-text-secondary)] font-medium leading-relaxed mb-8">
+              {t.requestSentMessage}
+            </p>
+            <button
+              onClick={() => setRequestSent(false)}
+              className="w-full py-4 px-6 bg-[var(--color-ios-blue)] text-white rounded-2xl text-[16px] font-bold hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+            >
+              {t.backToLogin}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="max-w-md w-full glass-panel p-10 rounded-[2.5rem]">

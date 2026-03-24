@@ -33,6 +33,7 @@ service cloud.firestore {
              data.status in ['pending', 'approved', 'rejected'] &&
              data.role in ['admin', 'user'] &&
              (!('isUltimateAdmin' in data) || data.isUltimateAdmin is bool) &&
+             (!('notifiedApproved' in data) || data.notifiedApproved is bool) &&
              data.createdAt is string;
     }
 
@@ -110,7 +111,10 @@ service cloud.firestore {
       allow list: if isUltimateAdmin();
       allow create: if isAuthenticated() && request.auth.uid == uId && isValidUserProfile(request.resource.data, uId) && 
                     ((request.resource.data.status == 'pending' && request.resource.data.role == 'user') || isUltimateAdmin());
-      allow update: if isUltimateAdmin() && isValidUserProfile(request.resource.data, uId);
+      allow update: if (isUltimateAdmin() && isValidUserProfile(request.resource.data, uId)) ||
+                    (isAuthenticated() && request.auth.uid == uId && 
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notifiedApproved']) &&
+                     request.resource.data.notifiedApproved == true);
     }
 
     match /inventory/current {

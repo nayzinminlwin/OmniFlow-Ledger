@@ -6,7 +6,7 @@ import {
   signInWithPopup,
   GoogleAuthProvider
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { Language } from '../translations';
 import { translations } from '../translations';
@@ -20,6 +20,7 @@ export interface UserProfile {
   role: 'admin' | 'user';
   createdAt: string;
   isUltimateAdmin?: boolean;
+  notifiedApproved?: boolean;
 }
 
 export function useAuth(lang: Language) {
@@ -27,6 +28,8 @@ export function useAuth(lang: Language) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isAuthReady, setIsAuthReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [requestSent, setRequestSent] = useState(false);
   const t = translations[lang];
 
   const ultimateAdminEmails = ["nayzinminlwin22@gmail.com", "tpl.pauline.pts2026@gmail.com"];
@@ -46,6 +49,16 @@ export function useAuth(lang: Language) {
             
             const isUltimateAdmin = isBootstrapAdmin || profileData.isUltimateAdmin === true;
             
+            // If approved and not yet notified, set success message and update profile
+            if (profileData.status === 'approved' && profileData.notifiedApproved === false) {
+              setSuccess(t.accountApprovedToast);
+              try {
+                await updateDoc(doc(db, 'users', user.uid), { notifiedApproved: true });
+              } catch (err) {
+                console.error("Error updating notifiedApproved:", err);
+              }
+            }
+
             // If not approved and not ultimate admin, sign out
             if (profileData.status !== 'approved' && !isUltimateAdmin) {
               console.log("User not approved, signing out...");
@@ -67,6 +80,7 @@ export function useAuth(lang: Language) {
               status: 'approved',
               role: 'admin',
               isUltimateAdmin: true,
+              notifiedApproved: true,
               createdAt: new Date().toISOString()
             };
             try {
@@ -87,14 +101,15 @@ export function useAuth(lang: Language) {
               email: user.email || '',
               status: 'pending',
               role: 'user',
+              notifiedApproved: false,
               createdAt: new Date().toISOString()
             };
             try {
               await setDoc(doc(db, 'users', user.uid), newProfile);
               console.log("Pending profile created successfully");
+              setRequestSent(true);
               setUser(null);
               setProfile(null);
-              setError(t.pendingApproval);
               await signOut(auth);
             } catch (err) {
               console.error("Error creating pending profile:", err);
@@ -135,6 +150,10 @@ export function useAuth(lang: Language) {
     handleLogout, 
     error, 
     setError,
+    success,
+    setSuccess,
+    requestSent,
+    setRequestSent,
     isUltimateAdmin: ultimateAdminEmails.includes(user?.email || "") || profile?.isUltimateAdmin === true
   };
 }

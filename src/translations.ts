@@ -102,7 +102,11 @@ export const translations = {
     adjustmentNegative: (batchId: string, cls: string) => `Adjustment would result in negative stock for Batch ${batchId}, Class ${cls}`,
     insufficientStock: (batchId: string, fromClass: string) => `Insufficient stock in Batch ${batchId}, Class ${fromClass}`,
     loginWithGoogle: 'Sign in with Google',
-    pendingApprovalNotice: 'New accounts require approval from the Ultimate Admin before access is granted.'
+    pendingApprovalNotice: 'New accounts require approval from the Ultimate Admin before access is granted.',
+    requestSentTitle: 'Request Submitted',
+    requestSentMessage: 'Your access request has been successfully sent to the Ultimate Admin. You will be able to access the system once your account is approved.',
+    backToLogin: 'Back to Login',
+    accountApprovedToast: 'Welcome back! Your account has been approved and you now have full access.'
   },
   ms: {
     brand: 'Lejar Pembaikan Pro',
@@ -205,7 +209,11 @@ export const translations = {
     adjustmentNegative: (batchId: string, cls: string) => `Pelarasan akan mengakibatkan stok negatif untuk Batch ${batchId}, Kelas ${cls}`,
     insufficientStock: (batchId: string, fromClass: string) => `Stok tidak mencukupi dalam Batch ${batchId}, Kelas ${fromClass}`,
     loginWithGoogle: 'Log masuk dengan Google',
-    pendingApprovalNotice: 'Akaun baru memerlukan kelulusan daripada Ultimate Admin sebelum akses diberikan.'
+    pendingApprovalNotice: 'Akaun baru memerlukan kelulusan daripada Ultimate Admin sebelum akses diberikan.',
+    requestSentTitle: 'Permintaan Dihantar',
+    requestSentMessage: 'Permintaan akses anda telah berjaya dihantar kepada Ultimate Admin. Anda akan dapat mengakses sistem setelah akaun anda diluluskan.',
+    backToLogin: 'Kembali ke Log Masuk',
+    accountApprovedToast: 'Selamat kembali! Akaun anda telah diluluskan dan anda kini mempunyai akses penuh.'
   },
   zh: {
     brand: '专业维修分类账',
@@ -308,6 +316,10 @@ export const translations = {
     adjustmentNegative: (batchId: string, cls: string) => `调整将导致批次 ${batchId} 等级 ${cls} 的库存为负数`,
     insufficientStock: (batchId: string, fromClass: string) => `批次 ${batchId} 等级 ${fromClass} 的库存不足`,
     loginWithGoogle: '使用 Google 登录',
-    pendingApprovalNotice: '新账号需要 Ultimate Admin 审核通过后方可访问。'
+    pendingApprovalNotice: '新账号需要 Ultimate Admin 审核通过后方可访问。',
+    requestSentTitle: '申请已提交',
+    requestSentMessage: '您的访问申请已成功发送给 Ultimate Admin。账号审核通过后，您即可访问系统。',
+    backToLogin: '返回登录',
+    accountApprovedToast: '欢迎回来！您的账号已获批准，现在拥有完整访问权限。'
   }
 };

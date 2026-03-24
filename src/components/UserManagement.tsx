@@ -37,7 +37,11 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab }) 
 
   const handleUpdateStatus = async (uid: string, status: 'approved' | 'rejected') => {
     try {
-      await updateDoc(doc(db, 'users', uid), { status });
+      const updateData: any = { status };
+      if (status === 'approved') {
+        updateData.notifiedApproved = false;
+      }
+      await updateDoc(doc(db, 'users', uid), updateData);
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
     }
