@@ -19,6 +19,7 @@ export interface UserProfile {
   status: 'pending' | 'approved' | 'rejected';
   role: 'admin' | 'user';
   createdAt: string;
+  isUltimateAdmin?: boolean;
 }
 
 export function useAuth(lang: Language) {
@@ -34,7 +35,7 @@ export function useAuth(lang: Language) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('Auth state changed:', user?.email, 'Verified:', user?.emailVerified);
       if (user) {
-        const isUltimateAdmin = ultimateAdminEmails.includes(user.email || "") && user.emailVerified;
+        const isBootstrapAdmin = ultimateAdminEmails.includes(user.email || "") && user.emailVerified;
         try {
           console.log("Fetching profile for UID:", user.uid);
           const profileDoc = await getDoc(doc(db, 'users', user.uid));
@@ -42,6 +43,8 @@ export function useAuth(lang: Language) {
             const profileData = profileDoc.data() as UserProfile;
             console.log("Profile found:", profileData.status);
             setProfile(profileData);
+            
+            const isUltimateAdmin = isBootstrapAdmin || profileData.isUltimateAdmin === true;
             
             // If not approved and not ultimate admin, sign out
             if (profileData.status !== 'approved' && !isUltimateAdmin) {
@@ -54,7 +57,7 @@ export function useAuth(lang: Language) {
               console.log("User approved or Ultimate Admin, setting user state");
               setUser(user);
             }
-          } else if (isUltimateAdmin) {
+          } else if (isBootstrapAdmin) {
             console.log("Ultimate Admin profile missing, creating...");
             // Auto-create profile for ultimate admin if it doesn't exist
             const newProfile: UserProfile = {
@@ -63,6 +66,7 @@ export function useAuth(lang: Language) {
               email: user.email!,
               status: 'approved',
               role: 'admin',
+              isUltimateAdmin: true,
               createdAt: new Date().toISOString()
             };
             try {
@@ -131,6 +135,6 @@ export function useAuth(lang: Language) {
     handleLogout, 
     error, 
     setError,
-    isUltimateAdmin: ultimateAdminEmails.includes(user?.email || "") && user?.emailVerified
+    isUltimateAdmin: ultimateAdminEmails.includes(user?.email || "") || profile?.isUltimateAdmin === true
   };
 }

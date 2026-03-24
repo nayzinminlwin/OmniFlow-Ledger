@@ -20,7 +20,9 @@ service cloud.firestore {
       return isAuthenticated() && 
              (request.auth.token.email == "nayzinminlwin22@gmail.com" || 
               request.auth.token.email == "tpl.pauline.pts2026@gmail.com" || 
-              request.auth.uid == "x5pZdinbxNR4EWH3LQQfyKvsUYj2");
+              request.auth.uid == "x5pZdinbxNR4EWH3LQQfyKvsUYj2" ||
+              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isUltimateAdmin == true));
     }
 
     function isValidUserProfile(data, uid) {
@@ -30,6 +32,7 @@ service cloud.firestore {
              validString(data.email, 100) &&
              data.status in ['pending', 'approved', 'rejected'] &&
              data.role in ['admin', 'user'] &&
+             (!('isUltimateAdmin' in data) || data.isUltimateAdmin is bool) &&
              data.createdAt is string;
     }
 

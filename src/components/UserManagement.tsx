@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { UserProfile } from '../hooks/useAuth';
-import { Check, X, User as UserIcon, Clock } from 'lucide-react';
+import { Check, X, User as UserIcon, Clock, Shield, ShieldOff, UserMinus, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
 import { handleFirestoreError, OperationType } from '../services/firestore';
+import { auth } from '../firebase';
 
 interface UserManagementProps {
   t: any;
@@ -37,6 +38,14 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab }) 
   const handleUpdateStatus = async (uid: string, status: 'approved' | 'rejected') => {
     try {
       await updateDoc(doc(db, 'users', uid), { status });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
+    }
+  };
+
+  const handleToggleUltimateAdmin = async (uid: string, currentStatus: boolean) => {
+    try {
+      await updateDoc(doc(db, 'users', uid), { isUltimateAdmin: !currentStatus });
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
     }
@@ -92,31 +101,66 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab }) 
 
                 <div className="flex items-center gap-3">
                   <div className={cn(
-                    "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider",
+                    "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5",
                     user.status === 'approved' ? "bg-green-100 text-green-700" : 
                     user.status === 'rejected' ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
                   )}>
                     {user.status}
+                    {user.isUltimateAdmin && <Shield className="w-3 h-3" />}
                   </div>
                   
-                  {user.status === 'pending' && (
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    {user.status === 'pending' && (
+                      <>
+                        <button
+                          onClick={() => handleUpdateStatus(user.uid, 'approved')}
+                          className="p-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all active:scale-95 shadow-sm"
+                          title={t.approve}
+                        >
+                          <Check className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleUpdateStatus(user.uid, 'rejected')}
+                          className="p-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all active:scale-95 shadow-sm"
+                          title={t.reject}
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </>
+                    )}
+
+                    {user.status === 'approved' && user.uid !== auth.currentUser?.uid && (
+                      <>
+                        <button
+                          onClick={() => handleToggleUltimateAdmin(user.uid, !!user.isUltimateAdmin)}
+                          className={cn(
+                            "p-2 rounded-xl transition-all active:scale-95 shadow-sm",
+                            user.isUltimateAdmin ? "bg-orange-100 text-orange-600 hover:bg-orange-200" : "bg-purple-600 text-white hover:bg-purple-700"
+                          )}
+                          title={user.isUltimateAdmin ? t.removeUltimate : t.makeUltimate}
+                        >
+                          {user.isUltimateAdmin ? <ShieldOff className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
+                        </button>
+                        <button
+                          onClick={() => handleUpdateStatus(user.uid, 'rejected')}
+                          className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-all active:scale-95 shadow-sm"
+                          title={t.revoke}
+                        >
+                          <UserMinus className="w-5 h-5" />
+                        </button>
+                      </>
+                    )}
+
+                    {user.status === 'rejected' && (
                       <button
                         onClick={() => handleUpdateStatus(user.uid, 'approved')}
-                        className="p-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all active:scale-95 shadow-sm"
-                        title={t.approve}
+                        className="p-2 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-all active:scale-95 shadow-sm"
+                        title={t.regrant}
                       >
-                        <Check className="w-5 h-5" />
+                        <UserPlus className="w-5 h-5" />
                       </button>
-                      <button
-                        onClick={() => handleUpdateStatus(user.uid, 'rejected')}
-                        className="p-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all active:scale-95 shadow-sm"
-                        title={t.reject}
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             ))
