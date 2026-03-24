@@ -28,6 +28,7 @@ export default function App() {
     user, 
     profile,
     isAuthReady, 
+    isLoggingIn,
     handleGoogleLogin,
     handleLogout, 
     error: authError, 
@@ -72,12 +73,12 @@ export default function App() {
     setActionSuccess(msg);
   };
 
-  if (!isAuthReady) {
+  if (!isAuthReady || isLoggingIn) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="text-center glass-panel p-8 rounded-[2rem]">
           <div className="w-12 h-12 border-4 border-[var(--color-ios-blue)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-[var(--color-ios-text)] font-medium tracking-tight">{t.initLedger}</p>
+          <p className="text-[var(--color-ios-text)] font-medium tracking-tight">{isLoggingIn ? t.processing : t.initLedger}</p>
         </div>
       </div>
     );

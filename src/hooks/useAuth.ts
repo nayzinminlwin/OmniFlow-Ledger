@@ -31,6 +31,7 @@ export function useAuth(lang: Language) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [requestSent, setRequestSent] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const t = translations[lang];
 
   const bootstrapAdminEmails = ["tpl.pauline.pts2026@gmail.com"];
@@ -49,6 +50,7 @@ export function useAuth(lang: Language) {
               console.log("Removing user from DB as requested...");
               await deleteDoc(doc(db, 'users', user.uid));
               // After deleting, sign out
+              setIsLoggingIn(false);
               await signOut(auth);
               setRequestSent(true);
               setUser(null);
@@ -149,27 +151,34 @@ export function useAuth(lang: Language) {
         setProfile(null);
       }
       setIsAuthReady(true);
+      setIsLoggingIn(false);
     });
     return () => unsubscribe();
   }, [t.pendingApproval, t.rejectedApproval]);
 
   const handleGoogleLogin = async () => {
     try {
+      setIsLoggingIn(true);
       setError(null);
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
     } catch (err: any) {
       console.error('Google login failed:', err);
       setError(t.loginFailed);
+      setIsLoggingIn(false);
     }
   };
 
-  const handleLogout = () => signOut(auth);
+  const handleLogout = () => {
+    setIsAuthReady(false);
+    signOut(auth);
+  };
 
   return { 
     user, 
     profile, 
     isAuthReady, 
+    isLoggingIn,
     handleGoogleLogin,
     handleLogout, 
     error, 
