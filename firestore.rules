@@ -25,9 +25,7 @@ service cloud.firestore {
 
     function isUltimateAdmin() {
       return isAuthenticated() && 
-             (request.auth.token.email == "nayzinminlwin22@gmail.com" || 
-              isOriginalAdmin() ||
-              request.auth.uid == "x5pZdinbxNR4EWH3LQQfyKvsUYj2" ||
+             (isOriginalAdmin() ||
               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isUltimateAdmin', false) == true));
     }
