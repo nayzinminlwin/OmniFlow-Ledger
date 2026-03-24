@@ -27,8 +27,6 @@ export default function App() {
     user, 
     profile,
     isAuthReady, 
-    handleLogin, 
-    handleSignUp,
     handleGoogleLogin,
     handleLogout, 
     error: authError, 
@@ -54,11 +52,6 @@ export default function App() {
   const [selectedBatchId, setSelectedBatchId] = useState<string>('');
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [newBatchName, setNewBatchName] = useState('');
-
-  // Login form state
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSignUp, setIsSignUp] = useState(false);
 
   const error = authError || invError || actionError;
   const setError = (err: string | null) => {
@@ -90,71 +83,21 @@ export default function App() {
             <p className="text-[var(--color-ios-text-secondary)] font-medium leading-relaxed px-4">{t.subtitle}</p>
           </div>
           
-          <form 
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (isSignUp) {
-                handleSignUp(username, password);
-              } else {
-                handleLogin(username, password);
-              }
-            }}
-            className="space-y-4"
-          >
-            <div>
-              <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2 ml-1">
-                {t.username}
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="ios-input w-full"
-                placeholder="e.g. admin"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-[13px] font-semibold text-gray-500 uppercase tracking-wider mb-2 ml-1">
-                {t.password}
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="ios-input w-full"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="ios-button w-full mt-6"
-            >
-              {isSignUp ? t.signUp : t.login}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center">
-            <button 
-              onClick={() => setIsSignUp(!isSignUp)}
-              className="text-[13px] font-bold text-[var(--color-ios-blue)] hover:underline"
-            >
-              {isSignUp ? t.hasAccount : t.noAccount}
-            </button>
-          </div>
-
-          <div className="mt-8 pt-8 border-t border-black/5">
+          <div className="space-y-6">
             <button
               onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-white border border-gray-200 rounded-2xl text-[14px] font-bold text-gray-700 hover:bg-gray-50 transition-all active:scale-95 shadow-sm"
+              className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white border border-gray-200 rounded-2xl text-[16px] font-bold text-gray-700 hover:bg-gray-50 transition-all active:scale-95 shadow-sm"
             >
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="Google" />
-              Sign in with Google
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
+              {t.loginWithGoogle || 'Sign in with Google'}
             </button>
+
+            <p className="text-center text-[13px] font-medium text-gray-500 leading-relaxed">
+              {t.pendingApprovalNotice || 'New accounts require approval from the Mother Admin before access is granted.'}
+            </p>
           </div>
           
-          <p className="mt-8 text-center text-xs font-medium text-[var(--color-ios-text-secondary)] uppercase tracking-widest">
+          <p className="mt-12 text-center text-xs font-medium text-[var(--color-ios-text-secondary)] uppercase tracking-widest">
             {t.authOnly}
           </p>
         </div>
@@ -170,7 +113,6 @@ export default function App() {
         lang={lang}
         setLang={setLang}
         handleLogout={handleLogout}
-        handleLogin={handleLogin}
       >
         <Navigation activeTab={activeTab} setActiveTab={setActiveTab} t={t} isMotherAdmin={isMotherAdmin} />
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { User } from 'firebase/auth';
-import { LayoutDashboard, LogOut, LogIn, AlertCircle } from 'lucide-react';
+import { LayoutDashboard, LogOut, AlertCircle } from 'lucide-react';
 import { LanguageToggle } from './LanguageToggle';
 import { Language } from '../translations';
 
@@ -10,7 +10,6 @@ interface LayoutProps {
   lang: Language;
   setLang: (lang: Language) => void;
   handleLogout: () => void;
-  handleLogin: (username?: string, password?: string) => void;
   children: React.ReactNode;
 }
 
@@ -20,7 +19,6 @@ export const Layout: React.FC<LayoutProps> = ({
   lang,
   setLang,
   handleLogout,
-  handleLogin,
   children,
 }) => {
   const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
@@ -42,7 +40,7 @@ export const Layout: React.FC<LayoutProps> = ({
             <div className="flex items-center gap-4">
               <LanguageToggle lang={lang} setLang={setLang} />
               
-              {user ? (
+              {user && (
                 <>
                   <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-black/5 rounded-full">
                     <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-[10px] font-bold text-blue-600 uppercase">
@@ -58,14 +56,6 @@ export const Layout: React.FC<LayoutProps> = ({
                     <LogOut className="w-5 h-5" />
                   </button>
                 </>
-              ) : (
-                <button
-                  onClick={() => handleLogin()}
-                  className="ios-button py-2 px-5 text-[13px]"
-                >
-                  <LogIn className="w-4 h-4" />
-                  {t.signIn}
-                </button>
               )}
             </div>
           </div>

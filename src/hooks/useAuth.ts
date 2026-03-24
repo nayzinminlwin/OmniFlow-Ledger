@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
   onAuthStateChanged, 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
   signOut, 
   User,
   signInWithPopup,
@@ -112,43 +110,6 @@ export function useAuth(lang: Language) {
     return () => unsubscribe();
   }, [t.pendingApproval, t.rejectedApproval]);
 
-  const handleLogin = async (username: string, password: string) => {
-    try {
-      setError(null);
-      const email = `${username.toLowerCase().trim()}@repair.ledger`;
-      await signInWithEmailAndPassword(auth, email, password);
-    } catch (err: any) {
-      console.error('Login failed:', err);
-      setError(t.loginFailed);
-    }
-  };
-
-  const handleSignUp = async (username: string, password: string) => {
-    try {
-      setError(null);
-      const email = `${username.toLowerCase().trim()}@repair.ledger`;
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      const newProfile: UserProfile = {
-        uid: userCredential.user.uid,
-        username: username.trim(),
-        email: email,
-        status: 'pending',
-        role: 'user',
-        createdAt: new Date().toISOString()
-      };
-      
-      await setDoc(doc(db, 'users', userCredential.user.uid), newProfile);
-      
-      // Sign out immediately after sign up to wait for approval
-      await signOut(auth);
-      setError(t.pendingApproval);
-    } catch (err: any) {
-      console.error('Sign up failed:', err);
-      setError(t.loginFailed);
-    }
-  };
-
   const handleGoogleLogin = async () => {
     try {
       setError(null);
@@ -166,8 +127,6 @@ export function useAuth(lang: Language) {
     user, 
     profile, 
     isAuthReady, 
-    handleLogin, 
-    handleSignUp, 
     handleGoogleLogin,
     handleLogout, 
     error, 
