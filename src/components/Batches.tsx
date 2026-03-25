@@ -33,9 +33,9 @@ export const Batches: React.FC<BatchesProps> = memo(({
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
-    if (!dateStr) return 'N/A';
+    if (!dateStr) return t.na;
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return 'Invalid Date';
+    if (isNaN(d.getTime())) return t.invalidDate;
     return format(d, formatStr);
   };
 
@@ -126,15 +126,15 @@ export const Batches: React.FC<BatchesProps> = memo(({
                     {CLASSES.map(cls => (
                       <th key={cls} className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.class} {cls}</th>
                     ))}
-                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">Classified</th>
-                    <th className="px-6 py-4 text-[13px] font-bold text-black uppercase tracking-wider">Total</th>
+                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.classified}</th>
+                    <th className="px-6 py-4 text-[13px] font-bold text-black uppercase tracking-wider">{t.total}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-black/5">
                   {models.length === 0 ? (
                     <tr key="empty-batch">
                       <td colSpan={CLASSES.length + 5} className="px-6 py-12 text-center text-gray-400 text-[15px]">
-                        No models in this batch.
+                        {t.noModelsInBatch}
                       </td>
                     </tr>
                   ) : (
@@ -153,7 +153,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
                         </tr>
                       )),
                       <tr key="batch-total" className="bg-black/[0.03] border-t-2 border-black/10">
-                        <td colSpan={3} className="px-6 py-4 font-bold text-black uppercase tracking-wider text-[13px]">Batch Total</td>
+                        <td colSpan={3} className="px-6 py-4 font-bold text-black uppercase tracking-wider text-[13px]">{t.batchTotal}</td>
                         <td className="px-6 py-4 font-bold text-blue-600 tabular-nums">{getColumnTotal('UNCLASSIFIED')}</td>
                         {CLASSES.map(cls => (
                           <td key={cls} className="px-6 py-4 font-bold text-black tabular-nums">{getColumnTotal(cls)}</td>
@@ -202,13 +202,10 @@ export const Batches: React.FC<BatchesProps> = memo(({
                   </div>
                 </th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">{t.unclassified}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">A</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">B</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">B-</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">C</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">C-</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">D</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">Classified</th>
+                {CLASSES.map(cls => (
+                  <th key={cls} className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">{cls === 'Spoiled' ? t.spoiled : cls}</th>
+                ))}
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">{t.classified}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-right"></th>
               </tr>
             </thead>
@@ -230,7 +227,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
                 ))
               ) : batches.length === 0 ? (
                 <tr key="no-batches">
-                  <td colSpan={10} className="px-8 py-12 text-center text-gray-400 font-medium text-[15px]">
+                  <td colSpan={CLASSES.length + 4} className="px-8 py-12 text-center text-gray-400 font-medium text-[15px]">
                     {t.noBatches}
                   </td>
                 </tr>
@@ -244,12 +241,9 @@ export const Batches: React.FC<BatchesProps> = memo(({
                       <p className="text-[13px] font-medium text-gray-500">{safeFormatDate(b.createdAt, 'MMM d, yyyy')}</p>
                     </td>
                     <td className="px-8 py-4 text-center font-semibold text-blue-900 bg-blue-500/5">{getBatchTotal(b, 'UNCLASSIFIED')}</td>
-                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'A')}</td>
-                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'B')}</td>
-                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'B-')}</td>
-                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'C')}</td>
-                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'C-')}</td>
-                    <td className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, 'D')}</td>
+                    {CLASSES.map(cls => (
+                      <td key={cls} className="px-8 py-4 text-center font-semibold text-black">{getBatchTotal(b, cls)}</td>
+                    ))}
                     <td className="px-8 py-4 text-center font-bold text-gray-700 bg-gray-500/5">
                       {CLASSES.reduce((sum, cls) => sum + getBatchTotal(b, cls), 0)}
                     </td>
@@ -272,7 +266,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
                             onDeleteBatch(b.batchId, setSelectedBatchId);
                           }}
                           className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors active:scale-95"
-                          title={t.deleteBatch || 'Delete Batch'}
+                          title={t.deleteBatch}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

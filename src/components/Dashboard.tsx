@@ -54,6 +54,8 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
 
   const getClassifiedGrandTotal = models.reduce((sum, m) => sum + getClassifiedRowTotal(m?.counts), 0);
 
+  const getClassName = (cls?: string) => cls === 'Spoiled' ? t.spoiled : cls;
+
   const handleExport = () => {
     if (!batches.length) return;
 
@@ -76,11 +78,11 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
         };
         
         CLASSES.forEach(cls => {
-          row[`${t.class} ${cls}`] = m.counts?.[cls] || 0;
+          row[cls === 'Spoiled' ? t.spoiled : `${t.class} ${cls}`] = m.counts?.[cls] || 0;
         });
         
-        row['Classified'] = getClassifiedRowTotal(m.counts);
-        row['Total'] = rowTotal;
+        row[t.classified] = getClassifiedRowTotal(m.counts);
+        row[t.total] = rowTotal;
         exportData.push(row);
       });
     });
@@ -89,31 +91,31 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
     exportData.push({}); // Empty row for separation
     
     const totalRow: any = {
-      [t.batchId]: 'GRAND TOTAL',
+      [t.batchId]: t.grandTotal,
       [t.brandLabel]: '',
       [t.seriesLabel]: '',
       [t.modelLabel]: '',
       [t.unclassified]: getColumnTotal('UNCLASSIFIED')
     };
     CLASSES.forEach(cls => {
-      totalRow[`${t.class} ${cls}`] = getColumnTotal(cls);
+      totalRow[cls === 'Spoiled' ? t.spoiled : `${t.class} ${cls}`] = getColumnTotal(cls);
     });
-    totalRow['Classified'] = getClassifiedGrandTotal;
-    totalRow['Total'] = grandTotal;
+    totalRow[t.classified] = getClassifiedGrandTotal;
+    totalRow[t.total] = grandTotal;
     exportData.push(totalRow);
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory_By_Batch");
+    XLSX.utils.book_append_sheet(workbook, worksheet, t.inventoryByBatch);
     
     const fileName = `Inventory_By_Batch_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   };
 
   const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
-    if (!dateStr) return 'N/A';
+    if (!dateStr) return t.na;
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return 'Invalid Date';
+    if (isNaN(d.getTime())) return t.invalidDate;
     return format(d, formatStr);
   };
 
@@ -152,10 +154,10 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                   <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.modelLabel}</th>
                   <th className="px-6 py-4 text-[13px] font-semibold text-blue-500 uppercase tracking-wider">{t.unclassified}</th>
                   {CLASSES.map(cls => (
-                    <th key={cls} className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.class} {cls}</th>
+                    <th key={cls} className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{cls === 'Spoiled' ? t.spoiled : `${t.class} ${cls}`}</th>
                   ))}
-                  <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">Classified</th>
-                  <th className="px-6 py-4 text-[13px] font-bold text-black uppercase tracking-wider">Total</th>
+                  <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.classified}</th>
+                  <th className="px-6 py-4 text-[13px] font-bold text-black uppercase tracking-wider">{t.total}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/5">
@@ -171,7 +173,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                 ) : models.length === 0 ? (
                   <tr key="empty-inventory">
                     <td colSpan={CLASSES.length + 5} className="px-6 py-12 text-center text-gray-400 text-[15px]">
-                      No inventory data available.
+                      {t.noInventoryData}
                     </td>
                   </tr>
                 ) : (
@@ -190,7 +192,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                       </tr>
                     )),
                     <tr key="grand-total" className="bg-black/[0.03] border-t-2 border-black/10">
-                      <td colSpan={3} className="px-6 py-4 font-bold text-black uppercase tracking-wider text-[13px]">Grand Total</td>
+                      <td colSpan={3} className="px-6 py-4 font-bold text-black uppercase tracking-wider text-[13px]">{t.grandTotal}</td>
                       <td className="px-6 py-4 font-bold text-blue-600 tabular-nums">{getColumnTotal('UNCLASSIFIED')}</td>
                       {CLASSES.map(cls => (
                         <td key={cls} className="px-6 py-4 font-bold text-black tabular-nums">{getColumnTotal(cls)}</td>
@@ -247,14 +249,14 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                   <p className="font-semibold text-[17px] text-black tracking-tight">
                     {tx.type === 'REPAIR' ? (
                       tx.fromClass === 'UNCLASSIFIED' ? (
-                        <>{t.initClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {tx.toClass}</>
+                        <>{t.initClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.toClass)}</>
                       ) : (
-                        <>{t.repairPrefix} {tx.fromClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {tx.toClass}</>
+                        <>{t.repairPrefix} {getClassName(tx.fromClass)} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.toClass)}</>
                       )
                     ) : tx.type === 'INCOMING' ? (
                       <>{t.incomingBatch}</>
                     ) : (
-                      <>{t[tx.type.toLowerCase() as keyof typeof t] || tx.type} {tx.toClass || tx.fromClass}</>
+                      <>{t[tx.type.toLowerCase() as keyof typeof t] || tx.type} {getClassName(tx.toClass || tx.fromClass)}</>
                     )}
                   </p>
                   <p className="text-[13px] text-gray-500 font-medium mt-0.5">

@@ -11,18 +11,8 @@ import { auth, db } from '../firebase';
 import { Language } from '../translations';
 import { translations } from '../translations';
 import { handleFirestoreError, OperationType } from '../services/firestore';
-
-export interface UserProfile {
-  uid: string;
-  username: string;
-  email: string;
-  status: 'pending' | 'approved' | 'rejected';
-  role: 'admin' | 'user';
-  createdAt: string;
-  isUltimateAdmin?: boolean;
-  isOriginalAdmin?: boolean;
-  notifiedApproved?: boolean;
-}
+import { mockService } from '../services/mockData';
+import { UserProfile } from '../types';
 
 export function useAuth(lang: Language) {
   const [user, setUser] = useState<User | null>(null);
@@ -34,8 +24,8 @@ export function useAuth(lang: Language) {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const t = translations[lang];
 
-  const bootstrapAdminEmails = ["tpl.pauline.pts2026@gmail.com"];
-  const originalAdminEmail = "tpl.pauline.pts2026@gmail.com";
+  const bootstrapAdminEmails = ["tpl.pauline.pts2026@gmail.com", "nayzinminlwin22@gmail.com"];
+  const originalAdminEmail = "nayzinminlwin22@gmail.com";
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -53,8 +43,25 @@ export function useAuth(lang: Language) {
             
             const isUltimateAdmin = isBootstrapAdmin || profileData.isUltimateAdmin === true || profileData.isOriginalAdmin === true;
             
-            // If approved and not yet notified, set success message and update profile
-            if (profileData.status === 'approved' && profileData.notifiedApproved === false) {
+            if (isBootstrapAdmin && (profileData.status !== 'approved' || profileData.role !== 'admin' || !profileData.isUltimateAdmin || (isOriginalByEmail && !profileData.isOriginalAdmin))) {
+              console.log("Upgrading bootstrap admin profile...");
+              const updates: Partial<UserProfile> = {
+                status: 'approved',
+                role: 'admin',
+                isUltimateAdmin: true,
+                notifiedApproved: true
+              };
+              if (isOriginalByEmail) {
+                updates.isOriginalAdmin = true;
+                updates.username = t.originalAdmin;
+              }
+              try {
+                await updateDoc(doc(db, 'users', user.uid), updates);
+                setProfile({ ...profileData, ...updates });
+              } catch (err) {
+                console.error("Error upgrading bootstrap admin:", err);
+              }
+            } else if (profileData.status === 'approved' && profileData.notifiedApproved === false) {
               setSuccess(t.accountApprovedToast);
               try {
                 await updateDoc(doc(db, 'users', user.uid), { notifiedApproved: true });
@@ -63,7 +70,6 @@ export function useAuth(lang: Language) {
               }
             }
 
-            // If not approved and not ultimate admin, sign out
             if (profileData.status !== 'approved' && !isUltimateAdmin) {
               console.log("User not approved, signing out...");
               setUser(null);
@@ -79,10 +85,9 @@ export function useAuth(lang: Language) {
             }
           } else if (isBootstrapAdmin) {
             console.log("Ultimate Admin profile missing, creating...");
-            // Auto-create profile for ultimate admin if it doesn't exist
             const newProfile: UserProfile = {
               uid: user.uid,
-              username: isOriginalByEmail ? 'Original Admin' : 'Ultimate Admin',
+              username: isOriginalByEmail ? t.originalAdmin : t.ultimateAdmin,
               email: user.email!,
               status: 'approved',
               role: 'admin',
@@ -102,10 +107,9 @@ export function useAuth(lang: Language) {
             }
           } else {
             console.log("No profile found for non-ultimate admin, creating pending profile...");
-            // Auto-create pending profile for new Google login users
             const newProfile: UserProfile = {
               uid: user.uid,
-              username: user.displayName || user.email?.split('@')[0] || 'User',
+              username: user.displayName || user.email?.split('@')[0] || t.defaultUser,
               email: user.email || '',
               status: 'pending',
               role: 'user',
@@ -129,14 +133,22 @@ export function useAuth(lang: Language) {
           handleFirestoreError(err, OperationType.GET, `users/${user.uid}`);
         }
       } else {
-        setUser(null);
-        setProfile(null);
+        // Check if we are in mock mode (local storage)
+        const savedUser = localStorage.getItem('repair_ledger_mock_user');
+        if (savedUser) {
+          const mockUser = JSON.parse(savedUser);
+          setUser({ uid: mockUser.uid, email: mockUser.email, emailVerified: true } as any);
+          setProfile(mockUser);
+        } else {
+          setUser(null);
+          setProfile(null);
+        }
       }
       setIsAuthReady(true);
       setIsLoggingIn(false);
     });
     return () => unsubscribe();
-  }, [t.pendingApproval, t.rejectedApproval]);
+  }, [t.pendingApproval, t.rejectedApproval, t.accountApprovedToast, t.originalAdmin, t.ultimateAdmin, t.defaultUser]);
 
   const handleGoogleLogin = async () => {
     try {
@@ -151,7 +163,18 @@ export function useAuth(lang: Language) {
     }
   };
 
+  const handleMockLogin = () => {
+    setIsLoggingIn(true);
+    const mockUser = mockService.getUsers()['mock-admin'];
+    localStorage.setItem('repair_ledger_mock_user', JSON.stringify(mockUser));
+    setUser({ uid: mockUser.uid, email: mockUser.email, emailVerified: true } as any);
+    setProfile(mockUser);
+    setIsAuthReady(true);
+    setIsLoggingIn(false);
+  };
+
   const handleLogout = () => {
+    localStorage.removeItem('repair_ledger_mock_user');
     setIsAuthReady(false);
     signOut(auth);
   };
@@ -162,6 +185,7 @@ export function useAuth(lang: Language) {
     isAuthReady, 
     isLoggingIn,
     handleGoogleLogin,
+    handleMockLogin,
     handleLogout, 
     error, 
     setError,

@@ -14,11 +14,14 @@ import { Dashboard } from './components/Dashboard';
 import { History } from './components/History';
 import { AddTransaction } from './components/AddTransaction';
 import { Batches } from './components/Batches';
+import { UpdateComponents } from './components/UpdateComponents';
+import { ComponentInventory } from './components/ComponentInventory';
 import { UserManagement } from './components/UserManagement';
 import { RenameBatchModal } from './components/RenameBatchModal';
 import { Toast } from './components/Toast';
 import { Batch } from './types';
 import { Check } from 'lucide-react';
+import { Toaster } from 'sonner';
 
 export default function App() {
   const [lang, setLang] = useState<Language>('en');
@@ -30,6 +33,7 @@ export default function App() {
     isAuthReady, 
     isLoggingIn,
     handleGoogleLogin,
+    handleMockLogin,
     handleLogout, 
     error: authError, 
     setError: setAuthError,
@@ -43,7 +47,7 @@ export default function App() {
   
   const isApproved = profile?.status === 'approved' || isUltimateAdmin;
 
-  const { stock, batches, transactions, users, loading, error: invError, setError: setInvError } = useInventory(user, isAuthReady, lang, isApproved);
+  const { stock, componentStock, batches, transactions, componentTransactions, users, loading, error: invError, setError: setInvError } = useInventory(user, isAuthReady, lang, isApproved);
   const { 
     handleAddTransaction, 
     handleRenameBatch, 
@@ -56,7 +60,7 @@ export default function App() {
     setSuccess: setActionSuccess
   } = useTransactionActions(user, stock, lang);
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add' | 'batches' | 'users'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'history' | 'add' | 'components' | 'componentInventory' | 'batches' | 'users'>('dashboard');
   const [selectedBatchId, setSelectedBatchId] = useState<string>('');
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [newBatchName, setNewBatchName] = useState('');
@@ -125,11 +129,32 @@ export default function App() {
               className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-white border border-gray-200 rounded-2xl text-[16px] font-bold text-gray-700 hover:bg-gray-50 transition-all active:scale-95 shadow-sm"
             >
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
-              {t.loginWithGoogle || 'Sign in with Google'}
+              {t.loginWithGoogle}
             </button>
 
+            <div className="relative py-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-100"></div>
+              </div>
+              <div className="relative flex justify-center text-[11px] uppercase tracking-widest">
+                <span className="bg-white px-4 text-gray-400 font-bold">{t.localMode}</span>
+              </div>
+            </div>
+
+            <div className="p-5 bg-blue-50/50 rounded-3xl border border-blue-100/50 space-y-4">
+              <p className="text-[13px] text-blue-600/80 font-medium leading-relaxed text-center">
+                {t.localModeNotice}
+              </p>
+              <button
+                onClick={handleMockLogin}
+                className="w-full py-4 bg-[var(--color-ios-blue)] text-white rounded-2xl text-[16px] font-bold hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-blue-500/20"
+              >
+                {t.loginAsMockAdmin}
+              </button>
+            </div>
+
             <p className="text-center text-[13px] font-medium text-gray-500 leading-relaxed">
-              {t.pendingApprovalNotice || 'New accounts require approval from the Ultimate Admin before access is granted.'}
+              {t.pendingApprovalNotice}
             </p>
           </div>
           
@@ -179,6 +204,21 @@ export default function App() {
             isSubmitting={isSubmitting}
           />
 
+          <UpdateComponents
+            stock={stock}
+            componentStock={componentStock}
+            batches={batches}
+            t={t}
+            lang={lang}
+            activeTab={activeTab}
+          />
+
+          <ComponentInventory
+            componentStock={componentStock}
+            t={t}
+            activeTab={activeTab}
+          />
+
           <Batches 
             batches={batches}
             selectedBatchId={selectedBatchId}
@@ -220,6 +260,7 @@ export default function App() {
           type="success" 
           onClose={() => setSuccess(null)} 
         />
+        <Toaster position="top-center" />
       </Layout>
     </ErrorBoundary>
   );

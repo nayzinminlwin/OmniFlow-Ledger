@@ -357,7 +357,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     className="ios-input w-full"
                   >
                     <option value="UNCLASSIFIED">{t.unclassified}</option>
-                    {CLASSES.map(c => <option key={c} value={c}>{t.class} {c}</option>)}
+                    {CLASSES.map(c => <option key={c} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
                   </select>
                 </div>
               )}
@@ -379,7 +379,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     className="ios-input w-full"
                   >
                     {txType === 'ADJUSTMENT' && <option value="UNCLASSIFIED">{t.unclassified}</option>}
-                    {CLASSES.map(c => <option key={c} value={c}>{t.class} {c}</option>)}
+                    {CLASSES.map(c => <option key={c} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
                   </select>
                 </div>
               )}

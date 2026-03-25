@@ -1,10 +1,10 @@
 import React, { memo } from 'react';
-import { LayoutDashboard, Edit2, History, Settings, Users } from 'lucide-react';
+import { LayoutDashboard, Edit2, History, Settings, Users, Cpu } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface NavigationProps {
-  activeTab: 'dashboard' | 'history' | 'add' | 'batches' | 'users';
-  setActiveTab: (tab: 'dashboard' | 'history' | 'add' | 'batches' | 'users') => void;
+  activeTab: 'dashboard' | 'history' | 'add' | 'components' | 'componentInventory' | 'batches' | 'users';
+  setActiveTab: (tab: 'dashboard' | 'history' | 'add' | 'components' | 'componentInventory' | 'batches' | 'users') => void;
   t: any;
   isUltimateAdmin?: boolean;
 }
@@ -12,7 +12,7 @@ interface NavigationProps {
 export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiveTab, t, isUltimateAdmin }) => {
   return (
     <div className="flex justify-center mb-8">
-      <div className="flex bg-black/5 p-1 rounded-xl shadow-inner overflow-x-auto no-scrollbar w-full max-w-3xl">
+      <div className="flex bg-black/5 p-1 rounded-xl shadow-inner overflow-x-auto no-scrollbar w-full max-w-4xl">
         <button
           onClick={() => setActiveTab('dashboard')}
           className={cn(
@@ -42,6 +42,26 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
         >
           <Edit2 className="w-4 h-4" />
           {t.updateStock}
+        </button>
+        <button
+          onClick={() => setActiveTab('components')}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-[13px] font-medium transition-all whitespace-nowrap",
+            activeTab === 'components' ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-700"
+          )}
+        >
+          <Cpu className="w-4 h-4" />
+          {t.updateComponents}
+        </button>
+        <button
+          onClick={() => setActiveTab('componentInventory')}
+          className={cn(
+            "flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-[13px] font-medium transition-all whitespace-nowrap",
+            activeTab === 'componentInventory' ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-700"
+          )}
+        >
+          <Cpu className="w-4 h-4" />
+          {t.componentInventory}
         </button>
         <button
           onClick={() => setActiveTab('history')}

@@ -46,12 +46,16 @@
             "A": { "type": "number" },
             "B": { "type": "number" },
             "B-": { "type": "number" },
-            "C": { "type": "number" },
-            "C-": { "type": "number" },
+            "C1": { "type": "number" },
+            "C2": { "type": "number" },
+            "C3": { "type": "number" },
+            "C4": { "type": "number" },
+            "C5": { "type": "number" },
             "D": { "type": "number" },
+            "Spoiled": { "type": "number" },
             "UNCLASSIFIED": { "type": "number" }
           },
-          "required": ["A", "B", "B-", "C", "C-", "D", "UNCLASSIFIED"]
+          "required": ["A", "B", "B-", "C1", "C2", "C3", "C4", "C5", "D", "Spoiled", "UNCLASSIFIED"]
         }
       },
       "required": ["brand", "series", "model", "counts"]
@@ -61,7 +65,7 @@
       "description": "A single entry in the ledger representing a stock change.",
       "type": "object",
       "properties": {
-        "type": { "type": "string", "enum": ["INCOMING", "REPAIR", "SALE", "ADJUSTMENT"], "description": "Type of transaction" },
+        "type": { "type": "string", "enum": ["INCOMING", "REPAIR", "SALE", "ADJUSTMENT", "BREAKDOWN"], "description": "Type of transaction" },
         "batchId": { "type": "string", "description": "The batch this transaction belongs to" },
         "batchActive": { "type": "boolean", "description": "Whether the associated batch is active. Used to hide transactions for deleted batches." },
         "brand": { "type": "string" },
@@ -75,6 +79,66 @@
         "notes": { "type": "string" }
       },
       "required": ["type", "batchId", "brand", "series", "model", "quantity", "timestamp", "userId"]
+    },
+    "ComponentStock": {
+      "title": "Component Stock",
+      "description": "Current counts of each component, organized by model.",
+      "type": "object",
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "ComponentModelStock"
+          }
+        },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["items", "lastUpdated"]
+    },
+    "ComponentModelStock": {
+      "title": "Component Model Stock",
+      "description": "Stock counts for components of a specific laptop model.",
+      "type": "object",
+      "properties": {
+        "brand": { "type": "string" },
+        "series": { "type": "string" },
+        "model": { "type": "string" },
+        "counts": {
+          "type": "object",
+          "properties": {
+            "A Cover": { "type": "number" },
+            "B Cover": { "type": "number" },
+            "C Cover": { "type": "number" },
+            "D Cover": { "type": "number" },
+            "Screen": { "type": "number" },
+            "Motherboard": { "type": "number" },
+            "Battery": { "type": "number" },
+            "Keyboard": { "type": "number" },
+            "RAM": { "type": "number" },
+            "SSD": { "type": "number" },
+            "Speaker": { "type": "number" }
+          }
+        }
+      },
+      "required": ["brand", "series", "model", "counts"]
+    },
+    "ComponentTransaction": {
+      "title": "Component Transaction",
+      "description": "A record of a change in component inventory.",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["BREAKDOWN", "INCOMING", "SALE", "ADJUSTMENT"] },
+        "brand": { "type": "string" },
+        "series": { "type": "string" },
+        "model": { "type": "string" },
+        "fromClass": { "type": "string" },
+        "laptopQuantity": { "type": "number" },
+        "componentChanges": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["type", "brand", "series", "model", "componentChanges", "timestamp", "userId"]
     },
     "UserProfile": {
       "title": "User Profile",
@@ -103,6 +167,14 @@
     "/transactions/{transactionId}": {
       "schema": "Transaction",
       "description": "Historical log of all stock movements."
+    },
+    "/components/current": {
+      "schema": "ComponentStock",
+      "description": "The single source of truth for global component stock levels."
+    },
+    "/component_transactions/{transactionId}": {
+      "schema": "ComponentTransaction",
+      "description": "Historical log of all component stock movements."
     },
     "/users/{uid}": {
       "schema": "UserProfile",

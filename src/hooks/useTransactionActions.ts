@@ -11,14 +11,24 @@ import {
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { db } from '../firebase';
-import { Stock, TransactionType, Batch, LaptopClass, ModelStock } from '../types';
-import { INITIAL_CLASS_COUNTS } from '../constants';
+import { Stock, TransactionType, Batch, LaptopClass, ModelStock, Transaction, ComponentType, ComponentModelStock, ComponentStock } from '../types';
+import { INITIAL_CLASS_COUNTS, INITIAL_COMPONENT_COUNTS, INITIAL_COMPONENT_STOCK } from '../constants';
 import { translations, Language } from '../translations';
+import { mockService } from '../services/mockData';
 
 const getModelStock = (items: ModelStock[], brand: string, series: string, model: string): ModelStock => {
   let ms = items.find(i => i.brand === brand && i.series === series && i.model === model);
   if (!ms) {
     ms = { brand, series, model, counts: { ...INITIAL_CLASS_COUNTS } };
+    items.push(ms);
+  }
+  return ms;
+};
+
+const getComponentModelStock = (items: ComponentModelStock[], brand: string, series: string, model: string): ComponentModelStock => {
+  let ms = items.find(i => i.brand === brand && i.series === series && i.model === model);
+  if (!ms) {
+    ms = { brand, series, model, counts: { ...INITIAL_COMPONENT_COUNTS } };
     items.push(ms);
   }
   return ms;
@@ -30,6 +40,8 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const t = translations[lang];
+
+  const isMockMode = !user || user.uid === 'mock-admin';
 
   const handleAddTransaction = async (
     txType: TransactionType,
@@ -49,6 +61,88 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
     setSuccess(null);
 
     try {
+      if (isMockMode) {
+        const currentStock = mockService.getStock();
+        const batches = mockService.getBatches();
+        let currentBatch = batches.find(b => b.batchId === batchId);
+        
+        if (!currentBatch) {
+          currentBatch = {
+            batchId,
+            items: [],
+            createdAt: new Date().toISOString(),
+            active: true
+          };
+        }
+
+        const newStock: Stock = { 
+          items: JSON.parse(JSON.stringify(currentStock.items)),
+          lastUpdated: new Date().toISOString() 
+        };
+        const newBatch: Batch = JSON.parse(JSON.stringify(currentBatch));
+
+        const globalModelStock = getModelStock(newStock.items, brand, series, model);
+        const batchModelStock = getModelStock(newBatch.items, brand, series, model);
+
+        if (txType === 'INCOMING') {
+          globalModelStock.counts['UNCLASSIFIED'] += quantity;
+          batchModelStock.counts['UNCLASSIFIED'] += quantity;
+        } else if (txType === 'SALE') {
+          if (batchModelStock.counts[fromClass] < quantity) {
+            throw new Error(t.insufficientStock(batchId, fromClass));
+          }
+          if (globalModelStock.counts[fromClass] < quantity) {
+            throw new Error(t.insufficientGlobalStock(fromClass));
+          }
+          globalModelStock.counts[fromClass] -= quantity;
+          batchModelStock.counts[fromClass] -= quantity;
+        } else if (txType === 'REPAIR') {
+          if (batchModelStock.counts[fromClass] < quantity) {
+            throw new Error(t.insufficientStock(batchId, fromClass));
+          }
+          if (globalModelStock.counts[fromClass] < quantity) {
+            throw new Error(t.insufficientGlobalStock(fromClass));
+          }
+          globalModelStock.counts[fromClass] -= quantity;
+          globalModelStock.counts[toClass] += quantity;
+          batchModelStock.counts[fromClass] -= quantity;
+          batchModelStock.counts[toClass] += quantity;
+        } else if (txType === 'ADJUSTMENT') {
+          const diff = quantity - batchModelStock.counts[toClass];
+          globalModelStock.counts[toClass] += diff;
+          batchModelStock.counts[toClass] += diff;
+          if (batchModelStock.counts[toClass] < 0) {
+            throw new Error(t.adjustmentNegative(batchId, toClass));
+          }
+          if (globalModelStock.counts[toClass] < 0) {
+            throw new Error(t.adjustmentNegativeGlobal(toClass));
+          }
+        }
+
+        mockService.updateStock(newStock);
+        mockService.updateBatch(newBatch);
+        
+        const txData: Transaction = {
+          id: Math.random().toString(36).substr(2, 9),
+          type: txType,
+          batchId,
+          batchActive: true,
+          brand,
+          series,
+          model,
+          quantity,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          fromClass: txType !== 'INCOMING' ? fromClass : undefined,
+          toClass: txType !== 'SALE' ? toClass : undefined,
+          notes: notes.trim() || undefined
+        };
+        
+        mockService.addTransaction(txData);
+        setSuccess(t.transactionSuccess);
+        return true;
+      }
+
       await runTransaction(db, async (transaction) => {
         const stockRef = doc(db, 'inventory', 'current');
         const batchRef = doc(db, 'batches', batchId);
@@ -101,7 +195,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
             throw new Error(t.insufficientStock(batchId, fromClass));
           }
           if (globalModelStock.counts[fromClass] < quantity) {
-            throw new Error(`Insufficient global stock for Class ${fromClass}`);
+            throw new Error(t.insufficientGlobalStock(fromClass));
           }
           globalModelStock.counts[fromClass] -= quantity;
           batchModelStock.counts[fromClass] -= quantity;
@@ -110,7 +204,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
             throw new Error(t.insufficientStock(batchId, fromClass));
           }
           if (globalModelStock.counts[fromClass] < quantity) {
-            throw new Error(`Insufficient global stock for Class ${fromClass}`);
+            throw new Error(t.insufficientGlobalStock(fromClass));
           }
           globalModelStock.counts[fromClass] -= quantity;
           globalModelStock.counts[toClass] += quantity;
@@ -124,7 +218,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
             throw new Error(t.adjustmentNegative(batchId, toClass));
           }
           if (globalModelStock.counts[toClass] < 0) {
-            throw new Error(`Adjustment would result in negative global stock for Class ${toClass}`);
+            throw new Error(t.adjustmentNegativeGlobal(toClass));
           }
         }
 
@@ -179,6 +273,23 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
     setSuccess(null);
 
     try {
+      if (isMockMode) {
+        const batches = mockService.getBatches();
+        const batchData = batches.find(b => b.batchId === oldBatchId);
+        if (!batchData) throw new Error(t.batchNotFound);
+        
+        const exists = batches.find(b => b.batchId === newId);
+        if (exists) throw new Error(t.batchExists);
+        
+        mockService.renameBatch(oldBatchId, newId, { ...batchData, batchId: newId });
+        
+        if (selectedBatchId === oldBatchId) {
+          setSelectedBatchId(newId);
+        }
+        setSuccess(t.renameSuccess);
+        return true;
+      }
+
       const oldBatchRef = doc(db, 'batches', oldBatchId);
       const oldBatchSnap = await getDoc(oldBatchRef);
       if (!oldBatchSnap.exists()) throw new Error(t.batchNotFound);
@@ -193,9 +304,6 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
       const txQuery = query(collection(db, 'transactions'), where('batchId', '==', oldBatchId));
       const txSnaps = await getDocs(txQuery);
       
-      // Firestore batches are limited to 500 operations.
-      // We have 2 ops for the batch document itself (set new, delete old).
-      // So we can process up to 498 transactions per batch.
       const CHUNK_SIZE = 490;
       const txDocs = txSnaps.docs;
       
@@ -204,7 +312,6 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         const currentBatch = writeBatch(db);
         
         if (i === 0) {
-          // Only do the batch rename in the first chunk
           currentBatch.set(newBatchRef, batchData);
           currentBatch.delete(oldBatchRef);
         }
@@ -217,7 +324,6 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
       }
       
       if (txDocs.length === 0) {
-        // If there were no transactions, we still need to commit the batch rename
         const emptyBatch = writeBatch(db);
         emptyBatch.set(newBatchRef, batchData);
         emptyBatch.delete(oldBatchRef);
@@ -247,6 +353,55 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
     setSuccess(null);
 
     try {
+      if (isMockMode) {
+        const currentStock = mockService.getStock();
+        const batches = mockService.getBatches();
+        const batchData = batches.find(b => b.batchId === batchId);
+        
+        if (!batchData) throw new Error(t.batchNotFound);
+
+        const newStockItems = JSON.parse(JSON.stringify(currentStock.items));
+        batchData.items.forEach(batchItem => {
+          const globalItem = newStockItems.find((gi: any) => 
+            gi.brand === batchItem.brand && 
+            gi.series === batchItem.series && 
+            gi.model === batchItem.model
+          );
+          
+          if (globalItem) {
+            Object.keys(batchItem.counts).forEach(cls => {
+              globalItem.counts[cls as LaptopClass] -= batchItem.counts[cls as LaptopClass];
+            });
+          }
+        });
+
+        mockService.updateStock({ 
+          items: newStockItems,
+          lastUpdated: new Date().toISOString()
+        });
+        
+        mockService.deleteBatch(batchId);
+
+        const txData: Transaction = {
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'ADJUSTMENT',
+          batchId,
+          batchActive: false,
+          brand: 'BATCH',
+          series: 'DELETION',
+          model: 'ALL',
+          quantity: 0,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes: t.batchDeletionNotes(batchId)
+        };
+        mockService.addTransaction(txData);
+
+        setSelectedBatchId('');
+        setSuccess(t.deleteSuccess);
+        return true;
+      }
+
       const batchRef = doc(db, 'batches', batchId);
       const batchDoc = await getDoc(batchRef);
       
@@ -265,7 +420,6 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         const currentStock = stockDoc.data() as Stock;
         const currentBatchData = batchDoc.data() as Batch;
         
-        // Subtract batch items from global stock
         const newStockItems = [...currentStock.items];
         currentBatchData.items.forEach(batchItem => {
           const globalItem = newStockItems.find(gi => 
@@ -286,17 +440,14 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
           lastUpdated: new Date().toISOString()
         });
         
-        // Soft delete: set active to false
         transaction.update(batchRef, { active: false });
 
-        // Update all transactions for this batch to be inactive
         const txQuery = query(collection(db, 'transactions'), where('batchId', '==', batchId));
         const txSnaps = await getDocs(txQuery);
         txSnaps.docs.forEach(txDoc => {
           transaction.update(txDoc.ref, { batchActive: false });
         });
 
-        // Record a deletion transaction
         const txRef = doc(collection(db, 'transactions'));
         transaction.set(txRef, {
           type: 'ADJUSTMENT',
@@ -308,7 +459,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
           quantity: 0,
           timestamp: new Date().toISOString(),
           userId: user.uid,
-          notes: `Batch ${batchId} deleted (soft delete)`
+          notes: t.batchDeletionNotes(batchId)
         });
       });
 
@@ -324,5 +475,155 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
     }
   };
 
-  return { handleAddTransaction, handleRenameBatch, handleDeleteBatch, isSubmitting, isRenaming, error, setError, success, setSuccess };
+  const recordComponentBreakdown = async ({
+    batchId,
+    brand,
+    series,
+    model,
+    fromClass,
+    laptopQuantity,
+    componentChanges,
+    notes
+  }: {
+    batchId: string;
+    brand: string;
+    series: string;
+    model: string;
+    fromClass: LaptopClass;
+    laptopQuantity: number;
+    componentChanges: Partial<Record<ComponentType, number>>;
+    notes: string;
+  }) => {
+    if (!user || !stock || !brand.trim() || !series.trim() || !model.trim() || !batchId) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      if (isMockMode) {
+        // Mock implementation
+        const globalStock = mockService.getStock();
+        const batches = mockService.getBatches();
+        const currentBatch = batches.find(b => b.batchId === batchId);
+        
+        if (!currentBatch) {
+          throw new Error(t.batchNotFound);
+        }
+
+        const globalModel = getModelStock(globalStock.items, brand, series, model);
+        const batchModel = getModelStock(currentBatch.items, brand, series, model);
+        
+        if ((batchModel.counts[fromClass] || 0) < laptopQuantity) {
+          throw new Error(t.insufficientStock(batchId, fromClass));
+        }
+        
+        if ((globalModel.counts[fromClass] || 0) < laptopQuantity) {
+          throw new Error(t.insufficientGlobalStock(fromClass));
+        }
+        
+        batchModel.counts[fromClass] -= laptopQuantity;
+        globalModel.counts[fromClass] -= laptopQuantity;
+        globalStock.lastUpdated = new Date().toISOString();
+        
+        mockService.updateStock(globalStock);
+        mockService.updateBatch(currentBatch);
+
+        setSuccess(t.breakdownSuccess);
+        return true;
+      }
+
+      await runTransaction(db, async (transaction) => {
+        const globalStockRef = doc(db, 'inventory', 'current');
+        const compStockRef = doc(db, 'components', 'current');
+        const batchRef = doc(db, 'batches', batchId);
+        
+        const globalStockDoc = await transaction.get(globalStockRef);
+        const compStockDoc = await transaction.get(compStockRef);
+        const batchDoc = await transaction.get(batchRef);
+
+        if (!globalStockDoc.exists()) {
+          throw new Error(t.globalStockMissing);
+        }
+
+        if (!batchDoc.exists()) {
+          throw new Error(t.batchNotFound);
+        }
+
+        const globalData = globalStockDoc.data() as Stock;
+        const batchData = batchDoc.data() as Batch;
+
+        const globalModel = getModelStock(globalData.items, brand, series, model);
+        const batchModel = getModelStock(batchData.items, brand, series, model);
+
+        if ((batchModel.counts[fromClass] || 0) < laptopQuantity) {
+          throw new Error(t.insufficientStock(batchId, fromClass));
+        }
+
+        if ((globalModel.counts[fromClass] || 0) < laptopQuantity) {
+          throw new Error(t.insufficientGlobalStock(fromClass));
+        }
+
+        batchModel.counts[fromClass] -= laptopQuantity;
+        globalModel.counts[fromClass] -= laptopQuantity;
+        globalData.lastUpdated = new Date().toISOString();
+
+        let compData = compStockDoc.exists() ? compStockDoc.data() as ComponentStock : { ...INITIAL_COMPONENT_STOCK };
+        const compModel = getComponentModelStock(compData.items, brand, series, model);
+
+        Object.entries(componentChanges).forEach(([comp, qty]) => {
+          compModel.counts[comp as ComponentType] = (compModel.counts[comp as ComponentType] || 0) + qty;
+        });
+        compData.lastUpdated = new Date().toISOString();
+
+        // Record the component transaction
+        const compTxRef = doc(collection(db, 'component_transactions'));
+        const compTxData = {
+          type: 'BREAKDOWN',
+          brand,
+          series,
+          model,
+          fromClass,
+          laptopQuantity,
+          componentChanges,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes
+        };
+
+        // Record the laptop transaction (deduction)
+        const laptopTxRef = doc(collection(db, 'transactions'));
+        const laptopTxData = {
+          type: 'BREAKDOWN',
+          batchId,
+          brand,
+          series,
+          model,
+          fromClass,
+          toClass: 'UNCLASSIFIED', // Not used for BREAKDOWN, but required by type
+          quantity: laptopQuantity,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes: `Broken down into components: ${notes}`
+        };
+
+        transaction.set(globalStockRef, globalData);
+        transaction.set(batchRef, batchData);
+        transaction.set(compStockRef, compData);
+        transaction.set(compTxRef, compTxData);
+        transaction.set(laptopTxRef, laptopTxData);
+      });
+
+      setSuccess(t.breakdownSuccess);
+      return true;
+    } catch (err: any) {
+      console.error('Breakdown failed:', err);
+      setError(err.message || t.breakdownFailed);
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { handleAddTransaction, handleRenameBatch, handleDeleteBatch, recordComponentBreakdown, isSubmitting, isRenaming, error, setError, success, setSuccess };
 }

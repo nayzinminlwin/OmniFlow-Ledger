@@ -21,7 +21,7 @@ export const Layout: React.FC<LayoutProps> = ({
   handleLogout,
   children,
 }) => {
-  const displayName = user?.displayName || user?.email?.split('@')[0] || 'User';
+  const displayName = user?.displayName || user?.email?.split('@')[0] || t.defaultUser;
 
   return (
     <div className="min-h-screen selection:bg-blue-200 selection:text-blue-900">

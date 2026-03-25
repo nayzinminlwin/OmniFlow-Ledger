@@ -17,11 +17,13 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
   if (activeTab !== 'history') return null;
 
   const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
-    if (!dateStr) return 'N/A';
+    if (!dateStr) return t.na;
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return 'Invalid Date';
+    if (isNaN(d.getTime())) return t.invalidDate;
     return format(d, formatStr);
   };
+
+  const getClassName = (cls?: string) => cls === 'Spoiled' ? t.spoiled : cls;
 
   return (
     <div className="lg:col-span-12 animate-in fade-in duration-500">
@@ -100,13 +102,13 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                   <td className="px-8 py-4">
                     <p className="text-[15px] font-medium text-gray-700">
                       {tx.type === 'REPAIR' ? (
-                        <>{tx.fromClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {tx.toClass}</>
+                        <>{getClassName(tx.fromClass)} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.toClass)}</>
                       ) : tx.type === 'INCOMING' ? (
                         <>{t.toUnclassified}</>
                       ) : tx.type === 'SALE' ? (
-                        <>{t.from} {tx.fromClass}</>
+                        <>{t.from} {getClassName(tx.fromClass)}</>
                       ) : (
-                        <>{t.class} {tx.toClass}</>
+                        <>{getClassName(tx.toClass) === t.spoiled ? t.spoiled : `${t.class} ${getClassName(tx.toClass)}`}</>
                       )}
                     </p>
                   </td>
@@ -120,7 +122,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                   </td>
                   <td className="px-8 py-4">
                     <p className="text-[15px] font-medium text-gray-700">
-                      {users[tx.userId]?.username || tx.userId || 'Unknown'}
+                      {users[tx.userId]?.username || tx.userId || t.unknown}
                     </p>
                   </td>
                   <td className="px-8 py-4">

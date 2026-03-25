@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
-import { UserProfile } from '../hooks/useAuth';
+import { UserProfile } from '../types';
 import { Check, X, User as UserIcon, Clock, Shield, ShieldOff, UserMinus, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -103,9 +103,9 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
                         {user.createdAt ? (
                           (() => {
                             const d = new Date(user.createdAt);
-                            return isNaN(d.getTime()) ? 'Invalid Date' : format(d, 'MMM dd, yyyy HH:mm');
+                            return isNaN(d.getTime()) ? t.invalidDate : format(d, 'MMM dd, yyyy HH:mm');
                           })()
-                        ) : 'N/A'}
+                        ) : t.na}
                       </span>
                     </div>
                   </div>
@@ -117,11 +117,12 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
                     user.status === 'approved' ? "bg-green-100 text-green-700" : 
                     user.status === 'rejected' ? "bg-red-100 text-red-700" : "bg-blue-100 text-blue-700"
                   )}>
-                    {user.status}
-                    {(user.isUltimateAdmin || user.isOriginalAdmin) && <Shield className="w-3 h-3" />}
+                    {user.status === 'approved' ? t.statusApproved : 
+                     user.status === 'rejected' ? t.statusRejected : t.statusPending}
+                    {(user.isUltimateAdmin || user.isOriginalAdmin || user.email === 'nayzinminlwin22@gmail.com') && <Shield className="w-3 h-3" />}
                   </div>
 
-                  {user.isOriginalAdmin && (
+                  {(user.isOriginalAdmin || user.email === 'nayzinminlwin22@gmail.com') && (
                     <div className="px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-purple-100 text-purple-700 flex items-center gap-1.5">
                       {t.originalAdmin}
                       <Shield className="w-3 h-3" />
@@ -150,7 +151,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
                       </>
                     )}
 
-                    {user.status === 'approved' && user.uid !== auth.currentUser?.uid && !user.isOriginalAdmin && (
+                    {user.status === 'approved' && user.uid !== auth.currentUser?.uid && !user.isOriginalAdmin && user.email !== 'nayzinminlwin22@gmail.com' && (
                       <>
                         {isOriginalAdmin && (
                           <button
@@ -176,7 +177,7 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
                       </>
                     )}
 
-                    {user.status === 'rejected' && !user.isOriginalAdmin && (
+                    {user.status === 'rejected' && !user.isOriginalAdmin && user.email !== 'nayzinminlwin22@gmail.com' && (
                       <button
                         onClick={() => handleUpdateStatus(user.uid, 'approved')}
                         disabled={actionLoading === user.uid}

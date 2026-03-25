@@ -1,4 +1,4 @@
-export type LaptopClass = 'A' | 'B' | 'B-' | 'C' | 'C-' | 'D' | 'UNCLASSIFIED';
+export type LaptopClass = 'A' | 'B' | 'B-' | 'C1' | 'C2' | 'C3' | 'C4' | 'C5' | 'D' | 'Spoiled' | 'UNCLASSIFIED';
 
 export type ClassCounts = {
   [key in LaptopClass]: number;
@@ -24,7 +24,41 @@ export interface Batch {
   active?: boolean;
 }
 
-export type TransactionType = 'INCOMING' | 'REPAIR' | 'SALE' | 'ADJUSTMENT';
+export type TransactionType = 'INCOMING' | 'REPAIR' | 'SALE' | 'ADJUSTMENT' | 'BREAKDOWN';
+
+export type ComponentType = 'A Cover' | 'B Cover' | 'C Cover' | 'D Cover' | 'Screen' | 'Motherboard' | 'Battery' | 'Keyboard' | 'RAM' | 'SSD' | 'Speaker';
+
+export type ComponentCounts = {
+  [key in ComponentType]: number;
+};
+
+export interface ComponentModelStock {
+  brand: string;
+  series: string;
+  model: string;
+  counts: ComponentCounts;
+}
+
+export interface ComponentStock {
+  items: ComponentModelStock[];
+  lastUpdated: string;
+}
+
+export type ComponentTransactionType = 'BREAKDOWN' | 'INCOMING' | 'SALE' | 'ADJUSTMENT';
+
+export interface ComponentTransaction {
+  id?: string;
+  type: ComponentTransactionType;
+  brand: string;
+  series: string;
+  model: string;
+  fromClass?: LaptopClass; // For BREAKDOWN
+  laptopQuantity?: number; // For BREAKDOWN
+  componentChanges: Partial<Record<ComponentType, number>>;
+  timestamp: string;
+  userId: string;
+  notes?: string;
+}
 
 export interface Transaction {
   id?: string;
@@ -49,4 +83,7 @@ export interface UserProfile {
   status: 'pending' | 'approved' | 'rejected';
   role: 'admin' | 'user';
   createdAt: string;
+  isUltimateAdmin?: boolean;
+  isOriginalAdmin?: boolean;
+  notifiedApproved?: boolean;
 }

@@ -12,13 +12,14 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && 
-             (request.auth.token.email == "admin@repair.ledger" || 
+             (request.auth.token.email == "nayzinminlwin22@gmail.com" || 
               isUltimateAdmin());
     }
 
     function isOriginalAdmin() {
       return isAuthenticated() && 
-             (request.auth.token.email == "tpl.pauline.pts2026@gmail.com" || 
+             (request.auth.token.email == "nayzinminlwin22@gmail.com" || 
+              request.auth.token.email == "tpl.pauline.pts2026@gmail.com" || 
               (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
                get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isOriginalAdmin', false) == true));
     }
@@ -51,7 +52,7 @@ service cloud.firestore {
     }
 
     function isValidClass(className) {
-      return className in ['A', 'B', 'B-', 'C', 'C-', 'D', 'UNCLASSIFIED'];
+      return className in ['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', 'C5', 'D', 'Spoiled', 'UNCLASSIFIED'];
     }
 
     function validString(val, maxLen) {
@@ -63,13 +64,17 @@ service cloud.firestore {
              modelStock.keys().hasAll(['model', 'counts']) &&
              validString(modelStock.model, 100) &&
              modelStock.counts is map &&
-             modelStock.counts.keys().hasAll(['A', 'B', 'B-', 'C', 'C-', 'D', 'UNCLASSIFIED']) &&
+             modelStock.counts.keys().hasAll(['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', 'C5', 'D', 'Spoiled', 'UNCLASSIFIED']) &&
              modelStock.counts['A'] is number &&
              modelStock.counts['B'] is number &&
              modelStock.counts['B-'] is number &&
-             modelStock.counts['C'] is number &&
-             modelStock.counts['C-'] is number &&
+             modelStock.counts['C1'] is number &&
+             modelStock.counts['C2'] is number &&
+             modelStock.counts['C3'] is number &&
+             modelStock.counts['C4'] is number &&
+             modelStock.counts['C5'] is number &&
              modelStock.counts['D'] is number &&
+             modelStock.counts['Spoiled'] is number &&
              modelStock.counts['UNCLASSIFIED'] is number;
     }
 
@@ -94,7 +99,7 @@ service cloud.firestore {
 
     function isValidTransaction(data) {
       return data.keys().hasAll(['type', 'batchId', 'model', 'quantity', 'timestamp', 'userId']) &&
-             data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT'] &&
+             data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT', 'BREAKDOWN'] &&
              validString(data.batchId, 50) &&
              validString(data.model, 100) &&
              (!('brand' in data) || validString(data.brand, 100)) &&
@@ -106,6 +111,21 @@ service cloud.firestore {
              (!('notes' in data) || validString(data.notes, 500)) &&
              (!('fromClass' in data) || isValidClass(data.fromClass)) &&
              (!('toClass' in data) || isValidClass(data.toClass));
+    }
+
+    function isValidComponentTransaction(data) {
+      return data.keys().hasAll(['type', 'brand', 'series', 'model', 'fromClass', 'laptopQuantity', 'componentChanges', 'timestamp', 'userId']) &&
+             data.type == 'BREAKDOWN' &&
+             validString(data.brand, 100) &&
+             validString(data.series, 100) &&
+             validString(data.model, 100) &&
+             isValidClass(data.fromClass) &&
+             data.laptopQuantity is number &&
+             data.laptopQuantity >= 0 &&
+             data.componentChanges is map &&
+             data.timestamp is string &&
+             data.userId == request.auth.uid &&
+             (!('notes' in data) || validString(data.notes, 500));
     }
 
     // ===============================================================
@@ -132,6 +152,11 @@ service cloud.firestore {
       allow write: if isAdmin() || (isApproved() && isValidStock(request.resource.data));
     }
 
+    match /components/current {
+      allow read: if isApproved();
+      allow write: if isAdmin() || (isApproved() && isValidStock(request.resource.data)); // Reusing isValidStock for ComponentStock structure
+    }
+
     match /batches/{batchId} {
       allow read: if isApproved();
       allow create, update: if isAdmin() || (isApproved() && isValidBatch(request.resource.data));
@@ -141,6 +166,12 @@ service cloud.firestore {
     match /transactions/{transactionId} {
       allow read: if isApproved();
       allow create: if isAdmin() || (isApproved() && isValidTransaction(request.resource.data));
+      allow update, delete: if isAdmin();
+    }
+
+    match /component_transactions/{transactionId} {
+      allow read: if isApproved();
+      allow create: if isAdmin() || (isApproved() && isValidComponentTransaction(request.resource.data));
       allow update, delete: if isAdmin();
     }
   }
