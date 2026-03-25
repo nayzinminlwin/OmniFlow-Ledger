@@ -115,7 +115,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
           </div>
         ) : selectedBatchId ? (
           <div className="glass-panel rounded-[32px] overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto custom-scrollbar pb-4">
               <table className="w-full text-left border-collapse whitespace-nowrap">
                 <thead>
                   <tr className="border-b border-black/5 bg-black/[0.02]">
@@ -179,7 +179,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
         <div className="px-8 py-6 border-b border-black/5 bg-black/[0.02]">
           <h2 className="text-[22px] font-bold text-black tracking-tight">{t.allBatchesSummary}</h2>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto custom-scrollbar pb-4">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-black/[0.02]">

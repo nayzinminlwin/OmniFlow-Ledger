@@ -110,18 +110,18 @@ service cloud.firestore {
              data.userId == request.auth.uid &&
              (!('notes' in data) || validString(data.notes, 500)) &&
              (!('fromClass' in data) || isValidClass(data.fromClass)) &&
-             (!('toClass' in data) || isValidClass(data.toClass));
+             (!('toClass' in data) || isValidClass(data.toClass)) &&
+             (!('componentChanges' in data) || data.componentChanges is map);
     }
 
     function isValidComponentTransaction(data) {
-      return data.keys().hasAll(['type', 'brand', 'series', 'model', 'fromClass', 'laptopQuantity', 'componentChanges', 'timestamp', 'userId']) &&
-             data.type == 'BREAKDOWN' &&
+      return data.keys().hasAll(['type', 'brand', 'series', 'model', 'componentChanges', 'timestamp', 'userId']) &&
+             data.type in ['BREAKDOWN', 'INCOMING', 'SALE', 'ADJUSTMENT'] &&
              validString(data.brand, 100) &&
              validString(data.series, 100) &&
              validString(data.model, 100) &&
-             isValidClass(data.fromClass) &&
-             data.laptopQuantity is number &&
-             data.laptopQuantity >= 0 &&
+             (!('fromClass' in data) || isValidClass(data.fromClass)) &&
+             (!('laptopQuantity' in data) || data.laptopQuantity is number) &&
              data.componentChanges is map &&
              data.timestamp is string &&
              data.userId == request.auth.uid &&
@@ -155,6 +155,11 @@ service cloud.firestore {
     match /components/current {
       allow read: if isApproved();
       allow write: if isAdmin() || (isApproved() && isValidStock(request.resource.data)); // Reusing isValidStock for ComponentStock structure
+    }
+
+    match /components/spoiled {
+      allow read: if isApproved();
+      allow write: if isAdmin() || (isApproved() && isValidStock(request.resource.data));
     }
 
     match /batches/{batchId} {

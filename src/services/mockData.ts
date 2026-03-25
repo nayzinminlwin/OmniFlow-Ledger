@@ -1,12 +1,15 @@
-import { Stock, Transaction, Batch, UserProfile } from '../types';
-import { INITIAL_STOCK } from '../constants';
+import { Stock, Transaction, Batch, UserProfile, ComponentStock, ComponentTransaction } from '../types';
+import { INITIAL_STOCK, INITIAL_COMPONENT_STOCK } from '../constants';
 
 const STORAGE_KEY = 'repair_ledger_data';
 
 interface LocalData {
   stock: Stock;
+  componentStock: ComponentStock;
+  spoiledComponentStock: ComponentStock;
   batches: Batch[];
   transactions: Transaction[];
+  componentTransactions: ComponentTransaction[];
   users: Record<string, UserProfile>;
 }
 
@@ -14,15 +17,23 @@ const getInitialData = (): LocalData => {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
-      return JSON.parse(saved);
+      const data = JSON.parse(saved);
+      // Ensure new fields exist for backward compatibility
+      if (!data.componentStock) data.componentStock = INITIAL_COMPONENT_STOCK;
+      if (!data.spoiledComponentStock) data.spoiledComponentStock = INITIAL_COMPONENT_STOCK;
+      if (!data.componentTransactions) data.componentTransactions = [];
+      return data;
     } catch (e) {
       console.error('Failed to parse local data', e);
     }
   }
   return {
     stock: INITIAL_STOCK,
+    componentStock: INITIAL_COMPONENT_STOCK,
+    spoiledComponentStock: INITIAL_COMPONENT_STOCK,
     batches: [],
     transactions: [],
+    componentTransactions: [],
     users: {
       'mock-admin': {
         uid: 'mock-admin',
@@ -46,12 +57,25 @@ const saveData = () => {
 
 export const mockService = {
   getStock: () => localData.stock,
+  getComponentStock: () => localData.componentStock,
+  getSpoiledComponentStock: () => localData.spoiledComponentStock,
   getBatches: () => localData.batches,
   getTransactions: () => localData.transactions,
+  getComponentTransactions: () => localData.componentTransactions,
   getUsers: () => localData.users,
   
   updateStock: (newStock: Stock) => {
     localData.stock = newStock;
+    saveData();
+  },
+
+  updateComponentStock: (newStock: ComponentStock) => {
+    localData.componentStock = newStock;
+    saveData();
+  },
+
+  updateSpoiledComponentStock: (newStock: ComponentStock) => {
+    localData.spoiledComponentStock = newStock;
     saveData();
   },
   
@@ -67,6 +91,11 @@ export const mockService = {
   
   addTransaction: (tx: Transaction) => {
     localData.transactions.unshift(tx);
+    saveData();
+  },
+
+  addComponentTransaction: (tx: ComponentTransaction) => {
+    localData.componentTransactions.unshift(tx);
     saveData();
   },
   

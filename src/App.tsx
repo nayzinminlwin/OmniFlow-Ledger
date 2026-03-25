@@ -47,7 +47,7 @@ export default function App() {
   
   const isApproved = profile?.status === 'approved' || isUltimateAdmin;
 
-  const { stock, componentStock, batches, transactions, componentTransactions, users, loading, error: invError, setError: setInvError } = useInventory(user, isAuthReady, lang, isApproved);
+  const { stock, componentStock, spoiledComponentStock, batches, transactions, componentTransactions, users, loading, error: invError, setError: setInvError } = useInventory(user, isAuthReady, lang, isApproved);
   const { 
     handleAddTransaction, 
     handleRenameBatch, 
@@ -215,6 +215,9 @@ export default function App() {
 
           <ComponentInventory
             componentStock={componentStock}
+            spoiledComponentStock={spoiledComponentStock}
+            componentTransactions={componentTransactions}
+            users={users}
             t={t}
             activeTab={activeTab}
           />

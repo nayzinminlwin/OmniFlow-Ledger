@@ -12,7 +12,7 @@ import {
 import { User } from 'firebase/auth';
 import { db } from '../firebase';
 import { Stock, TransactionType, Batch, LaptopClass, ModelStock, Transaction, ComponentType, ComponentModelStock, ComponentStock } from '../types';
-import { INITIAL_CLASS_COUNTS, INITIAL_COMPONENT_COUNTS, INITIAL_COMPONENT_STOCK } from '../constants';
+import { COMPONENTS, INITIAL_CLASS_COUNTS, INITIAL_COMPONENT_COUNTS, INITIAL_COMPONENT_STOCK } from '../constants';
 import { translations, Language } from '../translations';
 import { mockService } from '../services/mockData';
 
@@ -526,8 +526,55 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         globalModel.counts[fromClass] -= laptopQuantity;
         globalStock.lastUpdated = new Date().toISOString();
         
+        const compStock = mockService.getComponentStock();
+        const spoiledCompStock = mockService.getSpoiledComponentStock();
+        const compModel = getComponentModelStock(compStock.items, brand, series, model);
+        const spoiledCompModel = getComponentModelStock(spoiledCompStock.items, brand, series, model);
+
+        COMPONENTS.forEach(comp => {
+          const goodQty = componentChanges[comp] || 0;
+          const spoiledQty = laptopQuantity - goodQty;
+          compModel.counts[comp] = (compModel.counts[comp] || 0) + goodQty;
+          spoiledCompModel.counts[comp] = (spoiledCompModel.counts[comp] || 0) + spoiledQty;
+        });
+
+        compStock.lastUpdated = new Date().toISOString();
+        spoiledCompStock.lastUpdated = new Date().toISOString();
+
         mockService.updateStock(globalStock);
         mockService.updateBatch(currentBatch);
+        mockService.updateComponentStock(compStock);
+        mockService.updateSpoiledComponentStock(spoiledCompStock);
+
+        mockService.addComponentTransaction({
+          id: `mock-comp-tx-${Date.now()}`,
+          type: 'BREAKDOWN',
+          brand,
+          series,
+          model,
+          fromClass,
+          laptopQuantity,
+          componentChanges,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes
+        });
+
+        mockService.addTransaction({
+          id: `mock-tx-${Date.now()}`,
+          type: 'BREAKDOWN',
+          batchId,
+          brand,
+          series,
+          model,
+          fromClass,
+          toClass: 'UNCLASSIFIED',
+          quantity: laptopQuantity,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes: `Broken down into components: ${notes}`,
+          componentChanges
+        });
 
         setSuccess(t.breakdownSuccess);
         return true;
@@ -536,10 +583,12 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
       await runTransaction(db, async (transaction) => {
         const globalStockRef = doc(db, 'inventory', 'current');
         const compStockRef = doc(db, 'components', 'current');
+        const spoiledCompStockRef = doc(db, 'components', 'spoiled');
         const batchRef = doc(db, 'batches', batchId);
         
         const globalStockDoc = await transaction.get(globalStockRef);
         const compStockDoc = await transaction.get(compStockRef);
+        const spoiledCompStockDoc = await transaction.get(spoiledCompStockRef);
         const batchDoc = await transaction.get(batchRef);
 
         if (!globalStockDoc.exists()) {
@@ -569,12 +618,23 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         globalData.lastUpdated = new Date().toISOString();
 
         let compData = compStockDoc.exists() ? compStockDoc.data() as ComponentStock : { ...INITIAL_COMPONENT_STOCK };
+        let spoiledCompData = spoiledCompStockDoc.exists() ? spoiledCompStockDoc.data() as ComponentStock : { ...INITIAL_COMPONENT_STOCK };
+        
         const compModel = getComponentModelStock(compData.items, brand, series, model);
+        const spoiledCompModel = getComponentModelStock(spoiledCompData.items, brand, series, model);
 
-        Object.entries(componentChanges).forEach(([comp, qty]) => {
-          compModel.counts[comp as ComponentType] = (compModel.counts[comp as ComponentType] || 0) + qty;
+        // All components from the breakdown are accounted for:
+        // Either they are "good" (in componentChanges) or they are "spoiled" (laptopQuantity - goodQuantity)
+        COMPONENTS.forEach(comp => {
+          const goodQty = componentChanges[comp] || 0;
+          const spoiledQty = laptopQuantity - goodQty;
+          
+          compModel.counts[comp] = (compModel.counts[comp] || 0) + goodQty;
+          spoiledCompModel.counts[comp] = (spoiledCompModel.counts[comp] || 0) + spoiledQty;
         });
+
         compData.lastUpdated = new Date().toISOString();
+        spoiledCompData.lastUpdated = new Date().toISOString();
 
         // Record the component transaction
         const compTxRef = doc(collection(db, 'component_transactions'));
@@ -604,12 +664,14 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
           quantity: laptopQuantity,
           timestamp: new Date().toISOString(),
           userId: user.uid,
-          notes: `Broken down into components: ${notes}`
+          notes: `Broken down into components: ${notes}`,
+          componentChanges
         };
 
         transaction.set(globalStockRef, globalData);
         transaction.set(batchRef, batchData);
         transaction.set(compStockRef, compData);
+        transaction.set(spoiledCompStockRef, spoiledCompData);
         transaction.set(compTxRef, compTxData);
         transaction.set(laptopTxRef, laptopTxData);
       });
@@ -625,5 +687,249 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
     }
   };
 
-  return { handleAddTransaction, handleRenameBatch, handleDeleteBatch, recordComponentBreakdown, isSubmitting, isRenaming, error, setError, success, setSuccess };
+  const recordComponentPurchase = async ({
+    brand,
+    series,
+    model,
+    componentChanges,
+    notes
+  }: {
+    brand: string;
+    series: string;
+    model: string;
+    componentChanges: Partial<Record<ComponentType, number>>;
+    notes: string;
+  }) => {
+    if (!user || !brand.trim() || !series.trim() || !model.trim()) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      if (isMockMode) {
+        const compStock = mockService.getComponentStock();
+        const compModel = getComponentModelStock(compStock.items, brand, series, model);
+        
+        Object.entries(componentChanges).forEach(([comp, qty]) => {
+          compModel.counts[comp as ComponentType] = (compModel.counts[comp as ComponentType] || 0) + (qty || 0);
+        });
+        
+        compStock.lastUpdated = new Date().toISOString();
+        mockService.updateComponentStock(compStock);
+
+        mockService.addComponentTransaction({
+          id: `mock-comp-tx-${Date.now()}`,
+          type: 'PURCHASE',
+          brand,
+          series,
+          model,
+          componentChanges,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes
+        });
+
+        // Also record in main ledger for visibility
+        mockService.addTransaction({
+          id: `mock-tx-${Date.now()}`,
+          type: 'PURCHASE',
+          batchId: 'COMPONENTS',
+          brand,
+          series,
+          model,
+          quantity: 0,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes: `Purchased components: ${notes}`,
+          componentChanges
+        });
+
+        setSuccess(t.purchaseSuccess);
+        return true;
+      }
+
+      await runTransaction(db, async (transaction) => {
+        const compStockRef = doc(db, 'components', 'current');
+        const compStockDoc = await transaction.get(compStockRef);
+
+        let compData = compStockDoc.exists() ? compStockDoc.data() as ComponentStock : { ...INITIAL_COMPONENT_STOCK };
+        const compModel = getComponentModelStock(compData.items, brand, series, model);
+
+        Object.entries(componentChanges).forEach(([comp, qty]) => {
+          compModel.counts[comp as ComponentType] = (compModel.counts[comp as ComponentType] || 0) + (qty || 0);
+        });
+
+        compData.lastUpdated = new Date().toISOString();
+
+        const compTxRef = doc(collection(db, 'component_transactions'));
+        const compTxData = {
+          type: 'PURCHASE',
+          brand,
+          series,
+          model,
+          componentChanges,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes
+        };
+
+        // Also record in main ledger for visibility
+        const laptopTxRef = doc(collection(db, 'transactions'));
+        const laptopTxData = {
+          type: 'PURCHASE',
+          batchId: 'COMPONENTS',
+          brand,
+          series,
+          model,
+          quantity: 0,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes: `Purchased components: ${notes}`,
+          componentChanges
+        };
+
+        transaction.set(compStockRef, compData);
+        transaction.set(compTxRef, compTxData);
+        transaction.set(laptopTxRef, laptopTxData);
+      });
+
+      setSuccess(t.purchaseSuccess);
+      return true;
+    } catch (err: any) {
+      console.error('Purchase failed:', err);
+      setError(err.message || t.purchaseFailed);
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const recordComponentInstallation = async ({
+    brand,
+    series,
+    model,
+    componentChanges,
+    notes
+  }: {
+    brand: string;
+    series: string;
+    model: string;
+    componentChanges: Partial<Record<ComponentType, number>>;
+    notes: string;
+  }) => {
+    if (!user || !brand.trim() || !series.trim() || !model.trim()) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      if (isMockMode) {
+        const compStock = mockService.getComponentStock();
+        const compModel = getComponentModelStock(compStock.items, brand, series, model);
+        
+        Object.entries(componentChanges).forEach(([comp, qty]) => {
+          const currentQty = compModel.counts[comp as ComponentType] || 0;
+          if (currentQty < (qty || 0)) {
+            throw new Error(t.insufficientComponentStock(t[comp] || comp));
+          }
+          compModel.counts[comp as ComponentType] = currentQty - (qty || 0);
+        });
+        
+        compStock.lastUpdated = new Date().toISOString();
+        mockService.updateComponentStock(compStock);
+
+        mockService.addComponentTransaction({
+          id: `mock-comp-tx-${Date.now()}`,
+          type: 'INSTALL',
+          brand,
+          series,
+          model,
+          componentChanges,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes
+        });
+
+        // Also record in main ledger for visibility
+        mockService.addTransaction({
+          id: `mock-tx-${Date.now()}`,
+          type: 'INSTALL',
+          batchId: 'COMPONENTS',
+          brand,
+          series,
+          model,
+          quantity: 0,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes: `Installed components: ${notes}`,
+          componentChanges
+        });
+
+        setSuccess(t.installSuccess);
+        return true;
+      }
+
+      await runTransaction(db, async (transaction) => {
+        const compStockRef = doc(db, 'components', 'current');
+        const compStockDoc = await transaction.get(compStockRef);
+
+        let compData = compStockDoc.exists() ? compStockDoc.data() as ComponentStock : { ...INITIAL_COMPONENT_STOCK };
+        const compModel = getComponentModelStock(compData.items, brand, series, model);
+
+        Object.entries(componentChanges).forEach(([comp, qty]) => {
+          const currentQty = compModel.counts[comp as ComponentType] || 0;
+          if (currentQty < (qty || 0)) {
+            throw new Error(t.insufficientComponentStock(t[comp] || comp));
+          }
+          compModel.counts[comp as ComponentType] = currentQty - (qty || 0);
+        });
+
+        compData.lastUpdated = new Date().toISOString();
+
+        const compTxRef = doc(collection(db, 'component_transactions'));
+        const compTxData = {
+          type: 'INSTALL',
+          brand,
+          series,
+          model,
+          componentChanges,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes
+        };
+
+        // Also record in main ledger for visibility
+        const laptopTxRef = doc(collection(db, 'transactions'));
+        const laptopTxData = {
+          type: 'INSTALL',
+          batchId: 'COMPONENTS',
+          brand,
+          series,
+          model,
+          quantity: 0,
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes: `Installed components: ${notes}`,
+          componentChanges
+        };
+
+        transaction.set(compStockRef, compData);
+        transaction.set(compTxRef, compTxData);
+        transaction.set(laptopTxRef, laptopTxData);
+      });
+
+      setSuccess(t.installSuccess);
+      return true;
+    } catch (err: any) {
+      console.error('Installation failed:', err);
+      setError(err.message || t.installFailed);
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { handleAddTransaction, handleRenameBatch, handleDeleteBatch, recordComponentBreakdown, recordComponentPurchase, recordComponentInstallation, isSubmitting, isRenaming, error, setError, success, setSuccess };
 }

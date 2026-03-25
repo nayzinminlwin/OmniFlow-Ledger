@@ -157,7 +157,21 @@ export const translations = {
     componentChanges: 'Component Changes',
     addComponent: 'Add Component',
     remove: 'Remove',
-    breakdownNotes: (qty: number, fromClass: string) => `Broken down ${qty} laptops from ${fromClass}`
+    breakdownNotes: (qty: number, fromClass: string) => `Broken down ${qty} laptops from ${fromClass}`,
+    spoiledComponents: 'Spoiled Components',
+    goodComponents: 'Good Components',
+    buyComponents: 'Buy Components',
+    purchase: 'Purchase',
+    purchaseSuccess: 'Component purchase recorded successfully!',
+    purchaseFailed: 'Failed to record component purchase.',
+    extractFromLaptop: 'Extract from Laptop',
+    buy: 'Buy',
+    install: 'Install',
+    installComponents: 'Install Components',
+    installSuccess: 'Component installation recorded successfully!',
+    installFailed: 'Failed to record component installation!',
+    insufficientComponentStock: (comp: string) => `Insufficient stock for component: ${comp}`,
+    mode: 'Mode'
   },
   ms: {
     brand: 'Lejar Pembaikan Pro',
@@ -315,7 +329,21 @@ export const translations = {
     componentChanges: 'Perubahan Komponen',
     addComponent: 'Tambah Komponen',
     remove: 'Buang',
-    breakdownNotes: (qty: number, fromClass: string) => `Memecahkan ${qty} komputer riba dari ${fromClass}`
+    breakdownNotes: (qty: number, fromClass: string) => `Memecahkan ${qty} komputer riba dari ${fromClass}`,
+    spoiledComponents: 'Komponen Rosak',
+    goodComponents: 'Komponen Elok',
+    buyComponents: 'Beli Komponen',
+    purchase: 'Pembelian',
+    purchaseSuccess: 'Pembelian komponen berjaya direkodkan!',
+    purchaseFailed: 'Gagal merekodkan pembelian komponen.',
+    extractFromLaptop: 'Ambil dari Komputer Riba',
+    buy: 'Beli',
+    install: 'Pasang',
+    installComponents: 'Pasang Komponen',
+    installSuccess: 'Pemasangan komponen berjaya direkodkan!',
+    installFailed: 'Gagal merekodkan pemasangan komponen!',
+    insufficientComponentStock: (comp: string) => `Stok tidak mencukupi untuk komponen: ${comp}`,
+    mode: 'Mod'
   },
   zh: {
     brand: '专业维修分类账',
@@ -473,6 +501,20 @@ export const translations = {
     componentChanges: '组件变更',
     addComponent: '添加组件',
     remove: '移除',
-    breakdownNotes: (qty: number, fromClass: string) => `从 ${fromClass} 拆解了 ${qty} 台笔记本`
+    breakdownNotes: (qty: number, fromClass: string) => `从 ${fromClass} 拆解了 ${qty} 台笔记本`,
+    spoiledComponents: '损坏组件',
+    goodComponents: '完好组件',
+    buyComponents: '购买组件',
+    purchase: '购买',
+    purchaseSuccess: '组件购买记录成功！',
+    purchaseFailed: '组件购买记录失败。',
+    extractFromLaptop: '从笔记本拆解',
+    buy: '购买',
+    install: '安装',
+    installComponents: '安装组件',
+    installSuccess: '组件安装记录成功！',
+    installFailed: '组件安装记录失败！',
+    insufficientComponentStock: (comp: string) => `组件库存不足: ${comp}`,
+    mode: '模式'
   }
 };

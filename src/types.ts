@@ -24,7 +24,7 @@ export interface Batch {
   active?: boolean;
 }
 
-export type TransactionType = 'INCOMING' | 'REPAIR' | 'SALE' | 'ADJUSTMENT' | 'BREAKDOWN';
+export type TransactionType = 'INCOMING' | 'REPAIR' | 'SALE' | 'ADJUSTMENT' | 'BREAKDOWN' | 'PURCHASE' | 'INSTALL';
 
 export type ComponentType = 'A Cover' | 'B Cover' | 'C Cover' | 'D Cover' | 'Screen' | 'Motherboard' | 'Battery' | 'Keyboard' | 'RAM' | 'SSD' | 'Speaker';
 
@@ -44,7 +44,7 @@ export interface ComponentStock {
   lastUpdated: string;
 }
 
-export type ComponentTransactionType = 'BREAKDOWN' | 'INCOMING' | 'SALE' | 'ADJUSTMENT';
+export type ComponentTransactionType = 'BREAKDOWN' | 'INCOMING' | 'SALE' | 'ADJUSTMENT' | 'PURCHASE' | 'INSTALL';
 
 export interface ComponentTransaction {
   id?: string;
@@ -74,6 +74,7 @@ export interface Transaction {
   timestamp: string;
   userId: string;
   notes?: string;
+  componentChanges?: Partial<Record<ComponentType, number>>;
 }
 
 export interface UserProfile {

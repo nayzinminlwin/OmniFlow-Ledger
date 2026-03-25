@@ -172,6 +172,10 @@
       "schema": "ComponentStock",
       "description": "The single source of truth for global component stock levels."
     },
+    "/components/spoiled": {
+      "schema": "ComponentStock",
+      "description": "The single source of truth for spoiled component stock levels."
+    },
     "/component_transactions/{transactionId}": {
       "schema": "ComponentTransaction",
       "description": "Historical log of all component stock movements."

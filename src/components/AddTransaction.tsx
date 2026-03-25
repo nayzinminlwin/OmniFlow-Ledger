@@ -39,7 +39,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
   const [isNewModel, setIsNewModel] = useState(() => localStorage.getItem('last_isNewModel') === 'true');
   const [fromClass, setFromClass] = useState<LaptopClass>('D');
   const [toClass, setToClass] = useState<LaptopClass>('A');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | ''>(1);
   const [notes, setNotes] = useState('');
 
   // Persist values to localStorage
@@ -165,7 +165,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!brand.trim() || !series.trim() || !model.trim()) return;
-    const success = await onAddTransaction(txType, batchId, brand.trim(), series.trim(), model.trim(), fromClass, toClass, quantity, notes);
+    const success = await onAddTransaction(txType, batchId, brand.trim(), series.trim(), model.trim(), fromClass, toClass, Number(quantity), notes);
     if (success) {
       // Reset only quantity and notes, keeping batch and model info for faster workflow
       setQuantity(1);
@@ -392,10 +392,21 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 </label>
                 <input
                   type="number"
-                  min={txType === 'ADJUSTMENT' ? "0" : "1"}
                   value={quantity}
-                  onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+                  onKeyDown={(e) => {
+                    if (['-', 'e', 'E', '.', ','].includes(e.key)) e.preventDefault();
+                  }}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '') {
+                      setQuantity('');
+                    } else {
+                      const parsed = parseInt(val);
+                      if (!isNaN(parsed)) setQuantity(parsed);
+                    }
+                  }}
                   className="ios-input w-full"
+                  placeholder="0"
                   required
                 />
               </div>
@@ -412,10 +423,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
 
             <button
               type="submit"
-              disabled={isSubmitting || isFromStockEmpty}
+              disabled={isSubmitting || isFromStockEmpty || !quantity || Number(quantity) <= 0}
               className={cn(
                 "ios-button w-full py-5 text-[19px] mt-4",
-                isFromStockEmpty && "opacity-50 cursor-not-allowed bg-gray-400"
+                (isFromStockEmpty || !quantity || Number(quantity) <= 0) && "opacity-50 cursor-not-allowed bg-gray-400"
               )}
             >
               {isSubmitting ? <RefreshCw className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}

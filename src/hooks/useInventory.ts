@@ -22,6 +22,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
   const [batches, setBatches] = useState<Batch[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [componentStock, setComponentStock] = useState<ComponentStock | null>(null);
+  const [spoiledComponentStock, setSpoiledComponentStock] = useState<ComponentStock | null>(null);
   const [componentTransactions, setComponentTransactions] = useState<ComponentTransaction[]>([]);
   const [users, setUsers] = useState<Record<string, UserProfile>>({});
   const [loadingStates, setLoadingStates] = useState({
@@ -29,6 +30,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
     batches: true,
     transactions: true,
     componentStock: true,
+    spoiledComponentStock: true,
     componentTransactions: true,
     users: true
   });
@@ -69,15 +71,25 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       setStock(mockService.getStock());
       setBatches(mockService.getBatches().filter(b => b.active !== false));
       setTransactions(mockService.getTransactions().filter(tx => tx.batchActive !== false));
-      setComponentStock(INITIAL_COMPONENT_STOCK);
-      setComponentTransactions([]);
+      setComponentStock(mockService.getComponentStock());
+      setSpoiledComponentStock(mockService.getSpoiledComponentStock());
+      setComponentTransactions(mockService.getComponentTransactions());
       setUsers(mockService.getUsers());
-      setLoadingStates({ stock: false, batches: false, transactions: false, users: false, componentStock: false, componentTransactions: false });
+      setLoadingStates({ 
+        stock: false, 
+        batches: false, 
+        transactions: false, 
+        users: false, 
+        componentStock: false, 
+        spoiledComponentStock: false,
+        componentTransactions: false 
+      });
       return;
     }
 
     const stockRef = doc(db, 'inventory', 'current');
     const compStockRef = doc(db, 'components', 'current');
+    const spoiledCompStockRef = doc(db, 'components', 'spoiled');
     const txQuery = query(collection(db, 'transactions'), orderBy('timestamp', 'desc'), limit(50));
     const compTxQuery = query(collection(db, 'component_transactions'), orderBy('timestamp', 'desc'), limit(50));
     const batchesQuery = query(collection(db, 'batches'), orderBy('createdAt', 'desc'));
@@ -105,6 +117,18 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
     }, (err) => {
       handleFirestoreError(err, OperationType.GET, 'components/current');
       setLoadingStates(prev => ({ ...prev, componentStock: false }));
+    });
+
+    const unsubSpoiledCompStock = onSnapshot(spoiledCompStockRef, { includeMetadataChanges: true }, (snapshot: any) => {
+      if (snapshot.exists()) {
+        setSpoiledComponentStock(snapshot.data() as ComponentStock);
+      } else {
+        setSpoiledComponentStock(null);
+      }
+      setLoadingStates(prev => ({ ...prev, spoiledComponentStock: false }));
+    }, (err) => {
+      handleFirestoreError(err, OperationType.GET, 'components/spoiled');
+      setLoadingStates(prev => ({ ...prev, spoiledComponentStock: false }));
     });
 
     const unsubBatches = onSnapshot(batchesQuery, { includeMetadataChanges: true }, (snapshot) => {
@@ -165,6 +189,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
     return () => {
       unsubStock();
       unsubCompStock();
+      unsubSpoiledCompStock();
       unsubBatches();
       unsubTx();
       unsubCompTx();
@@ -172,5 +197,5 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
     };
   }, [isAuthReady, user, isApproved, isMockMode]);
 
-  return { stock, componentStock, batches, transactions, componentTransactions, users, loading, error, setError };
+  return { stock, componentStock, spoiledComponentStock, batches, transactions, componentTransactions, users, loading, error, setError };
 }

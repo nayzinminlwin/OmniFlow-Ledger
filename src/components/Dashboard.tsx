@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { format } from 'date-fns';
 import { 
   Plus, 
@@ -7,13 +7,17 @@ import {
   ChevronRight, 
   ArrowRightLeft, 
   Settings,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Hammer,
+  Info,
+  X
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Stock, Transaction, LaptopClass, Batch } from '../types';
 import { CLASSES } from '../constants';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface DashboardProps {
   stock: Stock | null;
@@ -34,6 +38,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
   activeTab,
   loading = false
 }) => {
+  const [hoveredTxId, setHoveredTxId] = useState<string | null>(null);
   const models = stock?.items || [];
   
   const getColumnTotal = (cls: LaptopClass) => {
@@ -145,7 +150,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
         </div>
         
         <div className="glass-panel rounded-[32px] overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto custom-scrollbar pb-4">
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead>
                 <tr className="border-b border-black/5 bg-black/[0.02]">
@@ -231,30 +236,112 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
             ))
           ) : (
             transactions.slice(0, 5).map((tx) => (
-              <div key={tx.id} className="px-8 py-5 flex items-center justify-between hover:bg-black/[0.02] transition-colors">
+              <div 
+                key={tx.id} 
+                className="px-8 py-5 flex items-center justify-between hover:bg-black/[0.02] transition-colors group relative cursor-pointer"
+                onClick={() => {
+                  if (tx.type === 'BREAKDOWN') {
+                    setHoveredTxId(hoveredTxId === tx.id ? null : (tx.id || null));
+                  }
+                }}
+              >
               <div className="flex items-center gap-4">
                 <div className={cn(
                   "w-10 h-10 rounded-xl flex items-center justify-center",
                   tx.type === 'INCOMING' && "bg-green-500/10 text-green-600",
                   tx.type === 'SALE' && "bg-orange-500/10 text-orange-600",
                   tx.type === 'REPAIR' && "bg-blue-500/10 text-blue-600",
-                  tx.type === 'ADJUSTMENT' && "bg-gray-500/10 text-gray-600"
+                  tx.type === 'ADJUSTMENT' && "bg-gray-500/10 text-gray-600",
+                  tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-600"
                 )}>
                   {tx.type === 'INCOMING' && <Plus className="w-5 h-5" />}
                   {tx.type === 'SALE' && <Minus className="w-5 h-5" />}
                   {tx.type === 'REPAIR' && <RefreshCw className="w-5 h-5" />}
                   {tx.type === 'ADJUSTMENT' && <Settings className="w-5 h-5" />}
+                  {tx.type === 'BREAKDOWN' && <Hammer className="w-5 h-5" />}
                 </div>
                 <div>
-                  <p className="font-semibold text-[17px] text-black tracking-tight">
+                  <p className="font-semibold text-[17px] text-black tracking-tight flex items-center gap-2">
                     {tx.type === 'REPAIR' ? (
                       tx.fromClass === 'UNCLASSIFIED' ? (
                         <>{t.initClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.toClass)}</>
                       ) : (
                         <>{t.repairPrefix} {getClassName(tx.fromClass)} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.toClass)}</>
                       )
-                    ) : tx.type === 'INCOMING' ? (
-                      <>{t.incomingBatch}</>
+                    ) : tx.type === 'BREAKDOWN' ? (
+                      <span className="flex items-center gap-1.5 relative">
+                        <span className="flex items-center gap-1.5">
+                          {t.breakdown} {t.from} {getClassName(tx.fromClass)}
+                          <Info className="w-3.5 h-3.5 text-purple-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                        </span>
+
+                        <AnimatePresence>
+                          {hoveredTxId === tx.id && (
+                            <>
+                              <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="fixed inset-0 bg-black/5 backdrop-blur-[1px] z-[90] cursor-default"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setHoveredTxId(null);
+                                }}
+                              />
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.9 }}
+                                className="absolute z-[100] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-72 bg-white rounded-[24px] shadow-2xl border border-black/5 p-6 pointer-events-auto cursor-default"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <div className="space-y-5">
+                                  <div className="flex items-center justify-between border-b border-black/5 pb-3">
+                                    <div>
+                                      <h3 className="text-[15px] font-bold text-black tracking-tight leading-none">{t.breakdownDetails}</h3>
+                                      <p className="text-[11px] text-gray-400 font-medium mt-1">{tx.brand} {tx.series}</p>
+                                    </div>
+                                    <button 
+                                      onClick={() => setHoveredTxId(null)}
+                                      className="p-1.5 hover:bg-black/5 rounded-full transition-colors"
+                                    >
+                                      <X className="w-4 h-4 text-gray-400" />
+                                    </button>
+                                  </div>
+                                  
+                                  <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">{t.goodComponents}</span>
+                                      <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">{tx.quantity} {t.laptops}</span>
+                                    </div>
+                                    <div className="grid grid-cols-1 gap-y-2">
+                                      {tx.componentChanges && Object.keys(tx.componentChanges).length > 0 ? (
+                                        Object.entries(tx.componentChanges).map(([comp, count]) => (
+                                          <div key={comp} className="flex items-center justify-between bg-black/[0.02] px-3 py-2 rounded-lg">
+                                            <span className="text-[13px] font-medium text-gray-700">{t[comp] || comp}</span>
+                                            <span className="text-[13px] font-bold text-black">{count}</span>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-center py-2 text-[12px] text-gray-400 italic">
+                                          {t.noComponentsRecorded}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {tx.notes && (
+                                    <div className="pt-3 border-t border-black/5">
+                                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{t.notes}</p>
+                                      <p className="text-[12px] text-gray-600 leading-snug line-clamp-2">{tx.notes}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
+                      </span>
                     ) : (
                       <>{t[tx.type.toLowerCase() as keyof typeof t] || tx.type} {getClassName(tx.toClass || tx.fromClass)}</>
                     )}
@@ -276,11 +363,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
             </div>
           ))
         )}
-        {!loading && transactions.length === 0 && (
-            <div className="px-8 py-12 text-center text-gray-400 text-[15px]">
-              {t.noTransactions}
-            </div>
-          )}
+
         </div>
       </section>
     </div>
