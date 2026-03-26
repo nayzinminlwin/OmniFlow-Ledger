@@ -131,9 +131,6 @@ export const translations = {
     batchDeletionNotes: (batchId: string) => `Batch ${batchId} deleted (soft delete)`,
     ultimateAdmin: 'Ultimate Admin',
     defaultUser: 'User',
-    localMode: 'Local Mode (Demo)',
-    localModeNotice: 'Use local storage for data. No Firebase required. Data will be saved in your browser only.',
-    loginAsMockAdmin: 'Login as Local Admin',
     inventoryByBatch: 'Inventory_By_Batch',
     updateComponents: 'Update Components',
     components: 'Components',
@@ -176,7 +173,8 @@ export const translations = {
     selectClassPlaceholder: 'Select Class',
     deleteBatch: 'Delete Batch',
     dateExample: 'e.g., 16-03-2026',
-    invalidBatchDate: 'Invalid batch date. Please use a real date (DD-MM-YYYY).'
+    invalidBatchDate: 'Invalid batch date. Please use a real date (DD-MM-YYYY).',
+    noBatchesFound: 'No matching batches found'
   },
   ms: {
     brand: 'Lejar Pembaikan Pro',
@@ -308,9 +306,6 @@ export const translations = {
     batchDeletionNotes: (batchId: string) => `Batch ${batchId} dipadam (soft delete)`,
     ultimateAdmin: 'Ultimate Admin',
     defaultUser: 'Pengguna',
-    localMode: 'Mod Tempatan (Demo)',
-    localModeNotice: 'Gunakan storan tempatan untuk data. Tiada Firebase diperlukan. Data akan disimpan dalam pelayar anda sahaja.',
-    loginAsMockAdmin: 'Log Masuk sebagai Admin Tempatan',
     inventoryByBatch: 'Inventori_Mengikut_Batch',
     updateComponents: 'Kemas Kini Komponen',
     components: 'Komponen',
@@ -353,7 +348,8 @@ export const translations = {
     selectClassPlaceholder: 'Pilih Kelas',
     deleteBatch: 'Padam Batch',
     dateExample: 'cth., 16-03-2026',
-    invalidBatchDate: 'Tarikh batch tidak sah. Sila gunakan tarikh sebenar (HH-BB-TTTT).'
+    invalidBatchDate: 'Tarikh batch tidak sah. Sila gunakan tarikh sebenar (HH-BB-TTTT).',
+    noBatchesFound: 'Tiada batch yang sepadan dijumpai'
   },
   zh: {
     brand: '专业维修分类账',
@@ -485,9 +481,6 @@ export const translations = {
     batchDeletionNotes: (batchId: string) => `批次 ${batchId} 已删除 (软删除)`,
     ultimateAdmin: 'Ultimate Admin',
     defaultUser: '用户',
-    localMode: '本地模式 (演示)',
-    localModeNotice: '使用本地存储。无需 Firebase。数据将仅保存在您的浏览器中。',
-    loginAsMockAdmin: '以本地管理员身份登录',
     inventoryByBatch: '按批次库存',
     updateComponents: '更新组件',
     components: '组件',
@@ -530,6 +523,7 @@ export const translations = {
     selectClassPlaceholder: '选择等级',
     deleteBatch: '删除批次',
     dateExample: '例如：16-03-2026',
-    invalidBatchDate: '无效的批次日期。请使用真实的日期 (日-月-年)。'
+    invalidBatchDate: '无效的批次日期。请使用真实的日期 (日-月-年)。',
+    noBatchesFound: '未找到匹配的批次'
   }
 };

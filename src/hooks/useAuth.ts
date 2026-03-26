@@ -11,7 +11,6 @@ import { auth, db } from '../firebase';
 import { Language } from '../translations';
 import { translations } from '../translations';
 import { handleFirestoreError, OperationType } from '../services/firestore';
-import { mockService } from '../services/mockData';
 import { UserProfile } from '../types';
 
 export function useAuth(lang: Language) {
@@ -133,16 +132,8 @@ export function useAuth(lang: Language) {
           handleFirestoreError(err, OperationType.GET, `users/${user.uid}`);
         }
       } else {
-        // Check if we are in mock mode (local storage)
-        const savedUser = localStorage.getItem('repair_ledger_mock_user');
-        if (savedUser) {
-          const mockUser = JSON.parse(savedUser);
-          setUser({ uid: mockUser.uid, email: mockUser.email, emailVerified: true } as any);
-          setProfile(mockUser);
-        } else {
-          setUser(null);
-          setProfile(null);
-        }
+        setUser(null);
+        setProfile(null);
       }
       setIsAuthReady(true);
       setIsLoggingIn(false);
@@ -163,18 +154,7 @@ export function useAuth(lang: Language) {
     }
   };
 
-  const handleMockLogin = () => {
-    setIsLoggingIn(true);
-    const mockUser = mockService.getUsers()['mock-admin'];
-    localStorage.setItem('repair_ledger_mock_user', JSON.stringify(mockUser));
-    setUser({ uid: mockUser.uid, email: mockUser.email, emailVerified: true } as any);
-    setProfile(mockUser);
-    setIsAuthReady(true);
-    setIsLoggingIn(false);
-  };
-
   const handleLogout = () => {
-    localStorage.removeItem('repair_ledger_mock_user');
     setIsAuthReady(false);
     signOut(auth);
   };
@@ -185,7 +165,6 @@ export function useAuth(lang: Language) {
     isAuthReady, 
     isLoggingIn,
     handleGoogleLogin,
-    handleMockLogin,
     handleLogout, 
     error, 
     setError,

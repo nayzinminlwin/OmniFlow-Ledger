@@ -7,6 +7,7 @@ import { useTransactionActions } from '../hooks/useTransactionActions';
 import { cn } from '../lib/utils';
 import { Language } from '../translations';
 import { Toast } from './Toast';
+import { formatBatchId, padBatchId } from '../lib/dateUtils';
 
 interface UpdateComponentsProps {
   stock: Stock | null;
@@ -41,6 +42,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
   const [isNewBrand, setIsNewBrand] = useState(() => localStorage.getItem('comp_last_isNewBrand') === 'true');
   const [isNewSeries, setIsNewSeries] = useState(() => localStorage.getItem('comp_last_isNewSeries') === 'true');
   const [isNewModel, setIsNewModel] = useState(() => localStorage.getItem('comp_last_isNewModel') === 'true');
+  const [isNewBatch, setIsNewBatch] = useState(false);
 
   // Persist values to localStorage
   React.useEffect(() => {
@@ -116,7 +118,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
       source = availableModels;
     } else if (mode === 'install') {
       source = (componentStock?.items || []).filter(m => 
-        Object.values(m.counts).some(count => (count as number) > 0)
+        m.counts && Object.values(m.counts).some(count => (count as number) > 0)
       );
     } else {
       source = allExistingModels;
@@ -131,7 +133,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
       source = availableModels;
     } else if (mode === 'install') {
       source = (componentStock?.items || []).filter(m => 
-        Object.values(m.counts).some(count => (count as number) > 0)
+        m.counts && Object.values(m.counts).some(count => (count as number) > 0)
       );
     } else {
       source = allExistingModels;
@@ -146,7 +148,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
       source = availableModels;
     } else if (mode === 'install') {
       source = (componentStock?.items || []).filter(m => 
-        Object.values(m.counts).some(count => (count as number) > 0)
+        m.counts && Object.values(m.counts).some(count => (count as number) > 0)
       );
     } else {
       source = allExistingModels;
@@ -213,7 +215,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
 
   const availableComponentCount = useMemo(() => {
     if (!selectedComponentModelStock || !selectedComponent) return 0;
-    return selectedComponentModelStock.counts[selectedComponent as ComponentType] || 0;
+    return selectedComponentModelStock?.counts?.[selectedComponent as ComponentType] || 0;
   }, [selectedComponentModelStock, selectedComponent]);
 
   const maxLaptopQuantity = useMemo(() => {
@@ -387,21 +389,58 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">{t.batch}</label>
-                  <select
-                    value={batchId}
-                    onChange={(e) => {
-                      setBatchId(e.target.value);
-                      setBrand('');
-                      setSeries('');
-                      setModel('');
-                      setFromClass('');
-                    }}
-                    className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                    required
-                  >
-                    <option key="placeholder" value="">{t.selectBatchPlaceholder}</option>
-                    {activeBatches.map(b => <option key={b.id || b.batchId} value={b.batchId}>{b.batchId}</option>)}
-                  </select>
+                  {!isNewBatch ? (
+                    <div className="relative">
+                      <select
+                        value={batchId}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '__NEW__') {
+                            setIsNewBatch(true);
+                            setBatchId('');
+                          } else {
+                            setIsNewBatch(false);
+                            setBatchId(val);
+                          }
+                          setBrand('');
+                          setSeries('');
+                          setModel('');
+                          setFromClass('');
+                        }}
+                        className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                        required
+                      >
+                        <option value="">{t.selectBatchPlaceholder}</option>
+                        {activeBatches.map(b => (
+                          <option key={b.id || b.batchId} value={b.batchId}>{b.batchId}</option>
+                        ))}
+                        <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBatch || 'New Batch'}</option>
+                      </select>
+                    </div>
+                  ) : (
+                    <div className="relative flex items-center">
+                      <input
+                        type="text"
+                        placeholder={t.dateExample}
+                        value={batchId}
+                        onChange={(e) => setBatchId(formatBatchId(e.target.value, batchId))}
+                        onBlur={() => setBatchId(prev => padBatchId(prev))}
+                        className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none pr-10"
+                        autoFocus
+                        required
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setIsNewBatch(false);
+                          setBatchId('');
+                        }}
+                        className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -657,7 +696,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     <option value="">{t.selectComponent}</option>
                     {COMPONENTS.map(comp => {
                       if (mode === 'install' && selectedComponentModelStock) {
-                        const count = selectedComponentModelStock.counts[comp as ComponentType] || 0;
+                        const count = selectedComponentModelStock?.counts?.[comp as ComponentType] || 0;
                         if (count <= 0) return null;
                       }
                       return (

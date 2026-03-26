@@ -15,7 +15,6 @@ import { Stock, Transaction, Batch, UserProfile, ComponentStock, ComponentTransa
 import { INITIAL_STOCK, INITIAL_COMPONENT_STOCK } from '../constants';
 import { handleFirestoreError, OperationType } from '../services/firestore';
 import { translations, Language } from '../translations';
-import { mockService } from '../services/mockData';
 
 export function useInventory(user: User | null, isAuthReady: boolean, lang: Language, isApproved: boolean) {
   const [stock, setStock] = useState<Stock | null>(null);
@@ -37,13 +36,11 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
   const [error, setError] = useState<string | null>(null);
   const t = translations[lang];
 
-  const isMockMode = !user || user.uid === 'mock-admin';
-
   const loading = loadingStates.stock || loadingStates.batches || loadingStates.transactions || loadingStates.users || loadingStates.componentStock || loadingStates.componentTransactions;
 
   // Test connection
   useEffect(() => {
-    if (!isAuthReady || !user || !isApproved || isMockMode) return;
+    if (!isAuthReady || !user || !isApproved) return;
     
     async function testConnection() {
       try {
@@ -57,33 +54,13 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       }
     }
     testConnection();
-  }, [isAuthReady, user, isApproved, t.firestoreOffline, isMockMode]);
+  }, [isAuthReady, user, isApproved, t.firestoreOffline]);
 
   useEffect(() => {
     if (!isAuthReady || !user || !isApproved) {
       if (isAuthReady && (!user || !isApproved)) {
         setLoadingStates({ stock: false, batches: false, transactions: false, users: false, componentStock: false, componentTransactions: false });
       }
-      return;
-    }
-
-    if (isMockMode) {
-      setStock(mockService.getStock());
-      setBatches(mockService.getBatches().filter(b => b.active !== false));
-      setTransactions(mockService.getTransactions().filter(tx => tx.batchActive !== false));
-      setComponentStock(mockService.getComponentStock());
-      setSpoiledComponentStock(mockService.getSpoiledComponentStock());
-      setComponentTransactions(mockService.getComponentTransactions());
-      setUsers(mockService.getUsers());
-      setLoadingStates({ 
-        stock: false, 
-        batches: false, 
-        transactions: false, 
-        users: false, 
-        componentStock: false, 
-        spoiledComponentStock: false,
-        componentTransactions: false 
-      });
       return;
     }
 
@@ -195,7 +172,7 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       unsubCompTx();
       unsubUsers();
     };
-  }, [isAuthReady, user, isApproved, isMockMode]);
+  }, [isAuthReady, user, isApproved]);
 
   return { stock, componentStock, spoiledComponentStock, batches, transactions, componentTransactions, users, loading, error, setError };
 }

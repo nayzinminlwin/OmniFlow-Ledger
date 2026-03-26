@@ -35,7 +35,7 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
       </div>
 
       <div className="p-8">
-        {stockItems.length === 0 || !stockItems.some(item => COMPONENTS.some(comp => (item.counts[comp] || 0) > 0)) ? (
+        {stockItems.length === 0 || !stockItems.some(item => COMPONENTS.some(comp => (item.counts?.[comp] || 0) > 0)) ? (
           <div className="text-center py-12 bg-black/[0.02] rounded-2xl border border-black/5">
             <Package className="w-12 h-12 text-gray-300 mx-auto mb-4" />
             <p className="text-[15px] font-medium text-gray-500">{t.noInventoryData}</p>
@@ -60,7 +60,7 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
               </thead>
               <tbody className="divide-y divide-black/5">
                 {stockItems.map((item, idx) => {
-                  const hasAnyStock = COMPONENTS.some(comp => (item.counts[comp] || 0) > 0);
+                  const hasAnyStock = COMPONENTS.some(comp => (item.counts?.[comp] || 0) > 0);
                   if (!hasAnyStock) return null;
 
                   return (
@@ -69,7 +69,7 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
                       <td className="py-4 px-4 text-[15px] text-gray-600 whitespace-nowrap">{item.series}</td>
                       <td className="py-4 px-4 text-[15px] text-gray-600 whitespace-nowrap">{item.model}</td>
                       {COMPONENTS.map(comp => {
-                        const count = item.counts[comp] || 0;
+                        const count = item.counts?.[comp] || 0;
                         return (
                           <td key={comp} className="py-4 px-4 text-center">
                             <span className={cn(
@@ -157,7 +157,7 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
                     <td className="px-8 py-4 text-[14px] text-gray-600">{tx.model}</td>
                     <td className="px-8 py-4">
                       <div className="flex flex-wrap gap-1">
-                        {Object.entries(tx.componentChanges).map(([comp, qty]) => (
+                        {Object.entries(tx.componentChanges || {}).map(([comp, qty]) => (
                           <span key={comp} className="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-[11px] font-medium text-gray-700">
                             {t[comp] || comp}: {qty}
                           </span>

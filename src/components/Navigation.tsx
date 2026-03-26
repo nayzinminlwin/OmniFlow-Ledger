@@ -46,6 +46,19 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
     };
   }, []);
 
+  useEffect(() => {
+    if (scrollRef.current) {
+      const activeElement = scrollRef.current.querySelector('[data-active="true"]');
+      if (activeElement) {
+        activeElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center'
+        });
+      }
+    }
+  }, [activeTab]);
+
   const scroll = (direction: 'left' | 'right') => {
     if (scrollRef.current) {
       const scrollAmount = direction === 'left' ? -200 : 200;
@@ -89,6 +102,7 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
         >
           <button
             onClick={() => setActiveTab('dashboard')}
+            data-active={activeTab === 'dashboard'}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
               activeTab === 'dashboard' ? "bg-white text-black shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-black/5"
@@ -99,6 +113,7 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
           </button>
           <button
             onClick={() => setActiveTab('batches')}
+            data-active={activeTab === 'batches'}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
               activeTab === 'batches' ? "bg-white text-black shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-black/5"
@@ -109,6 +124,7 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
           </button>
           <button
             onClick={() => setActiveTab('add')}
+            data-active={activeTab === 'add'}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
               activeTab === 'add' ? "bg-white text-black shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-black/5"
@@ -119,6 +135,7 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
           </button>
           <button
             onClick={() => setActiveTab('components')}
+            data-active={activeTab === 'components'}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
               activeTab === 'components' ? "bg-white text-black shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-black/5"
@@ -129,6 +146,7 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
           </button>
           <button
             onClick={() => setActiveTab('componentInventory')}
+            data-active={activeTab === 'componentInventory'}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
               activeTab === 'componentInventory' ? "bg-white text-black shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-black/5"
@@ -139,6 +157,7 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
           </button>
           <button
             onClick={() => setActiveTab('history')}
+            data-active={activeTab === 'history'}
             className={cn(
               "flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
               activeTab === 'history' ? "bg-white text-black shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-black/5"
@@ -150,6 +169,7 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
           {isUltimateAdmin && (
             <button
               onClick={() => setActiveTab('users')}
+              data-active={activeTab === 'users'}
               className={cn(
                 "flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
                 activeTab === 'users' ? "bg-white text-black shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-black/5"

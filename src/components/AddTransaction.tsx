@@ -45,6 +45,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
   const [toClass, setToClass] = useState<LaptopClass>('A');
   const [quantity, setQuantity] = useState<number | ''>(1);
   const [notes, setNotes] = useState('');
+  const [isNewBatch, setIsNewBatch] = useState(false);
 
   // Persist values to localStorage
   React.useEffect(() => {
@@ -159,12 +160,18 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
 
   const isFromStockEmpty = (txType === 'REPAIR' || txType === 'SALE') && batchId && brand && series && model && getStockCount(fromClass) <= 0;
 
-  const handleBatchIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setBatchId(formatBatchId(e.target.value, batchId));
+  const handleBatchIdChange = (val: string) => {
+    if (val === '__NEW__') {
+      setIsNewBatch(true);
+      setBatchId('');
+    } else {
+      setIsNewBatch(false);
+      setBatchId(val);
+    }
   };
 
   const handleBatchIdBlur = () => {
-    setBatchId(padBatchId(batchId));
+    setBatchId(prev => padBatchId(prev));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -200,25 +207,42 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
             <div className="space-y-8">
               <div className="space-y-3">
                 <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.batchId}</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <input
-                    type="text"
-                    placeholder={t.dateExample}
-                    value={batchId}
-                    onChange={handleBatchIdChange}
-                    onBlur={handleBatchIdBlur}
-                    className="ios-input w-full"
-                    required
-                  />
-                  <select
-                    onChange={(e) => setBatchId(e.target.value)}
-                    value={batchId}
-                    className="ios-input w-full text-[15px] font-medium"
-                  >
-                    <option key="placeholder" value="">{t.selectExisting}</option>
-                    {batches.map(b => <option key={b.id || b.batchId} value={b.batchId}>{b.batchId}</option>)}
-                  </select>
-                </div>
+                {!isNewBatch ? (
+                  <div className="relative">
+                    <select
+                      value={batchId}
+                      onChange={(e) => handleBatchIdChange(e.target.value)}
+                      className="ios-input w-full pr-10"
+                      required
+                    >
+                      <option value="">{t.selectBatchPlaceholder}</option>
+                      {batches.map(b => (
+                        <option key={b.id || b.batchId} value={b.batchId}>{b.batchId}</option>
+                      ))}
+                      <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBatch || 'New Batch'}</option>
+                    </select>
+                  </div>
+                ) : (
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder={t.dateExample}
+                      value={batchId}
+                      onChange={(e) => setBatchId(formatBatchId(e.target.value, batchId))}
+                      onBlur={handleBatchIdBlur}
+                      className="ios-input w-full pr-10"
+                      autoFocus
+                      required
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => handleBatchIdChange('')}
+                      className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-3">

@@ -33,7 +33,6 @@ export default function App() {
     isAuthReady, 
     isLoggingIn,
     handleGoogleLogin,
-    handleMockLogin,
     handleLogout, 
     error: authError, 
     setError: setAuthError,
@@ -131,27 +130,6 @@ export default function App() {
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
               {t.loginWithGoogle}
             </button>
-
-            <div className="relative py-2">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-100"></div>
-              </div>
-              <div className="relative flex justify-center text-[11px] uppercase tracking-widest">
-                <span className="bg-white px-4 text-gray-400 font-bold">{t.localMode}</span>
-              </div>
-            </div>
-
-            <div className="p-5 bg-blue-50/50 rounded-3xl border border-blue-100/50 space-y-4">
-              <p className="text-[13px] text-blue-600/80 font-medium leading-relaxed text-center">
-                {t.localModeNotice}
-              </p>
-              <button
-                onClick={handleMockLogin}
-                className="w-full py-4 bg-[var(--color-ios-blue)] text-white rounded-2xl text-[16px] font-bold hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-blue-500/20"
-              >
-                {t.loginAsMockAdmin}
-              </button>
-            </div>
 
             <p className="text-center text-[13px] font-medium text-gray-500 leading-relaxed">
               {t.pendingApprovalNotice}
