@@ -325,6 +325,19 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
     }
   };
 
+  const handleModeChange = (newMode: 'extract' | 'buy' | 'install') => {
+    setMode(newMode);
+    setBrand('');
+    setSeries('');
+    setModel('');
+    setNotes('');
+    if (newMode !== 'buy') {
+      setIsNewBrand(false);
+      setIsNewSeries(false);
+      setIsNewModel(false);
+    }
+  };
+
   if (activeTab !== 'components') return null;
 
   return (
@@ -340,13 +353,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
             </div>
             <div className="flex bg-black/5 p-1 rounded-xl">
               <button
-                onClick={() => {
-                  setMode('extract');
-                  setBrand('');
-                  setSeries('');
-                  setModel('');
-                  setNotes('');
-                }}
+                onClick={() => handleModeChange('extract')}
                 className={cn(
                   "px-4 py-2 rounded-lg text-[13px] font-bold transition-all",
                   mode === 'extract' ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-700"
@@ -355,13 +362,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                 {t.extractFromLaptop}
               </button>
               <button
-                onClick={() => {
-                  setMode('buy');
-                  setBrand('');
-                  setSeries('');
-                  setModel('');
-                  setNotes('');
-                }}
+                onClick={() => handleModeChange('buy')}
                 className={cn(
                   "px-4 py-2 rounded-lg text-[13px] font-bold transition-all",
                   mode === 'buy' ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-700"
@@ -370,13 +371,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                 {t.buy}
               </button>
               <button
-                onClick={() => {
-                  setMode('install');
-                  setBrand('');
-                  setSeries('');
-                  setModel('');
-                  setNotes('');
-                }}
+                onClick={() => handleModeChange('install')}
                 className={cn(
                   "px-4 py-2 rounded-lg text-[13px] font-bold transition-all",
                   mode === 'install' ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-700"
@@ -424,7 +419,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                   >
                     <option value="">{t.selectExisting}</option>
                     {brands.map(b => <option key={b} value={b}>{b}</option>)}
-                    {mode !== 'install' && (
+                    {mode === 'buy' && (
                       <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
                     )}
                   </select>
@@ -462,7 +457,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                   >
                     <option value="">{t.selectExisting}</option>
                     {seriesList.map(s => <option key={s} value={s}>{s}</option>)}
-                    {mode !== 'install' && (
+                    {mode === 'buy' && (
                       <option value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
                     )}
                   </select>
@@ -500,7 +495,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                   >
                     <option value="">{t.selectExisting}</option>
                     {modelList.map(m => <option key={m} value={m}>{m}</option>)}
-                    {mode !== 'install' && (
+                    {mode === 'buy' && (
                       <option value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
                     )}
                   </select>

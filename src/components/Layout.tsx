@@ -10,6 +10,7 @@ interface LayoutProps {
   lang: Language;
   setLang: (lang: Language) => void;
   handleLogout: () => void;
+  setActiveTab?: (tab: any) => void;
   children: React.ReactNode;
 }
 
@@ -19,6 +20,7 @@ export const Layout: React.FC<LayoutProps> = ({
   lang,
   setLang,
   handleLogout,
+  setActiveTab,
   children,
 }) => {
   const displayName = user?.displayName || user?.email?.split('@')[0] || t.defaultUser;
@@ -28,7 +30,10 @@ export const Layout: React.FC<LayoutProps> = ({
       <nav className="glass-panel sticky top-0 z-40 border-b-0 border-x-0 rounded-none">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center gap-3 group cursor-pointer">
+            <div 
+              className="flex items-center gap-3 group cursor-pointer"
+              onClick={() => setActiveTab?.('dashboard')}
+            >
               <div className="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
                 <LayoutDashboard className="w-5 h-5 text-white" />
               </div>
@@ -68,7 +73,10 @@ export const Layout: React.FC<LayoutProps> = ({
 
       <footer className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mt-12">
         <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2 text-gray-400">
+          <div 
+            className="flex items-center gap-2 text-gray-400 cursor-pointer hover:text-blue-500 transition-colors"
+            onClick={() => setActiveTab?.('dashboard')}
+          >
             <LayoutDashboard className="w-4 h-4" />
             <span className="text-[11px] font-semibold uppercase tracking-widest">{t.brand}</span>
           </div>

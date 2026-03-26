@@ -174,6 +174,7 @@ export default function App() {
         lang={lang}
         setLang={setLang}
         handleLogout={handleLogout}
+        setActiveTab={setActiveTab}
       >
         <Navigation activeTab={activeTab} setActiveTab={setActiveTab} t={t} isUltimateAdmin={isUltimateAdmin} />
 

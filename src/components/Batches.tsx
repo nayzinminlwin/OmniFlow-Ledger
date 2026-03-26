@@ -234,9 +234,9 @@ export const Batches: React.FC<BatchesProps> = memo(({
               ) : (
                 sortedBatches.map((b, index) => (
                   <tr key={b.id || index} className="hover:bg-black/[0.02] transition-colors">
-                    <td className="px-8 py-4">
-                      <p className="text-[15px] font-semibold text-blue-600">{b.batchId}</p>
-                    </td>
+                  <td className="px-8 py-4 whitespace-nowrap">
+                    <p className="text-[15px] font-semibold text-blue-600">{b.batchId}</p>
+                  </td>
                     <td className="px-8 py-4 whitespace-nowrap">
                       <p className="text-[13px] font-medium text-gray-500">{safeFormatDate(b.createdAt, 'MMM d, yyyy')}</p>
                     </td>

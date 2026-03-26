@@ -77,7 +77,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                       {safeFormatDate(tx.timestamp, 'HH:mm:ss')}
                     </p>
                   </td>
-                  <td className="px-8 py-4">
+                  <td className="px-8 py-4 whitespace-nowrap">
                     <p className="text-[15px] font-semibold text-blue-600">{tx.batchId}</p>
                   </td>
                   <td className="px-8 py-4">

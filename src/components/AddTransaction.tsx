@@ -59,6 +59,20 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
     if (type !== 'ADJUSTMENT' && toClass === 'UNCLASSIFIED') {
       setToClass('A');
     }
+    // Reset "New" states if not INCOMING
+    if (type !== 'INCOMING') {
+      setIsNewBrand(false);
+      setIsNewSeries(false);
+      setIsNewModel(false);
+      // If we were in "New" mode, we should also clear the values to avoid invalid state
+      // or we can keep them if they happen to match existing ones, but safer to clear
+      // or reset to empty so user has to pick from list.
+      if (isNewBrand || isNewSeries || isNewModel) {
+        setBrand('');
+        setSeries('');
+        setModel('');
+      }
+    }
   };
 
   const currentBatch = useMemo(() => batches.find(b => b.batchId === batchId), [batches, batchId]);
@@ -240,7 +254,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                   >
                     <option value="">{t.selectExisting}</option>
                     {existingBrands.map(b => <option key={b} value={b}>{b}</option>)}
-                    <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
+                    {txType === 'INCOMING' && (
+                      <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
+                    )}
                   </select>
                 ) : (
                   <div className="relative flex items-center">
@@ -276,7 +292,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                   >
                     <option value="">{t.selectExisting}</option>
                     {filteredSeries.map(s => <option key={s} value={s}>{s}</option>)}
-                    <option value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
+                    {txType === 'INCOMING' && (
+                      <option value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
+                    )}
                   </select>
                 ) : (
                   <div className="relative flex items-center">
@@ -312,7 +330,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                   >
                     <option value="">{t.selectExisting}</option>
                     {filteredModels.map(m => <option key={m} value={m}>{m}</option>)}
-                    <option value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
+                    {txType === 'INCOMING' && (
+                      <option value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
+                    )}
                   </select>
                 ) : (
                   <div className="relative flex items-center">
