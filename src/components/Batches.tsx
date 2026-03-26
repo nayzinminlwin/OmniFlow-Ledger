@@ -104,8 +104,8 @@ export const Batches: React.FC<BatchesProps> = memo(({
             onChange={(e) => setSelectedBatchId(e.target.value)}
             className="ios-input py-2 px-4 shadow-sm w-auto"
           >
-            <option value="">{t.selectBatch}</option>
-            {batches.map(b => <option key={b.id} value={b.batchId}>{b.batchId}</option>)}
+            <option key="placeholder" value="">{t.selectBatch}</option>
+            {batches.map(b => <option key={b.id || b.batchId} value={b.batchId}>{b.batchId}</option>)}
           </select>
         </div>
 
@@ -115,19 +115,19 @@ export const Batches: React.FC<BatchesProps> = memo(({
           </div>
         ) : selectedBatchId ? (
           <div className="glass-panel rounded-[32px] overflow-hidden">
-            <div className="overflow-x-auto custom-scrollbar pb-4">
-              <table className="w-full text-left border-collapse whitespace-nowrap">
-                <thead>
-                  <tr className="border-b border-black/5 bg-black/[0.02]">
-                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.brandLabel}</th>
-                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.seriesLabel}</th>
-                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.modelLabel}</th>
-                    <th className="px-6 py-4 text-[13px] font-semibold text-blue-500 uppercase tracking-wider">{t.unclassified}</th>
+            <div className="overflow-x-auto overflow-y-auto custom-scrollbar max-h-[calc(100vh-450px)] relative">
+              <table className="w-full text-left border-separate border-spacing-0 whitespace-nowrap">
+                <thead className="sticky top-0 z-20">
+                  <tr className="bg-[#F8F8F8] shadow-[0_1px_0_rgba(0,0,0,0.05)]">
+                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider bg-[#F8F8F8]">{t.brandLabel}</th>
+                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider bg-[#F8F8F8]">{t.seriesLabel}</th>
+                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider bg-[#F8F8F8]">{t.modelLabel}</th>
+                    <th className="px-6 py-4 text-[13px] font-semibold text-blue-500 uppercase tracking-wider bg-[#F8F8F8]">{t.unclassified}</th>
                     {CLASSES.map(cls => (
-                      <th key={cls} className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.class} {cls}</th>
+                      <th key={cls} className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider bg-[#F8F8F8]">{t.class} {cls}</th>
                     ))}
-                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider">{t.classified}</th>
-                    <th className="px-6 py-4 text-[13px] font-bold text-black uppercase tracking-wider">{t.total}</th>
+                    <th className="px-6 py-4 text-[13px] font-semibold text-gray-500 uppercase tracking-wider bg-[#F8F8F8]">{t.classified}</th>
+                    <th className="px-6 py-4 text-[13px] font-bold text-black uppercase tracking-wider bg-[#F8F8F8]">{t.total}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-black/5">
@@ -179,12 +179,12 @@ export const Batches: React.FC<BatchesProps> = memo(({
         <div className="px-8 py-6 border-b border-black/5 bg-black/[0.02]">
           <h2 className="text-[22px] font-bold text-black tracking-tight">{t.allBatchesSummary}</h2>
         </div>
-        <div className="overflow-x-auto custom-scrollbar pb-4">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-black/[0.02]">
+        <div className="overflow-x-auto overflow-y-auto custom-scrollbar max-h-[calc(100vh-350px)] relative">
+          <table className="w-full text-left border-separate border-spacing-0">
+            <thead className="sticky top-0 z-20">
+              <tr className="bg-[#F8F8F8] shadow-[0_1px_0_rgba(0,0,0,0.05)]">
                 <th 
-                  className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest cursor-pointer hover:text-black transition-colors"
+                  className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest cursor-pointer hover:text-black transition-colors bg-[#F8F8F8]"
                   onClick={() => handleSort('batchId')}
                 >
                   <div className="flex items-center">
@@ -193,7 +193,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
                   </div>
                 </th>
                 <th 
-                  className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest cursor-pointer hover:text-black transition-colors"
+                  className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest cursor-pointer hover:text-black transition-colors bg-[#F8F8F8]"
                   onClick={() => handleSort('createdAt')}
                 >
                   <div className="flex items-center">
@@ -201,12 +201,12 @@ export const Batches: React.FC<BatchesProps> = memo(({
                     <SortIcon field="createdAt" />
                   </div>
                 </th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">{t.unclassified}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center bg-[#F8F8F8]">{t.unclassified}</th>
                 {CLASSES.map(cls => (
-                  <th key={cls} className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">{cls === 'Spoiled' ? t.spoiled : cls}</th>
+                  <th key={cls} className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center bg-[#F8F8F8]">{cls === 'Spoiled' ? t.spoiled : cls}</th>
                 ))}
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center">{t.classified}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-right"></th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-center bg-[#F8F8F8]">{t.classified}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-right bg-[#F8F8F8]"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
@@ -238,7 +238,12 @@ export const Batches: React.FC<BatchesProps> = memo(({
                     <p className="text-[15px] font-semibold text-blue-600">{b.batchId}</p>
                   </td>
                     <td className="px-8 py-4 whitespace-nowrap">
-                      <p className="text-[13px] font-medium text-gray-500">{safeFormatDate(b.createdAt, 'MMM d, yyyy')}</p>
+                      <span className="text-[14px] font-semibold text-black">
+                        {safeFormatDate(b.createdAt, 'MMM d, yyyy')}
+                      </span>
+                      <span className="text-[12px] text-gray-400 font-medium ml-2">
+                        {safeFormatDate(b.createdAt, 'HH:mm:ss')}
+                      </span>
                     </td>
                     <td className="px-8 py-4 text-center font-semibold text-blue-900 bg-blue-500/5">{getBatchTotal(b, 'UNCLASSIFIED')}</td>
                     {CLASSES.map(cls => (

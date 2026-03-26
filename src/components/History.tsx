@@ -37,20 +37,20 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
             {t.showingLast50}
           </div>
         </div>
-        <div className="overflow-x-auto custom-scrollbar pb-4">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="bg-black/[0.02]">
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.dateTime}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.batch}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.brandLabel}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.seriesLabel}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.modelLabel}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.type}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.movement}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-right">{t.qty}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.user}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.notes}</th>
+        <div className="overflow-x-auto overflow-y-auto custom-scrollbar max-h-[calc(100vh-320px)] relative">
+          <table className="w-full text-left border-separate border-spacing-0">
+            <thead className="sticky top-0 z-20">
+              <tr className="bg-[#F8F8F8] shadow-[0_1px_0_rgba(0,0,0,0.05)]">
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.dateTime}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.batch}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.brandLabel}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.seriesLabel}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.modelLabel}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.type}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.movement}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-right bg-[#F8F8F8]">{t.qty}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.user}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.notes}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
@@ -70,12 +70,12 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                 transactions.map((tx, index) => (
                 <tr key={tx.id || index} className="hover:bg-black/[0.02] transition-colors group">
                   <td className="px-8 py-4 whitespace-nowrap">
-                    <p className="text-[15px] font-semibold text-black">
+                    <span className="text-[14px] font-semibold text-black">
                       {safeFormatDate(tx.timestamp, 'MMM d, yyyy')}
-                    </p>
-                    <p className="text-[13px] text-gray-500 font-medium mt-0.5">
+                    </span>
+                    <span className="text-[12px] text-gray-400 font-medium ml-2">
                       {safeFormatDate(tx.timestamp, 'HH:mm:ss')}
-                    </p>
+                    </span>
                   </td>
                   <td className="px-8 py-4 whitespace-nowrap">
                     <p className="text-[15px] font-semibold text-blue-600">{tx.batchId}</p>

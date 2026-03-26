@@ -355,7 +355,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                         ? `${t.install} ${Object.keys(tx.componentChanges).map(c => t[c] || c).join(', ')}`
                         : t.installComponents}</>
                     ) : (
-                      <>{t[tx.type.toLowerCase() as keyof typeof t] || tx.type} {getClassName(tx.toClass || tx.fromClass)}</>
+                      <>{tx.type === 'INCOMING' ? t.incoming : (t[tx.type.toLowerCase() as keyof typeof t] || tx.type)} {tx.type !== 'INCOMING' && getClassName(tx.toClass || tx.fromClass)}</>
                     )}
                   </p>
                   <p className="text-[13px] text-gray-500 font-medium mt-0.5">

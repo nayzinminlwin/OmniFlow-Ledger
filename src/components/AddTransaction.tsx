@@ -56,7 +56,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
 
   const handleTxTypeChange = (type: TransactionType) => {
     setTxType(type);
-    if (type !== 'ADJUSTMENT' && toClass === 'UNCLASSIFIED') {
+    if (type === 'INCOMING') {
+      setToClass('UNCLASSIFIED');
+    } else if (type !== 'ADJUSTMENT' && toClass === 'UNCLASSIFIED') {
       setToClass('A');
     }
     // Reset "New" states if not INCOMING
@@ -214,8 +216,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     value={batchId}
                     className="ios-input w-full text-[15px] font-medium"
                   >
-                    <option value="">{t.selectExisting}</option>
-                    {batches.map(b => <option key={b.id} value={b.batchId}>{b.batchId}</option>)}
+                    <option key="placeholder" value="">{t.selectExisting}</option>
+                    {batches.map(b => <option key={b.id || b.batchId} value={b.batchId}>{b.batchId}</option>)}
                   </select>
                 </div>
               </div>
@@ -252,10 +254,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     className="ios-input w-full text-[15px] py-3"
                     required
                   >
-                    <option value="">{t.selectExisting}</option>
+                    <option key="placeholder" value="">{t.selectExisting}</option>
                     {existingBrands.map(b => <option key={b} value={b}>{b}</option>)}
                     {txType === 'INCOMING' && (
-                      <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
+                      <option key="new-brand" value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
                     )}
                   </select>
                 ) : (
@@ -290,10 +292,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     disabled={!brand && !isNewBrand}
                     required
                   >
-                    <option value="">{t.selectExisting}</option>
+                    <option key="placeholder" value="">{t.selectExisting}</option>
                     {filteredSeries.map(s => <option key={s} value={s}>{s}</option>)}
                     {txType === 'INCOMING' && (
-                      <option value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
+                      <option key="new-series" value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
                     )}
                   </select>
                 ) : (
@@ -328,10 +330,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     disabled={(!series && !isNewSeries) || (!brand && !isNewBrand)}
                     required
                   >
-                    <option value="">{t.selectExisting}</option>
+                    <option key="placeholder" value="">{t.selectExisting}</option>
                     {filteredModels.map(m => <option key={m} value={m}>{m}</option>)}
                     {txType === 'INCOMING' && (
-                      <option value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
+                      <option key="new-model" value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
                     )}
                   </select>
                 ) : (
@@ -376,7 +378,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     onChange={(e) => setFromClass(e.target.value as LaptopClass)}
                     className="ios-input w-full"
                   >
-                    <option value="UNCLASSIFIED">{t.unclassified}</option>
+                    <option key="unclassified" value="UNCLASSIFIED">{t.unclassified}</option>
                     {CLASSES.map(c => <option key={c} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
                   </select>
                 </div>
@@ -398,7 +400,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     onChange={(e) => setToClass(e.target.value as LaptopClass)}
                     className="ios-input w-full"
                   >
-                    {txType === 'ADJUSTMENT' && <option value="UNCLASSIFIED">{t.unclassified}</option>}
+                    {txType === 'ADJUSTMENT' && <option key="unclassified" value="UNCLASSIFIED">{t.unclassified}</option>}
                     {CLASSES.map(c => <option key={c} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
                   </select>
                 </div>
