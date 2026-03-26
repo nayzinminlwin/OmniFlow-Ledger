@@ -3,6 +3,9 @@ import { RefreshCw, CheckCircle2, X } from 'lucide-react';
 import { Batch, LaptopClass, TransactionType } from '../types';
 import { CLASSES } from '../constants';
 import { cn } from '../lib/utils';
+import { Toast } from './Toast';
+
+import { isValidBatchDate, formatBatchId, padBatchId } from '../lib/dateUtils';
 
 interface AddTransactionProps {
   t: any;
@@ -37,6 +40,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
   const [isNewBrand, setIsNewBrand] = useState(() => localStorage.getItem('last_isNewBrand') === 'true');
   const [isNewSeries, setIsNewSeries] = useState(() => localStorage.getItem('last_isNewSeries') === 'true');
   const [isNewModel, setIsNewModel] = useState(() => localStorage.getItem('last_isNewModel') === 'true');
+  const [error, setError] = useState<string | null>(null);
   const [fromClass, setFromClass] = useState<LaptopClass>('D');
   const [toClass, setToClass] = useState<LaptopClass>('A');
   const [quantity, setQuantity] = useState<number | ''>(1);
@@ -156,32 +160,26 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
   const isFromStockEmpty = (txType === 'REPAIR' || txType === 'SALE') && batchId && brand && series && model && getStockCount(fromClass) <= 0;
 
   const handleBatchIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value.replace(/\//g, '-');
-    
-    // If user is deleting, just let them delete
-    if (val.length < batchId.length) {
-      setBatchId(val);
-      return;
-    }
+    setBatchId(formatBatchId(e.target.value, batchId));
+  };
 
-    // Auto-format
-    const digits = val.replace(/\D/g, '');
-    let formatted = '';
-    if (digits.length > 0) formatted += digits.substring(0, 2);
-    if (digits.length >= 3) formatted += '-' + digits.substring(2, 4);
-    if (digits.length >= 5) formatted += '-' + digits.substring(4, 8);
-    
-    if (val.endsWith('-') && formatted.length > 0 && !formatted.endsWith('-')) {
-      formatted += '-';
-    }
-
-    setBatchId(formatted);
+  const handleBatchIdBlur = () => {
+    setBatchId(padBatchId(batchId));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!brand.trim() || !series.trim() || !model.trim()) return;
-    const success = await onAddTransaction(txType, batchId, brand.trim(), series.trim(), model.trim(), fromClass, toClass, Number(quantity), notes);
+    
+    // Final padding and validation
+    const finalBatchId = padBatchId(batchId);
+    
+    if (!isValidBatchDate(finalBatchId)) {
+      setError(t.invalidBatchDate);
+      return;
+    }
+
+    const success = await onAddTransaction(txType, finalBatchId, brand.trim(), series.trim(), model.trim(), fromClass, toClass, Number(quantity), notes);
     if (success) {
       // Reset only quantity and notes, keeping batch and model info for faster workflow
       setQuantity(1);
@@ -208,6 +206,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     placeholder={t.dateExample}
                     value={batchId}
                     onChange={handleBatchIdChange}
+                    onBlur={handleBatchIdBlur}
                     className="ios-input w-full"
                     required
                   />
@@ -457,6 +456,12 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
           </form>
         </div>
       </div>
+
+      <Toast 
+        message={error} 
+        type="error" 
+        onClose={() => setError(null)} 
+      />
     </div>
   );
 });

@@ -175,7 +175,8 @@ export const translations = {
     selectBatchPlaceholder: 'Select Batch',
     selectClassPlaceholder: 'Select Class',
     deleteBatch: 'Delete Batch',
-    dateExample: 'e.g., 16-03-2026'
+    dateExample: 'e.g., 16-03-2026',
+    invalidBatchDate: 'Invalid batch date. Please use a real date (DD-MM-YYYY).'
   },
   ms: {
     brand: 'Lejar Pembaikan Pro',
@@ -351,7 +352,8 @@ export const translations = {
     selectBatchPlaceholder: 'Pilih Batch',
     selectClassPlaceholder: 'Pilih Kelas',
     deleteBatch: 'Padam Batch',
-    dateExample: 'cth., 16-03-2026'
+    dateExample: 'cth., 16-03-2026',
+    invalidBatchDate: 'Tarikh batch tidak sah. Sila gunakan tarikh sebenar (HH-BB-TTTT).'
   },
   zh: {
     brand: '专业维修分类账',
@@ -527,6 +529,7 @@ export const translations = {
     selectBatchPlaceholder: '选择批次',
     selectClassPlaceholder: '选择等级',
     deleteBatch: '删除批次',
-    dateExample: '例如：16-03-2026'
+    dateExample: '例如：16-03-2026',
+    invalidBatchDate: '无效的批次日期。请使用真实的日期 (日-月-年)。'
   }
 };

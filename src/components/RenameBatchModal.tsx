@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Batch } from '../types';
+import { isValidBatchDate, formatBatchId, padBatchId } from '../lib/dateUtils';
+import { Toast } from './Toast';
 
 interface RenameBatchModalProps {
   t: any;
@@ -21,6 +23,7 @@ export const RenameBatchModal: React.FC<RenameBatchModalProps> = ({
   isRenaming,
   handleRenameBatch,
 }) => {
+  const [error, setError] = useState<string | null>(null);
   if (!editingBatch) return null;
 
   return (
@@ -41,7 +44,8 @@ export const RenameBatchModal: React.FC<RenameBatchModalProps> = ({
             <input
               type="text"
               value={newBatchName}
-              onChange={(e) => setNewBatchName(e.target.value)}
+              onChange={(e) => setNewBatchName(formatBatchId(e.target.value, newBatchName))}
+              onBlur={() => setNewBatchName(padBatchId(newBatchName))}
               className="ios-input w-full"
             />
           </div>
@@ -54,8 +58,15 @@ export const RenameBatchModal: React.FC<RenameBatchModalProps> = ({
               {t.cancel}
             </button>
             <button
-              onClick={handleRenameBatch}
-              disabled={isRenaming || !newBatchName.trim() || newBatchName.trim() === editingBatch.batchId}
+              onClick={() => {
+                const finalName = padBatchId(newBatchName);
+                if (!isValidBatchDate(finalName)) {
+                  setError(t.invalidBatchDate);
+                  return;
+                }
+                handleRenameBatch();
+              }}
+              disabled={isRenaming || !newBatchName.trim() || padBatchId(newBatchName) === editingBatch.batchId}
               className="px-6 py-3 text-[15px] font-semibold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors disabled:opacity-50 flex items-center gap-2 shadow-sm"
             >
               {isRenaming ? (
@@ -70,6 +81,12 @@ export const RenameBatchModal: React.FC<RenameBatchModalProps> = ({
           </div>
         </div>
       </div>
+
+      <Toast 
+        message={error} 
+        type="error" 
+        onClose={() => setError(null)} 
+      />
     </div>
   );
 };
