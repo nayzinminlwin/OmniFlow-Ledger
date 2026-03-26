@@ -84,8 +84,8 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
               <p className="text-[15px] font-medium">{t.noTransactions}</p>
             </div>
           ) : (
-            users.map((user) => (
-              <div key={user.uid} className="glass-panel p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            users.map((user, index) => (
+              <div key={user.uid || index} className="glass-panel p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className={cn(
                     "w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm",

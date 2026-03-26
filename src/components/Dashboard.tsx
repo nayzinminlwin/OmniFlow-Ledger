@@ -183,8 +183,8 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                   </tr>
                 ) : (
                   [
-                    ...models.map(m => (
-                      <tr key={`${m.brand}-${m.series}-${m.model}`} className="hover:bg-black/[0.02] transition-colors">
+                    ...models.map((m, index) => (
+                      <tr key={`${m.brand}-${m.series}-${m.model}-${index}`} className="hover:bg-black/[0.02] transition-colors">
                         <td className="px-6 py-4 font-medium text-black">{m.brand}</td>
                         <td className="px-6 py-4 text-gray-600">{m.series}</td>
                         <td className="px-6 py-4 text-gray-600">{m.model}</td>
@@ -235,9 +235,9 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
               </div>
             ))
           ) : (
-            transactions.slice(0, 5).map((tx) => (
+            transactions.slice(0, 5).map((tx, index) => (
               <div 
-                key={tx.id} 
+                key={tx.id || index} 
                 className="px-8 py-5 flex items-center justify-between hover:bg-black/[0.02] transition-colors group relative cursor-pointer"
                 onClick={() => {
                   if (tx.type === 'BREAKDOWN') {

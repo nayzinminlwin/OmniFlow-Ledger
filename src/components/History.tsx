@@ -68,7 +68,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                 ))
               ) : (
                 transactions.map((tx, index) => (
-                <tr key={tx.id} className="hover:bg-black/[0.02] transition-colors group">
+                <tr key={tx.id || index} className="hover:bg-black/[0.02] transition-colors group">
                   <td className="px-8 py-4 whitespace-nowrap">
                     <p className="text-[15px] font-semibold text-black">
                       {safeFormatDate(tx.timestamp, 'MMM d, yyyy')}

@@ -1,6 +1,7 @@
-import React, { memo } from 'react';
-import { LayoutDashboard, Edit2, History, Settings, Users, Cpu } from 'lucide-react';
+import React, { memo, useRef, useState, useEffect } from 'react';
+import { LayoutDashboard, Edit2, History, Settings, Users, Cpu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface NavigationProps {
   activeTab: 'dashboard' | 'history' | 'add' | 'components' | 'componentInventory' | 'batches' | 'users';
@@ -10,13 +11,82 @@ interface NavigationProps {
 }
 
 export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiveTab, t, isUltimateAdmin }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [showLeftArrow, setShowLeftArrow] = useState(false);
+  const [showRightArrow, setShowRightArrow] = useState(false);
+
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setShowLeftArrow(scrollLeft > 5);
+      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 5);
+    }
+  };
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    checkScroll();
+    el.addEventListener('scroll', checkScroll);
+    window.addEventListener('resize', checkScroll);
+
+    // Initial scroll hint
+    const hintTimer = setTimeout(() => {
+      el.scrollTo({ left: 60, behavior: 'smooth' });
+      setTimeout(() => {
+        el.scrollTo({ left: 0, behavior: 'smooth' });
+      }, 600);
+    }, 1200);
+
+    return () => {
+      el.removeEventListener('scroll', checkScroll);
+      window.removeEventListener('resize', checkScroll);
+      clearTimeout(hintTimer);
+    };
+  }, []);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollRef.current) {
+      const scrollAmount = direction === 'left' ? -200 : 200;
+      scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="flex justify-center mb-8 px-4">
       <div className="relative w-full max-w-4xl group">
-        {/* Left fade indicator */}
-        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#F2F2F7] to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
-        
-        <div className="flex bg-black/5 p-1 rounded-2xl shadow-inner overflow-x-auto no-scrollbar scroll-smooth">
+        <AnimatePresence>
+          {showLeftArrow && (
+            <motion.button
+              key="left-arrow"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              onClick={() => scroll('left')}
+              className="absolute left-[-12px] top-1/2 -translate-y-1/2 z-20 p-1.5 bg-white rounded-full shadow-md border border-black/5 text-gray-400 hover:text-black transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </motion.button>
+          )}
+          {showRightArrow && (
+            <motion.button
+              key="right-arrow"
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              onClick={() => scroll('right')}
+              className="absolute right-[-12px] top-1/2 -translate-y-1/2 z-20 p-1.5 bg-white rounded-full shadow-md border border-black/5 text-gray-400 hover:text-black transition-colors"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        <div 
+          ref={scrollRef}
+          className="flex bg-black/5 p-1 rounded-2xl shadow-inner overflow-x-auto no-scrollbar scroll-smooth"
+        >
           <button
             onClick={() => setActiveTab('dashboard')}
             className={cn(
@@ -90,9 +160,6 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
             </button>
           )}
         </div>
-
-        {/* Right fade indicator */}
-        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#F2F2F7] to-transparent z-10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
     </div>
   );

@@ -232,8 +232,8 @@ export const Batches: React.FC<BatchesProps> = memo(({
                   </td>
                 </tr>
               ) : (
-                sortedBatches.map((b) => (
-                  <tr key={b.id} className="hover:bg-black/[0.02] transition-colors">
+                sortedBatches.map((b, index) => (
+                  <tr key={b.id || index} className="hover:bg-black/[0.02] transition-colors">
                     <td className="px-8 py-4">
                       <p className="text-[15px] font-semibold text-blue-600">{b.batchId}</p>
                     </td>
