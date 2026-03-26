@@ -67,11 +67,8 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
   const availableModels = useMemo(() => {
     if (!selectedBatch || !selectedBatch.items) return [];
     return selectedBatch.items.filter(item => {
-      // Only include models that have stock in C1-C5 or Spoiled
-      const hasEligibleStock = ['C1', 'C2', 'C3', 'C4', 'C5', 'Spoiled'].some(
-        cls => (item.counts?.[cls as LaptopClass] || 0) > 0
-      );
-      return hasEligibleStock;
+      // Include models that have stock in any class
+      return Object.values(item.counts || {}).some(count => (count as number) > 0);
     });
   }, [selectedBatch]);
 
@@ -202,7 +199,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
     setFromClass('');
   };
 
-  const eligibleClasses = ['C1', 'C2', 'C3', 'C4', 'C5', 'Spoiled'];
+  const eligibleClasses: LaptopClass[] = ['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', 'C5', 'D', 'Spoiled', 'UNCLASSIFIED'];
 
   const selectedModelStock = useMemo(() => {
     if (!brand || !series || !model || !selectedBatch) return null;
