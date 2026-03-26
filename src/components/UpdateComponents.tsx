@@ -407,7 +407,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                     required
                   >
-                    <option value="">Select Batch</option>
+                    <option value="">{t.selectBatchPlaceholder}</option>
                     {activeBatches.map(b => <option key={b.batchId} value={b.batchId}>{b.batchId}</option>)}
                   </select>
                 </div>
@@ -552,7 +552,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                       className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
                       required
                     >
-                      <option value="">Select Class</option>
+                      <option value="">{t.selectClassPlaceholder}</option>
                       {eligibleClasses.map(cls => {
                         const count = selectedModelStock?.counts?.[cls as LaptopClass] || 0;
                         if (count === 0) return null;

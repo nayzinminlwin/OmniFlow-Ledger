@@ -252,13 +252,17 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                   tx.type === 'SALE' && "bg-orange-500/10 text-orange-600",
                   tx.type === 'REPAIR' && "bg-blue-500/10 text-blue-600",
                   tx.type === 'ADJUSTMENT' && "bg-gray-500/10 text-gray-600",
-                  tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-600"
+                  tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-600",
+                  tx.type === 'PURCHASE' && "bg-emerald-500/10 text-emerald-600",
+                  tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-600"
                 )}>
                   {tx.type === 'INCOMING' && <Plus className="w-5 h-5" />}
                   {tx.type === 'SALE' && <Minus className="w-5 h-5" />}
                   {tx.type === 'REPAIR' && <RefreshCw className="w-5 h-5" />}
                   {tx.type === 'ADJUSTMENT' && <Settings className="w-5 h-5" />}
                   {tx.type === 'BREAKDOWN' && <Hammer className="w-5 h-5" />}
+                  {tx.type === 'PURCHASE' && <Plus className="w-5 h-5" />}
+                  {tx.type === 'INSTALL' && <Hammer className="w-5 h-5" />}
                 </div>
                 <div>
                   <p className="font-semibold text-[17px] text-black tracking-tight flex items-center gap-2">
@@ -342,6 +346,14 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                           )}
                         </AnimatePresence>
                       </span>
+                    ) : tx.type === 'PURCHASE' ? (
+                      <>{tx.componentChanges && Object.keys(tx.componentChanges).length > 0 
+                        ? `${t.purchase} ${Object.keys(tx.componentChanges).map(c => t[c] || c).join(', ')}`
+                        : t.buyComponents}</>
+                    ) : tx.type === 'INSTALL' ? (
+                      <>{tx.componentChanges && Object.keys(tx.componentChanges).length > 0 
+                        ? `${t.install} ${Object.keys(tx.componentChanges).map(c => t[c] || c).join(', ')}`
+                        : t.installComponents}</>
                     ) : (
                       <>{t[tx.type.toLowerCase() as keyof typeof t] || tx.type} {getClassName(tx.toClass || tx.fromClass)}</>
                     )}
@@ -354,9 +366,9 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
               <div className="text-right">
                 <p className={cn(
                   "text-[19px] font-semibold tabular-nums tracking-tight",
-                  (tx.type === 'INCOMING' || tx.type === 'REPAIR') ? "text-green-600" : "text-orange-600"
+                  (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE') ? "text-green-600" : tx.type === 'INSTALL' ? "text-pink-600" : "text-orange-600"
                 )}>
-                  {tx.type === 'INCOMING' || tx.type === 'REPAIR' ? '+' : '-'}{tx.quantity}
+                  {tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' ? '+' : '-'}{tx.type === 'PURCHASE' || tx.type === 'INSTALL' ? (Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0) : tx.quantity}
                 </p>
                 {tx.notes && <p className="text-[11px] text-gray-400 max-w-[120px] truncate mt-0.5">{tx.notes}</p>}
               </div>

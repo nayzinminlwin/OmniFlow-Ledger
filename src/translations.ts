@@ -171,7 +171,11 @@ export const translations = {
     installSuccess: 'Component installation recorded successfully!',
     installFailed: 'Failed to record component installation!',
     insufficientComponentStock: (comp: string) => `Insufficient stock for component: ${comp}`,
-    mode: 'Mode'
+    mode: 'Mode',
+    selectBatchPlaceholder: 'Select Batch',
+    selectClassPlaceholder: 'Select Class',
+    deleteBatch: 'Delete Batch',
+    dateExample: 'e.g., 16-03-2026'
   },
   ms: {
     brand: 'Lejar Pembaikan Pro',
@@ -343,7 +347,11 @@ export const translations = {
     installSuccess: 'Pemasangan komponen berjaya direkodkan!',
     installFailed: 'Gagal merekodkan pemasangan komponen!',
     insufficientComponentStock: (comp: string) => `Stok tidak mencukupi untuk komponen: ${comp}`,
-    mode: 'Mod'
+    mode: 'Mod',
+    selectBatchPlaceholder: 'Pilih Batch',
+    selectClassPlaceholder: 'Pilih Kelas',
+    deleteBatch: 'Padam Batch',
+    dateExample: 'cth., 16-03-2026'
   },
   zh: {
     brand: '专业维修分类账',
@@ -515,6 +523,10 @@ export const translations = {
     installSuccess: '组件安装记录成功！',
     installFailed: '组件安装记录失败！',
     insufficientComponentStock: (comp: string) => `组件库存不足: ${comp}`,
-    mode: '模式'
+    mode: '模式',
+    selectBatchPlaceholder: '选择批次',
+    selectClassPlaceholder: '选择等级',
+    deleteBatch: '删除批次',
+    dateExample: '例如：16-03-2026'
   }
 };

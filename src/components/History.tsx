@@ -106,7 +106,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                         tx.type === 'REPAIR' && "bg-blue-500/10 text-blue-700",
                         tx.type === 'ADJUSTMENT' && "bg-gray-500/10 text-gray-700",
                         tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-700",
-                        tx.type === 'INSTALL' && "bg-red-500/10 text-red-700"
+                        tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-700"
                       )}>
                         {(tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL') && <Hammer className="w-3 h-3" />}
                         {tx.type === 'REPAIR' && tx.fromClass === 'UNCLASSIFIED' 
@@ -173,9 +173,13 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                       ) : tx.type === 'BREAKDOWN' ? (
                         <>{t.breakdown} {t.from} {getClassName(tx.fromClass)}</>
                       ) : tx.type === 'PURCHASE' ? (
-                        <>{t.buyComponents}</>
+                        <>{tx.componentChanges && Object.keys(tx.componentChanges).length > 0 
+                          ? `${t.purchase} ${Object.keys(tx.componentChanges).map(c => t[c] || c).join(', ')}`
+                          : t.buyComponents}</>
                       ) : tx.type === 'INSTALL' ? (
-                        <>{t.installComponents}</>
+                        <>{tx.componentChanges && Object.keys(tx.componentChanges).length > 0 
+                          ? `${t.install} ${Object.keys(tx.componentChanges).map(c => t[c] || c).join(', ')}`
+                          : t.installComponents}</>
                       ) : (
                         <>{getClassName(tx.toClass) === t.spoiled ? t.spoiled : `${t.class} ${getClassName(tx.toClass)}`}</>
                       )}
@@ -184,7 +188,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                   <td className="px-8 py-4 text-right">
                     <p className={cn(
                       "text-[17px] font-semibold tabular-nums tracking-tight",
-                      (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE') ? "text-green-600" : "text-orange-600"
+                      (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE') ? "text-green-600" : tx.type === 'INSTALL' ? "text-pink-600" : "text-orange-600"
                     )}>
                       {tx.type === 'PURCHASE' ? (
                         `+${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`

@@ -146,7 +146,7 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
                         "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
                         tx.type === 'INCOMING' ? "bg-green-500/10 text-green-700" : 
                         tx.type === 'PURCHASE' ? "bg-emerald-500/10 text-emerald-700" :
-                        tx.type === 'INSTALL' ? "bg-red-500/10 text-red-700" :
+                        tx.type === 'INSTALL' ? "bg-pink-500/10 text-pink-700" :
                         "bg-purple-500/10 text-purple-700"
                       )}>
                         {t[tx.type.toLowerCase() as keyof typeof t] || tx.type}

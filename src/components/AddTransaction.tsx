@@ -189,7 +189,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <input
                     type="text"
-                    placeholder="e.g., 16-03-2026"
+                    placeholder={t.dateExample}
                     value={batchId}
                     onChange={handleBatchIdChange}
                     className="ios-input w-full"
