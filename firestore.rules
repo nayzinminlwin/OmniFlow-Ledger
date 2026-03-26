@@ -99,7 +99,7 @@ service cloud.firestore {
 
     function isValidTransaction(data) {
       return data.keys().hasAll(['type', 'batchId', 'model', 'quantity', 'timestamp', 'userId']) &&
-             data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT', 'BREAKDOWN'] &&
+             data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT', 'BREAKDOWN', 'PURCHASE', 'INSTALL'] &&
              validString(data.batchId, 50) &&
              validString(data.model, 100) &&
              (!('brand' in data) || validString(data.brand, 100)) &&
@@ -116,7 +116,7 @@ service cloud.firestore {
 
     function isValidComponentTransaction(data) {
       return data.keys().hasAll(['type', 'brand', 'series', 'model', 'componentChanges', 'timestamp', 'userId']) &&
-             data.type in ['BREAKDOWN', 'INCOMING', 'SALE', 'ADJUSTMENT'] &&
+             data.type in ['BREAKDOWN', 'INCOMING', 'SALE', 'ADJUSTMENT', 'PURCHASE', 'INSTALL'] &&
              validString(data.brand, 100) &&
              validString(data.series, 100) &&
              validString(data.model, 100) &&

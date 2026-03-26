@@ -1,0 +1,14 @@
+{
+  "inventory/current": {
+    "items": [],
+    "lastUpdated": "2026-03-26T07:56:54.000Z"
+  },
+  "components/current": {
+    "items": [],
+    "lastUpdated": "2026-03-26T07:56:54.000Z"
+  },
+  "components/spoiled": {
+    "items": [],
+    "lastUpdated": "2026-03-26T07:56:54.000Z"
+  }
+}

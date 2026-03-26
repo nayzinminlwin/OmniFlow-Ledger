@@ -65,7 +65,7 @@
       "description": "A single entry in the ledger representing a stock change.",
       "type": "object",
       "properties": {
-        "type": { "type": "string", "enum": ["INCOMING", "REPAIR", "SALE", "ADJUSTMENT", "BREAKDOWN"], "description": "Type of transaction" },
+        "type": { "type": "string", "enum": ["INCOMING", "REPAIR", "SALE", "ADJUSTMENT", "BREAKDOWN", "PURCHASE", "INSTALL"], "description": "Type of transaction" },
         "batchId": { "type": "string", "description": "The batch this transaction belongs to" },
         "batchActive": { "type": "boolean", "description": "Whether the associated batch is active. Used to hide transactions for deleted batches." },
         "brand": { "type": "string" },
@@ -76,7 +76,8 @@
         "quantity": { "type": "number", "description": "Number of laptops involved" },
         "timestamp": { "type": "string", "format": "date-time" },
         "userId": { "type": "string" },
-        "notes": { "type": "string" }
+        "notes": { "type": "string" },
+        "componentChanges": { "type": "object", "description": "Changes to components associated with this transaction" }
       },
       "required": ["type", "batchId", "brand", "series", "model", "quantity", "timestamp", "userId"]
     },
@@ -127,7 +128,7 @@
       "description": "A record of a change in component inventory.",
       "type": "object",
       "properties": {
-        "type": { "type": "string", "enum": ["BREAKDOWN", "INCOMING", "SALE", "ADJUSTMENT"] },
+        "type": { "type": "string", "enum": ["BREAKDOWN", "INCOMING", "SALE", "ADJUSTMENT", "PURCHASE", "INSTALL"] },
         "brand": { "type": "string" },
         "series": { "type": "string" },
         "model": { "type": "string" },
@@ -150,7 +151,10 @@
         "email": { "type": "string" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "role": { "type": "string", "enum": ["admin", "user"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "isUltimateAdmin": { "type": "boolean" },
+        "isOriginalAdmin": { "type": "boolean" },
+        "notifiedApproved": { "type": "boolean" }
       },
       "required": ["uid", "username", "email", "status", "role", "createdAt"]
     }
