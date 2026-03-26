@@ -1,154 +1,13 @@
 {
   "entities": {
-    "Stock": {
-      "title": "Inventory Stock",
-      "description": "Current counts of each laptop class, organized by model.",
-      "type": "object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "ModelStock"
-          }
-        },
-        "lastUpdated": { "type": "string", "format": "date-time" }
-      },
-      "required": ["items", "lastUpdated"]
-    },
-    "Batch": {
-      "title": "Batch Stock",
-      "description": "Stock counts for a specific batch of laptops, organized by model.",
-      "type": "object",
-      "properties": {
-        "batchId": { "type": "string", "description": "The date or identifier for the batch (e.g., 16/03/2026)" },
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "ModelStock"
-          }
-        },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "active": { "type": "boolean", "description": "Whether the batch is active and visible." }
-      },
-      "required": ["batchId", "items", "createdAt"]
-    },
-    "ModelStock": {
-      "title": "Model Stock",
-      "description": "Stock counts for a specific laptop model.",
-      "type": "object",
-      "properties": {
-        "brand": { "type": "string" },
-        "series": { "type": "string" },
-        "model": { "type": "string" },
-        "counts": {
-          "type": "object",
-          "properties": {
-            "A": { "type": "number" },
-            "B": { "type": "number" },
-            "B-": { "type": "number" },
-            "C1": { "type": "number" },
-            "C2": { "type": "number" },
-            "C3": { "type": "number" },
-            "C4": { "type": "number" },
-            "C5": { "type": "number" },
-            "D": { "type": "number" },
-            "Spoiled": { "type": "number" },
-            "UNCLASSIFIED": { "type": "number" }
-          },
-          "required": ["A", "B", "B-", "C1", "C2", "C3", "C4", "C5", "D", "Spoiled", "UNCLASSIFIED"]
-        }
-      },
-      "required": ["brand", "series", "model", "counts"]
-    },
-    "Transaction": {
-      "title": "Ledger Transaction",
-      "description": "A single entry in the ledger representing a stock change.",
-      "type": "object",
-      "properties": {
-        "type": { "type": "string", "enum": ["INCOMING", "REPAIR", "SALE", "ADJUSTMENT", "BREAKDOWN", "PURCHASE", "INSTALL"], "description": "Type of transaction" },
-        "batchId": { "type": "string", "description": "The batch this transaction belongs to" },
-        "batchActive": { "type": "boolean", "description": "Whether the associated batch is active. Used to hide transactions for deleted batches." },
-        "brand": { "type": "string" },
-        "series": { "type": "string" },
-        "model": { "type": "string", "description": "The laptop model involved in the transaction" },
-        "fromClass": { "type": "string", "description": "The class the laptop is moving FROM" },
-        "toClass": { "type": "string", "description": "The class the laptop is moving TO" },
-        "quantity": { "type": "number", "description": "Number of laptops involved" },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "userId": { "type": "string" },
-        "notes": { "type": "string" },
-        "componentChanges": { "type": "object", "description": "Changes to components associated with this transaction" }
-      },
-      "required": ["type", "batchId", "brand", "series", "model", "quantity", "timestamp", "userId"]
-    },
-    "ComponentStock": {
-      "title": "Component Stock",
-      "description": "Current counts of each component, organized by model.",
-      "type": "object",
-      "properties": {
-        "items": {
-          "type": "array",
-          "items": {
-            "$ref": "ComponentModelStock"
-          }
-        },
-        "lastUpdated": { "type": "string", "format": "date-time" }
-      },
-      "required": ["items", "lastUpdated"]
-    },
-    "ComponentModelStock": {
-      "title": "Component Model Stock",
-      "description": "Stock counts for components of a specific laptop model.",
-      "type": "object",
-      "properties": {
-        "brand": { "type": "string" },
-        "series": { "type": "string" },
-        "model": { "type": "string" },
-        "counts": {
-          "type": "object",
-          "properties": {
-            "A Cover": { "type": "number" },
-            "B Cover": { "type": "number" },
-            "C Cover": { "type": "number" },
-            "D Cover": { "type": "number" },
-            "Screen": { "type": "number" },
-            "Motherboard": { "type": "number" },
-            "Battery": { "type": "number" },
-            "Keyboard": { "type": "number" },
-            "RAM": { "type": "number" },
-            "SSD": { "type": "number" },
-            "Speaker": { "type": "number" }
-          }
-        }
-      },
-      "required": ["brand", "series", "model", "counts"]
-    },
-    "ComponentTransaction": {
-      "title": "Component Transaction",
-      "description": "A record of a change in component inventory.",
-      "type": "object",
-      "properties": {
-        "type": { "type": "string", "enum": ["BREAKDOWN", "INCOMING", "SALE", "ADJUSTMENT", "PURCHASE", "INSTALL"] },
-        "brand": { "type": "string" },
-        "series": { "type": "string" },
-        "model": { "type": "string" },
-        "fromClass": { "type": "string" },
-        "laptopQuantity": { "type": "number" },
-        "componentChanges": { "type": "object" },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "userId": { "type": "string" },
-        "notes": { "type": "string" }
-      },
-      "required": ["type", "brand", "series", "model", "componentChanges", "timestamp", "userId"]
-    },
     "UserProfile": {
-      "title": "User Profile",
-      "description": "User profile and approval status.",
+      "title": "UserProfile",
+      "description": "User profile information and access control",
       "type": "object",
       "properties": {
         "uid": { "type": "string" },
         "username": { "type": "string" },
-        "email": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
         "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
         "role": { "type": "string", "enum": ["admin", "user"] },
         "createdAt": { "type": "string", "format": "date-time" },
@@ -157,36 +16,75 @@
         "notifiedApproved": { "type": "boolean" }
       },
       "required": ["uid", "username", "email", "status", "role", "createdAt"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Laptop inventory transaction record",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["INCOMING", "REPAIR", "SALE", "ADJUSTMENT", "BREAKDOWN", "PURCHASE", "INSTALL"] },
+        "batchId": { "type": "string" },
+        "batchActive": { "type": "boolean" },
+        "brand": { "type": "string" },
+        "series": { "type": "string" },
+        "model": { "type": "string" },
+        "fromClass": { "type": "string" },
+        "toClass": { "type": "string" },
+        "quantity": { "type": "integer" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" },
+        "notes": { "type": "string" },
+        "componentChanges": { "type": "object" }
+      },
+      "required": ["type", "batchId", "brand", "series", "model", "quantity", "timestamp", "userId"]
+    },
+    "ComponentTransaction": {
+      "title": "ComponentTransaction",
+      "description": "Component inventory transaction record",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["BREAKDOWN", "INCOMING", "SALE", "ADJUSTMENT", "PURCHASE", "INSTALL"] },
+        "brand": { "type": "string" },
+        "series": { "type": "string" },
+        "model": { "type": "string" },
+        "fromClass": { "type": "string" },
+        "laptopQuantity": { "type": "integer" },
+        "componentChanges": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" },
+        "notes": { "type": "string" }
+      },
+      "required": ["type", "brand", "series", "model", "componentChanges", "timestamp", "userId"]
+    },
+    "Batch": {
+      "title": "Batch",
+      "description": "Inventory batch record",
+      "type": "object",
+      "properties": {
+        "batchId": { "type": "string" },
+        "items": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "active": { "type": "boolean" }
+      },
+      "required": ["batchId", "items", "createdAt"]
     }
   },
   "firestore": {
-    "/inventory/current": {
-      "schema": "Stock",
-      "description": "The single source of truth for global stock levels."
-    },
-    "/batches/{batchId}": {
-      "schema": "Batch",
-      "description": "Stock levels for a specific batch."
-    },
-    "/transactions/{transactionId}": {
-      "schema": "Transaction",
-      "description": "Historical log of all stock movements."
-    },
-    "/components/current": {
-      "schema": "ComponentStock",
-      "description": "The single source of truth for global component stock levels."
-    },
-    "/components/spoiled": {
-      "schema": "ComponentStock",
-      "description": "The single source of truth for spoiled component stock levels."
-    },
-    "/component_transactions/{transactionId}": {
-      "schema": "ComponentTransaction",
-      "description": "Historical log of all component stock movements."
-    },
-    "/users/{uid}": {
+    "users": {
       "schema": "UserProfile",
-      "description": "User profiles and approval status."
+      "description": "Collection of user profiles"
+    },
+    "transactions": {
+      "schema": "Transaction",
+      "description": "Collection of laptop transactions"
+    },
+    "component_transactions": {
+      "schema": "ComponentTransaction",
+      "description": "Collection of component transactions"
+    },
+    "batches": {
+      "schema": "Batch",
+      "description": "Collection of inventory batches"
     }
   }
 }

@@ -188,12 +188,14 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                   <td className="px-8 py-4 text-right">
                     <p className={cn(
                       "text-[17px] font-semibold tabular-nums tracking-tight",
-                      (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE') ? "text-green-600" : tx.type === 'INSTALL' ? "text-pink-600" : "text-orange-600"
+                      (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' || (tx.type === 'ADJUSTMENT' && tx.quantity > 0)) ? "text-green-600" : tx.type === 'INSTALL' ? "text-pink-600" : "text-orange-600"
                     )}>
                       {tx.type === 'PURCHASE' ? (
                         `+${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
                       ) : tx.type === 'INSTALL' ? (
                         `-${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
+                      ) : tx.type === 'ADJUSTMENT' ? (
+                        tx.quantity >= 0 ? `+${tx.quantity}` : tx.quantity
                       ) : (
                         `${(tx.type === 'INCOMING' || tx.type === 'REPAIR') ? '+' : '-'}${tx.quantity}`
                       )}

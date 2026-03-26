@@ -105,7 +105,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
             className="ios-input py-2 px-4 shadow-sm w-auto"
           >
             <option key="placeholder" value="">{t.selectBatch}</option>
-            {batches.map(b => <option key={b.id || b.batchId} value={b.batchId}>{b.batchId}</option>)}
+            {batches.map((b, i) => <option key={b.id || b.batchId || `batch-${i}`} value={b.batchId}>{b.batchId}</option>)}
           </select>
         </div>
 

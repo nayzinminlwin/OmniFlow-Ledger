@@ -1,183 +1,121 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: uid, username, email, status, role, createdAt, isUltimateAdmin, isOriginalAdmin, notifiedApproved
+    //
+    // Collection: transactions
+    // Fields: type, batchId, batchActive, brand, series, model, fromClass, toClass, quantity, timestamp, userId, notes, componentChanges
+    //
+    // Collection: component_transactions
+    // Fields: type, brand, series, model, fromClass, laptopQuantity, componentChanges, timestamp, userId, notes
+    //
+    // Collection: batches
+    // Fields: batchId, items, createdAt, active
+    //
+    // ===============================================================
+
     // ===============================================================
     // Helper Functions
     // ===============================================================
-    
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
     function isAdmin() {
-      return isAuthenticated() && 
-             (request.auth.token.email == "nayzinminlwin22@gmail.com" || 
-              isUltimateAdmin());
-    }
-
-    function isOriginalAdmin() {
-      return isAuthenticated() && 
-             (request.auth.token.email == "nayzinminlwin22@gmail.com" || 
-              request.auth.token.email == "tpl.pauline.pts2026@gmail.com" || 
-              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isOriginalAdmin', false) == true));
-    }
-
-    function isUltimateAdmin() {
-      return isAuthenticated() && 
-             (isOriginalAdmin() ||
-              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isUltimateAdmin', false) == true));
-    }
-
-    function isValidUserProfile(data, uid) {
-      return data.keys().hasAll(['uid', 'username', 'email', 'status', 'role', 'createdAt']) &&
-             data.uid == uid &&
-             validString(data.username, 50) &&
-             validString(data.email, 100) &&
-             data.status in ['pending', 'approved', 'rejected'] &&
-             data.role in ['admin', 'user'] &&
-             (!('isUltimateAdmin' in data) || data.isUltimateAdmin is bool) &&
-             (!('isOriginalAdmin' in data) || data.isOriginalAdmin is bool) &&
-             (!('notifiedApproved' in data) || data.notifiedApproved is bool) &&
-              data.createdAt is string;
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        (request.auth.token.email == "nayzinminlwin22@gmail.com" && request.auth.token.email_verified == true)
+      );
     }
 
     function isApproved() {
-      return isAuthenticated() && 
-             (isUltimateAdmin() || 
-              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved'));
+      return isAuthenticated() && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved' ||
+        isAdmin()
+      );
     }
 
-    function isValidClass(className) {
-      return className in ['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', 'C5', 'D', 'Spoiled', 'UNCLASSIFIED'];
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
     }
 
-    function validString(val, maxLen) {
-      return val is string && val.size() <= maxLen;
+    function isValidTimestamp(ts) {
+      return ts is string && ts.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
     }
 
-    function isValidModelStock(modelStock) {
-      return modelStock is map &&
-             modelStock.keys().hasAll(['model', 'counts']) &&
-             validString(modelStock.model, 100) &&
-             modelStock.counts is map &&
-             modelStock.counts.keys().hasAll(['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', 'C5', 'D', 'Spoiled', 'UNCLASSIFIED']) &&
-             modelStock.counts['A'] is number &&
-             modelStock.counts['B'] is number &&
-             modelStock.counts['B-'] is number &&
-             modelStock.counts['C1'] is number &&
-             modelStock.counts['C2'] is number &&
-             modelStock.counts['C3'] is number &&
-             modelStock.counts['C4'] is number &&
-             modelStock.counts['C5'] is number &&
-             modelStock.counts['D'] is number &&
-             modelStock.counts['Spoiled'] is number &&
-             modelStock.counts['UNCLASSIFIED'] is number;
-    }
-
-    function isValidModelStockList(items) {
-      return items is list && items.size() <= 1000;
-      // Note: Deep inspection of list items is complex in rules, 
-      // but limiting the size prevents massive payloads.
-    }
-
-    function isValidStock(data) {
-      return data.keys().hasAll(['items', 'lastUpdated']) &&
-             isValidModelStockList(data.items) &&
-             data.lastUpdated is string;
-    }
-
-    function isValidBatch(data) {
-      return data.keys().hasAll(['batchId', 'items', 'createdAt']) &&
-             validString(data.batchId, 50) &&
-             isValidModelStockList(data.items) &&
-             data.createdAt is string;
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'username', 'email', 'status', 'role', 'createdAt']) &&
+             data.uid is string && data.username is string && data.username.size() > 0 &&
+             isValidEmail(data.email) &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             data.role in ['admin', 'user'] &&
+             isValidTimestamp(data.createdAt);
     }
 
     function isValidTransaction(data) {
-      return data.keys().hasAll(['type', 'batchId', 'model', 'quantity', 'timestamp', 'userId']) &&
+      return data.keys().hasAll(['type', 'batchId', 'brand', 'series', 'model', 'quantity', 'timestamp', 'userId']) &&
              data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT', 'BREAKDOWN', 'PURCHASE', 'INSTALL'] &&
-             validString(data.batchId, 50) &&
-             validString(data.model, 100) &&
-             (!('brand' in data) || validString(data.brand, 100)) &&
-             (!('series' in data) || validString(data.series, 100)) &&
-             data.quantity is number &&
-             data.quantity >= 0 &&
-             data.timestamp is string &&
-             data.userId == request.auth.uid &&
-             (!('notes' in data) || validString(data.notes, 500)) &&
-             (!('fromClass' in data) || isValidClass(data.fromClass)) &&
-             (!('toClass' in data) || isValidClass(data.toClass)) &&
-             (!('componentChanges' in data) || data.componentChanges is map);
+             data.batchId is string && data.brand is string && data.series is string &&
+             data.model is string && data.quantity is int &&
+             isValidTimestamp(data.timestamp) && data.userId == request.auth.uid;
     }
 
     function isValidComponentTransaction(data) {
       return data.keys().hasAll(['type', 'brand', 'series', 'model', 'componentChanges', 'timestamp', 'userId']) &&
              data.type in ['BREAKDOWN', 'INCOMING', 'SALE', 'ADJUSTMENT', 'PURCHASE', 'INSTALL'] &&
-             validString(data.brand, 100) &&
-             validString(data.series, 100) &&
-             validString(data.model, 100) &&
-             (!('fromClass' in data) || isValidClass(data.fromClass)) &&
-             (!('laptopQuantity' in data) || data.laptopQuantity is number) &&
-             data.componentChanges is map &&
-             data.timestamp is string &&
-             data.userId == request.auth.uid &&
-             (!('notes' in data) || validString(data.notes, 500));
+             data.brand is string && data.series is string && data.model is string &&
+             data.componentChanges is map && isValidTimestamp(data.timestamp) &&
+             data.userId == request.auth.uid;
+    }
+
+    function isValidBatch(data) {
+      return data.keys().hasAll(['batchId', 'items', 'createdAt']) &&
+             data.batchId is string && data.items is list && isValidTimestamp(data.createdAt);
     }
 
     // ===============================================================
     // Rules
     // ===============================================================
-
-    match /users/{uId} {
-      allow get: if isAuthenticated();
-      allow list: if isUltimateAdmin();
-      allow delete: if isAuthenticated() && request.auth.uid == uId;
-      allow create: if isAuthenticated() && request.auth.uid == uId && isValidUserProfile(request.resource.data, uId) && 
-                    ((request.resource.data.status == 'pending' && request.resource.data.role == 'user') || isUltimateAdmin());
-      allow update: if (isOriginalAdmin() && isValidUserProfile(request.resource.data, uId)) ||
-                    (isUltimateAdmin() && isValidUserProfile(request.resource.data, uId) && 
-                     !resource.data.get('isOriginalAdmin', false) &&
-                     !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isUltimateAdmin', 'isOriginalAdmin'])) ||
-                    (isAuthenticated() && request.auth.uid == uId && 
-                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['notifiedApproved']) &&
-                     request.resource.data.notifiedApproved == true);
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
+                      request.resource.data.role == 'user' && request.resource.data.status == 'pending';
+      allow update: if isAuthenticated() && (
+                      (isOwner(userId) && request.resource.data.role == resource.data.role && 
+                       request.resource.data.status == resource.data.status && isValidUser(request.resource.data)) ||
+                      isAdmin()
+                    );
+      allow delete: if isAdmin();
     }
 
-    match /inventory/current {
+    match /transactions/{txId} {
       allow read: if isApproved();
-      allow write: if isAdmin() || (isApproved() && isValidStock(request.resource.data));
+      allow create: if isApproved() && isValidTransaction(request.resource.data);
+      allow update, delete: if isAdmin();
     }
 
-    match /components/current {
+    match /component_transactions/{txId} {
       allow read: if isApproved();
-      allow write: if isAdmin() || (isApproved() && isValidStock(request.resource.data)); // Reusing isValidStock for ComponentStock structure
-    }
-
-    match /components/spoiled {
-      allow read: if isApproved();
-      allow write: if isAdmin() || (isApproved() && isValidStock(request.resource.data));
+      allow create: if isApproved() && isValidComponentTransaction(request.resource.data);
+      allow update, delete: if isAdmin();
     }
 
     match /batches/{batchId} {
       allow read: if isApproved();
-      allow create, update: if isAdmin() || (isApproved() && isValidBatch(request.resource.data));
+      allow create, update: if isApproved() && isValidBatch(request.resource.data);
       allow delete: if isAdmin();
-    }
-
-    match /transactions/{transactionId} {
-      allow read: if isApproved();
-      allow create: if isAdmin() || (isApproved() && isValidTransaction(request.resource.data));
-      allow update, delete: if isAdmin();
-    }
-
-    match /component_transactions/{transactionId} {
-      allow read: if isApproved();
-      allow create: if isAdmin() || (isApproved() && isValidComponentTransaction(request.resource.data));
-      allow update, delete: if isAdmin();
     }
   }
 }

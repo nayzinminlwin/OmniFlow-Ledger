@@ -123,7 +123,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
     } else {
       source = allExistingModels;
     }
-    return Array.from(new Set(source.map(m => m.brand))).sort();
+    return Array.from(new Set(source.map(m => m.brand).filter(Boolean))).sort() as string[];
   }, [mode, availableModels, allExistingModels, componentStock]);
 
   const seriesList = useMemo(() => {
@@ -138,7 +138,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
     } else {
       source = allExistingModels;
     }
-    return Array.from(new Set(source.filter(m => m.brand === brand).map(m => m.series))).sort();
+    return Array.from(new Set(source.filter(m => m.brand === brand).map(m => m.series).filter(Boolean))).sort() as string[];
   }, [mode, brand, isNewBrand, availableModels, allExistingModels, componentStock]);
 
   const modelList = useMemo(() => {
@@ -153,7 +153,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
     } else {
       source = allExistingModels;
     }
-    return Array.from(new Set(source.filter(m => m.brand === brand && m.series === series).map(m => m.model))).sort();
+    return Array.from(new Set(source.filter(m => m.brand === brand && m.series === series).map(m => m.model).filter(Boolean))).sort() as string[];
   }, [mode, brand, series, isNewBrand, isNewSeries, availableModels, allExistingModels, componentStock]);
 
   const handleBrandChange = (val: string) => {
@@ -410,11 +410,11 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                         className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                         required
                       >
-                        <option value="">{t.selectBatchPlaceholder}</option>
-                        {activeBatches.map(b => (
-                          <option key={b.id || b.batchId} value={b.batchId}>{b.batchId}</option>
+                        <option key="placeholder" value="">{t.selectBatchPlaceholder}</option>
+                        {activeBatches.map((b, i) => (
+                          <option key={b.id || b.batchId || `batch-${i}`} value={b.batchId}>{b.batchId}</option>
                         ))}
-                        <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBatch || 'New Batch'}</option>
+                        <option key="new-batch" value="__NEW__" className="font-bold text-blue-600">+ {t.newBatch || 'New Batch'}</option>
                       </select>
                     </div>
                   ) : (
@@ -457,10 +457,10 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     required
                   >
                     <option key="placeholder" value="">{t.selectExisting}</option>
-                    {brands.map(b => <option key={b} value={b}>{b}</option>)}
-                    {mode === 'buy' && (
+                    {brands.map((b, i) => <option key={`brand-${b}-${i}`} value={b}>{b}</option>)}
+                    {mode === 'buy' ? (
                       <option key="new-brand" value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
-                    )}
+                    ) : null}
                   </select>
                 ) : (
                   <div className="relative flex items-center">
@@ -495,10 +495,10 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     required
                   >
                     <option key="placeholder" value="">{t.selectExisting}</option>
-                    {seriesList.map(s => <option key={s} value={s}>{s}</option>)}
-                    {mode === 'buy' && (
+                    {seriesList.map((s, i) => <option key={`series-${s}-${i}`} value={s}>{s}</option>)}
+                    {mode === 'buy' ? (
                       <option key="new-series" value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
-                    )}
+                    ) : null}
                   </select>
                 ) : (
                   <div className="relative flex items-center">
@@ -533,10 +533,10 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     required
                   >
                     <option key="placeholder" value="">{t.selectExisting}</option>
-                    {modelList.map(m => <option key={m} value={m}>{m}</option>)}
-                    {mode === 'buy' && (
+                    {modelList.map((m, i) => <option key={`model-${m}-${i}`} value={m}>{m}</option>)}
+                    {mode === 'buy' ? (
                       <option key="new-model" value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
-                    )}
+                    ) : null}
                   </select>
                 ) : (
                   <div className="relative flex items-center">
@@ -584,15 +584,11 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                       required
                     >
                       <option key="placeholder" value="">{t.selectClassPlaceholder}</option>
-                      {eligibleClasses.map(cls => {
-                        const count = selectedModelStock?.counts?.[cls as LaptopClass] || 0;
-                        if (count === 0) return null;
-                        return (
-                          <option key={cls} value={cls}>
-                            {cls === 'Spoiled' ? t.spoiled : cls}
-                          </option>
-                        );
-                      })}
+                      {eligibleClasses.filter(cls => (selectedModelStock?.counts?.[cls as LaptopClass] || 0) > 0).map((cls, i) => (
+                        <option key={`class-${cls}-${i}`} value={cls}>
+                          {cls === 'Spoiled' ? t.spoiled : cls}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -693,16 +689,16 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                     required
                   >
-                    <option value="">{t.selectComponent}</option>
-                    {COMPONENTS.map(comp => {
+                    <option key="placeholder" value="">{t.selectComponent}</option>
+                    {COMPONENTS.filter(comp => {
                       if (mode === 'install' && selectedComponentModelStock) {
                         const count = selectedComponentModelStock?.counts?.[comp as ComponentType] || 0;
-                        if (count <= 0) return null;
+                        return count > 0;
                       }
-                      return (
-                        <option key={comp} value={comp}>{t[comp] || comp}</option>
-                      );
-                    })}
+                      return true;
+                    }).map((comp, i) => (
+                      <option key={`comp-${comp}-${i}`} value={comp}>{t[comp] || comp}</option>
+                    ))}
                   </select>
                 </div>
 

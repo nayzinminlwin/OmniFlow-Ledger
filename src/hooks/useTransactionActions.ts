@@ -102,6 +102,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         const globalModelStock = getModelStock(newStock.items, brand, series, model);
         const batchModelStock = getModelStock(newBatchStock.items, brand, series, model);
 
+        let adjustmentDiff = 0;
         if (txType === 'INCOMING') {
           globalModelStock.counts['UNCLASSIFIED'] += quantity;
           batchModelStock.counts['UNCLASSIFIED'] += quantity;
@@ -126,9 +127,9 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
           batchModelStock.counts[fromClass] -= quantity;
           batchModelStock.counts[toClass] += quantity;
         } else if (txType === 'ADJUSTMENT') {
-          const diff = quantity - batchModelStock.counts[toClass];
-          globalModelStock.counts[toClass] += diff;
-          batchModelStock.counts[toClass] += diff;
+          adjustmentDiff = quantity - batchModelStock.counts[toClass];
+          globalModelStock.counts[toClass] += adjustmentDiff;
+          batchModelStock.counts[toClass] += adjustmentDiff;
           if (batchModelStock.counts[toClass] < 0) {
             throw new Error(t.adjustmentNegative(batchId, toClass));
           }
@@ -148,7 +149,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
           brand,
           series,
           model,
-          quantity,
+          quantity: txType === 'ADJUSTMENT' ? adjustmentDiff : quantity,
           timestamp: new Date().toISOString(),
           userId: user.uid,
         };
