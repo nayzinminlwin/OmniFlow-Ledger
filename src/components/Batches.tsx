@@ -99,14 +99,13 @@ export const Batches: React.FC<BatchesProps> = memo(({
       <section>
         <div className="flex items-center justify-between mb-6 px-2">
           <h2 className="text-[28px] font-bold text-black tracking-tight leading-none">{t.batchStockLevels}</h2>
-          <select
-            value={selectedBatchId}
-            onChange={(e) => setSelectedBatchId(e.target.value)}
-            className="ios-input py-2 px-4 shadow-sm w-auto"
-          >
-            <option key="placeholder" value="">{t.selectBatch}</option>
-            {batches.map((b, i) => <option key={b.id || b.batchId || `batch-${i}`} value={b.batchId}>{b.batchId}</option>)}
-          </select>
+            <select
+              value={selectedBatchId}
+              onChange={(e) => setSelectedBatchId(e.target.value)}
+              className="ios-input py-2 px-4 shadow-sm w-auto"
+            >
+              {batches.map((b, i) => <option key={b.id || b.batchId || `batch-${i}`} value={b.batchId}>{b.batchId}</option>)}
+            </select>
         </div>
 
         {loading ? (

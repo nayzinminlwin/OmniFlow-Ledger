@@ -222,7 +222,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
     setFromClass('');
   };
 
-  const eligibleClasses: LaptopClass[] = ['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', 'C5', 'D', 'Spoiled', 'UNCLASSIFIED'];
+  const eligibleClasses: LaptopClass[] = ['C1', 'C2', 'C3', 'C4', 'C5', 'Spoiled', 'UNCLASSIFIED'];
 
   const selectedModelStock = useMemo(() => {
     if (!brand || !series || !model || !selectedBatch) return null;
@@ -239,13 +239,63 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
     return selectedComponentModelStock?.counts?.[selectedComponent as ComponentType] || 0;
   }, [selectedComponentModelStock, selectedComponent]);
 
+  // Set default batchId if empty
+  useEffect(() => {
+    if (!batchId && activeBatches.length > 0 && !isNewBatch) {
+      setBatchId(activeBatches[0].batchId);
+    }
+  }, [activeBatches, batchId, isNewBatch]);
+
+  // Set default brand if empty
+  useEffect(() => {
+    if (!brand && brands.length > 0 && !isNewBrand) {
+      setBrand(brands[0]);
+    }
+  }, [brands, brand, isNewBrand]);
+
+  // Set default series if empty
+  useEffect(() => {
+    if (!series && seriesList.length > 0 && !isNewSeries) {
+      setSeries(seriesList[0]);
+    }
+  }, [seriesList, series, isNewSeries]);
+
+  // Set default model if empty
+  useEffect(() => {
+    if (!model && modelList.length > 0 && !isNewModel) {
+      setModel(modelList[0]);
+    }
+  }, [modelList, model, isNewModel]);
+
+  // Set default fromClass if empty and eligible classes exist
+  useEffect(() => {
+    const availableClasses = eligibleClasses.filter(cls => (selectedModelStock?.counts?.[cls as LaptopClass] || 0) > 0);
+    if (!fromClass && availableClasses.length > 0) {
+      setFromClass(availableClasses[0] as LaptopClass);
+    }
+  }, [selectedModelStock, fromClass, eligibleClasses]);
+
+  // Set default selectedComponent if empty
+  useEffect(() => {
+    const availableComponents = COMPONENTS.filter(comp => {
+      if (mode === 'install' && selectedComponentModelStock) {
+        const count = selectedComponentModelStock?.counts?.[comp as ComponentType] || 0;
+        return count > 0;
+      }
+      return true;
+    });
+    if (!selectedComponent && availableComponents.length > 0) {
+      setSelectedComponent(availableComponents[0] as ComponentType);
+    }
+  }, [mode, selectedComponentModelStock, selectedComponent]);
+
   const maxLaptopQuantity = useMemo(() => {
     if (!selectedModelStock || !fromClass) return 0;
     return selectedModelStock.counts?.[fromClass as LaptopClass] || 0;
   }, [selectedModelStock, fromClass]);
 
   const handleComponentChange = (component: ComponentType, val: number | '') => {
-    const finalVal = val === '' ? '' : Math.min(val, Number(laptopQuantity));
+    const finalVal = val === '' ? '' : Math.max(0, Math.min(val, Number(laptopQuantity)));
     setComponentChanges(prev => ({
       ...prev,
       [component]: finalVal
@@ -431,7 +481,6 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                         className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                         required
                       >
-                        <option key="placeholder" value="">{t.selectBatchPlaceholder}</option>
                         {activeBatches.map((b, i) => (
                           <option key={b.id || b.batchId || `batch-${i}`} value={b.batchId}>{b.batchId}</option>
                         ))}
@@ -477,7 +526,6 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
                     required
                   >
-                    <option key="placeholder" value="">{t.selectExisting}</option>
                     {brands.map((b, i) => <option key={`brand-${b}-${i}`} value={b}>{b}</option>)}
                     {mode === 'buy' ? (
                       <option key="new-brand" value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
@@ -515,7 +563,6 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
                     required
                   >
-                    <option key="placeholder" value="">{t.selectExisting}</option>
                     {seriesList.map((s, i) => <option key={`series-${s}-${i}`} value={s}>{s}</option>)}
                     {mode === 'buy' ? (
                       <option key="new-series" value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
@@ -553,7 +600,6 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
                     required
                   >
-                    <option key="placeholder" value="">{t.selectExisting}</option>
                     {modelList.map((m, i) => <option key={`model-${m}-${i}`} value={m}>{m}</option>)}
                     {mode === 'buy' ? (
                       <option key="new-model" value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
@@ -604,7 +650,6 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                       className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
                       required
                     >
-                      <option key="placeholder" value="">{t.selectClassPlaceholder}</option>
                       {eligibleClasses.filter(cls => (selectedModelStock?.counts?.[cls as LaptopClass] || 0) > 0).map((cls, i) => (
                         <option key={`class-${cls}-${i}`} value={cls}>
                           {cls === 'Spoiled' ? t.spoiled : cls}
@@ -623,7 +668,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                       }}
                       onChange={(e) => {
                         const val = e.target.value;
-                        const numVal = val === '' ? '' : parseInt(val);
+                        const numVal = val === '' ? '' : Math.max(0, parseInt(val));
                         setLaptopQuantity(numVal);
                         
                         if (numVal !== '') {
@@ -671,7 +716,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                             }}
                             onChange={(e) => {
                               const val = e.target.value;
-                              handleComponentChange(comp, val === '' ? '' : parseInt(val));
+                              handleComponentChange(comp, val === '' ? '' : Math.max(0, parseInt(val)));
                             }}
                             className="w-20 px-3 py-2 text-center bg-white border border-black/10 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
                             placeholder="0"
@@ -710,7 +755,6 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
                     required
                   >
-                    <option key="placeholder" value="">{t.selectComponent}</option>
                     {COMPONENTS.filter(comp => {
                       if (mode === 'install' && selectedComponentModelStock) {
                         const count = selectedComponentModelStock?.counts?.[comp as ComponentType] || 0;
@@ -733,7 +777,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     }}
                     onChange={(e) => {
                       const val = e.target.value;
-                      let numVal = val === '' ? '' : parseInt(val);
+                      let numVal = val === '' ? '' : Math.max(0, parseInt(val));
                       if (mode === 'install' && typeof numVal === 'number' && numVal > availableComponentCount) {
                         numVal = availableComponentCount;
                       }

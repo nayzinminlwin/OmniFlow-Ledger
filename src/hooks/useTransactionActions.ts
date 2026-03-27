@@ -376,6 +376,11 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         const globalModel = getModelStock(globalData.items, brand, series, model);
         const batchModel = getModelStock(batchData.items, brand, series, model);
 
+        const allowedClasses: LaptopClass[] = ['C1', 'C2', 'C3', 'C4', 'C5', 'Spoiled', 'UNCLASSIFIED'];
+        if (!allowedClasses.includes(fromClass)) {
+          throw new Error(`Breakdown not allowed for class ${fromClass}`);
+        }
+
         if ((batchModel.counts[fromClass] || 0) < laptopQuantity) {
           throw new Error(t.insufficientStock(batchId, fromClass));
         }
@@ -427,6 +432,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         const laptopTxData = {
           type: 'BREAKDOWN',
           batchId,
+          batchActive: batchData.active ?? true,
           brand,
           series,
           model,
@@ -508,6 +514,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         const laptopTxData = {
           type: 'PURCHASE',
           batchId: 'COMPONENTS',
+          batchActive: true,
           brand,
           series,
           model,
@@ -588,6 +595,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         const laptopTxData = {
           type: 'INSTALL',
           batchId: 'COMPONENTS',
+          batchActive: true,
           brand,
           series,
           model,
@@ -794,16 +802,29 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         // Mark original transaction as undone
         transaction.update(txRef, { isUndone: true });
 
+        // Calculate the correct quantity for the UNDO record to show opposite sign in ledger
+        let undoQuantity = -txData.quantity;
+        if (txData.type === 'SALE' || txData.type === 'BREAKDOWN') {
+          undoQuantity = txData.quantity;
+        } else if (txData.type === 'PURCHASE') {
+          const totalComponents = Object.values(txData.componentChanges || {}).reduce((a, b) => a + (b || 0), 0);
+          undoQuantity = -totalComponents;
+        } else if (txData.type === 'INSTALL') {
+          const totalComponents = Object.values(txData.componentChanges || {}).reduce((a, b) => a + (b || 0), 0);
+          undoQuantity = totalComponents;
+        }
+
         // Create a new UNDO transaction record
         const undoTxRef = doc(collection(db, 'transactions'));
         const undoTxData: any = {
           type: 'UNDO',
+          undoneType: txData.type,
           batchId: txData.batchId,
-          batchActive: txData.batchActive,
+          batchActive: txData.batchActive ?? true,
           brand: txData.brand,
           series: txData.series,
           model: txData.model,
-          quantity: -txData.quantity, // Negative quantity to show reversal
+          quantity: undoQuantity,
           timestamp: new Date().toISOString(),
           userId: user.uid,
           notes: `Undid ${txData.type} for ${txData.brand} ${txData.model}`,

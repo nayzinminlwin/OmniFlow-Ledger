@@ -131,6 +131,34 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
     return Array.from(modelsSet).sort();
   }, [batches, brand, series, isNewBrand, isNewSeries]);
 
+  // Set default batchId if empty
+  useEffect(() => {
+    if (!batchId && batches.length > 0 && !isNewBatch) {
+      setBatchId(batches[0].batchId);
+    }
+  }, [batches, batchId, isNewBatch]);
+
+  // Set default brand if empty
+  useEffect(() => {
+    if (!brand && existingBrands.length > 0 && !isNewBrand) {
+      setBrand(existingBrands[0]);
+    }
+  }, [existingBrands, brand, isNewBrand]);
+
+  // Set default series if empty
+  useEffect(() => {
+    if (!series && filteredSeries.length > 0 && !isNewSeries) {
+      setSeries(filteredSeries[0]);
+    }
+  }, [filteredSeries, series, isNewSeries]);
+
+  // Set default model if empty
+  useEffect(() => {
+    if (!model && filteredModels.length > 0 && !isNewModel) {
+      setModel(filteredModels[0]);
+    }
+  }, [filteredModels, model, isNewModel]);
+
   const handleBrandChange = (val: string) => {
     if (val === '__NEW__') {
       setIsNewBrand(true);
@@ -230,18 +258,17 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.batchId}</label>
                 {!isNewBatch ? (
                   <div className="relative">
-                    <select
-                      value={batchId}
-                      onChange={(e) => handleBatchIdChange(e.target.value)}
-                      className="ios-input w-full pr-10"
-                      required
-                    >
-                      <option key="placeholder" value="">{t.selectBatchPlaceholder}</option>
-                      {batches.map((b, i) => (
-                        <option key={b.id || b.batchId || `batch-${i}`} value={b.batchId}>{b.batchId}</option>
-                      ))}
-                      <option key="new-batch" value="__NEW__" className="font-bold text-blue-600">+ {t.newBatch || 'New Batch'}</option>
-                    </select>
+                      <select
+                        value={batchId}
+                        onChange={(e) => handleBatchIdChange(e.target.value)}
+                        className="ios-input w-full pr-10"
+                        required
+                      >
+                        {batches.map((b, i) => (
+                          <option key={b.id || b.batchId || `batch-${i}`} value={b.batchId}>{b.batchId}</option>
+                        ))}
+                        <option key="new-batch" value="__NEW__" className="font-bold text-blue-600">+ {t.newBatch || 'New Batch'}</option>
+                      </select>
                   </div>
                 ) : (
                   <div className="relative flex items-center">
@@ -298,7 +325,6 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     className="ios-input w-full text-[15px] py-3"
                     required
                   >
-                    <option key="placeholder" value="">{t.selectExisting}</option>
                     {existingBrands.map((b, i) => <option key={`brand-${b}-${i}`} value={b}>{b}</option>)}
                     {txType === 'INCOMING' ? (
                       <option key="new-brand" value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
@@ -336,7 +362,6 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     disabled={!brand && !isNewBrand}
                     required
                   >
-                    <option key="placeholder" value="">{t.selectExisting}</option>
                     {filteredSeries.map((s, i) => <option key={`series-${s}-${i}`} value={s}>{s}</option>)}
                     {txType === 'INCOMING' ? (
                       <option key="new-series" value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
@@ -374,7 +399,6 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     disabled={(!series && !isNewSeries) || (!brand && !isNewBrand)}
                     required
                   >
-                    <option key="placeholder" value="">{t.selectExisting}</option>
                     {filteredModels.map((m, i) => <option key={`model-${m}-${i}`} value={m}>{m}</option>)}
                     {txType === 'INCOMING' ? (
                       <option key="new-model" value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
@@ -467,7 +491,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     if (val === '') {
                       setQuantity('');
                     } else {
-                      const parsed = parseInt(val);
+                      const parsed = Math.max(0, parseInt(val));
                       if (!isNaN(parsed)) setQuantity(parsed);
                     }
                   }}

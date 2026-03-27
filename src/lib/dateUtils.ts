@@ -1,4 +1,5 @@
 export const isValidBatchDate = (dateStr: string) => {
+  if (dateStr === '00-00-2000') return true;
   const parts = dateStr.split('-');
   if (parts.length !== 3) return false;
   const day = parseInt(parts[0], 10);

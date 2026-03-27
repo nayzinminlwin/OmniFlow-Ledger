@@ -26,7 +26,7 @@ export interface Batch {
 
 export type TransactionType = 'INCOMING' | 'REPAIR' | 'SALE' | 'ADJUSTMENT' | 'BREAKDOWN' | 'PURCHASE' | 'INSTALL' | 'UNDO';
 
-export type ComponentType = 'A Cover' | 'B Cover' | 'C Cover' | 'D Cover' | 'Screen' | 'Motherboard' | 'Battery' | 'Keyboard' | 'RAM' | 'SSD' | 'Speaker';
+export type ComponentType = 'A Cover' | 'B Cover' | 'C Cover' | 'D Cover' | 'Screen' | 'Motherboard' | 'Battery' | 'Keyboard' | 'RAM' | 'SSD' | 'Speaker' | 'Charging Adapter';
 
 export type ComponentCounts = {
   [key in ComponentType]: number;
@@ -77,6 +77,7 @@ export interface Transaction {
   notes?: string;
   componentChanges?: Partial<Record<ComponentType, number>>;
   isUndone?: boolean;
+  undoneType?: TransactionType;
 }
 
 export interface UserProfile {

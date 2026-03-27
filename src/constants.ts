@@ -4,12 +4,12 @@ export const CLASSES: LaptopClass[] = ['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', '
 
 export const COMPONENTS: ComponentType[] = [
   'A Cover', 'B Cover', 'C Cover', 'D Cover', 'Screen', 
-  'Motherboard', 'Battery', 'Keyboard', 'RAM', 'SSD', 'Speaker'
+  'Motherboard', 'Battery', 'Keyboard', 'RAM', 'SSD', 'Speaker', 'Charging Adapter'
 ];
 
 export const INITIAL_COMPONENT_COUNTS: ComponentCounts = {
   'A Cover': 0, 'B Cover': 0, 'C Cover': 0, 'D Cover': 0, 'Screen': 0,
-  'Motherboard': 0, 'Battery': 0, 'Keyboard': 0, 'RAM': 0, 'SSD': 0, 'Speaker': 0
+  'Motherboard': 0, 'Battery': 0, 'Keyboard': 0, 'RAM': 0, 'SSD': 0, 'Speaker': 0, 'Charging Adapter': 0
 };
 
 export const INITIAL_COMPONENT_STOCK: ComponentStock = {

@@ -1,6 +1,6 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { ArrowRightLeft, Info, Hammer, Undo2 } from 'lucide-react';
+import { ArrowRightLeft, Info, Hammer, Undo2, ArrowDownLeft, ArrowUpRight, ShoppingCart, Wrench, Sliders, PackagePlus, PlusCircle } from 'lucide-react';
 import { Transaction, UserProfile } from '../types';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
@@ -19,6 +19,20 @@ interface HistoryProps {
 export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, activeTab, loading = false, onUndo, currentUserProfile }) => {
   const [hoveredTxId, setHoveredTxId] = useState<string | null>(null);
   const [undoingTxId, setUndoingTxId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (hoveredTxId && !target.closest('.breakdown-trigger') && !target.closest('.breakdown-popup')) {
+        setHoveredTxId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [hoveredTxId]);
 
   if (activeTab !== 'history') return null;
 
@@ -100,9 +114,12 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                       </td>
                       <td className="px-8 py-4 relative">
                         <div 
-                          className="inline-flex items-center gap-1.5 cursor-pointer"
+                          className={cn(
+                            "inline-flex items-center gap-1.5",
+                            (tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges)) && "cursor-pointer breakdown-trigger"
+                          )}
                           onClick={() => {
-                            if (tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL') {
+                            if (tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges)) {
                               setHoveredTxId(hoveredTxId === tx.id ? null : (tx.id || null));
                             }
                           }}
@@ -118,23 +135,32 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                             tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-700",
                             tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-700"
                           )}>
-                            {(tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL') && <Hammer className="w-3 h-3" />}
+                            {tx.type === 'INCOMING' && <ArrowDownLeft className="w-3 h-3" />}
+                            {tx.type === 'PURCHASE' && <ShoppingCart className="w-3 h-3" />}
+                            {tx.type === 'SALE' && <ArrowUpRight className="w-3 h-3" />}
+                            {tx.type === 'REPAIR' && (tx.fromClass === 'UNCLASSIFIED' ? <PlusCircle className="w-3 h-3" /> : <Wrench className="w-3 h-3" />)}
+                            {tx.type === 'ADJUSTMENT' && <Sliders className="w-3 h-3" />}
+                            {tx.type === 'UNDO' && <Undo2 className="w-3 h-3" />}
+                            {tx.type === 'BREAKDOWN' && <Hammer className="w-3 h-3" />}
+                            {tx.type === 'INSTALL' && <PackagePlus className="w-3 h-3" />}
                             {tx.type === 'REPAIR' && tx.fromClass === 'UNCLASSIFIED' 
                               ? t.initClass 
-                              : (t[tx.type.toLowerCase() as keyof typeof t] || tx.type)}
+                              : tx.type === 'UNDO' 
+                                ? `${t.undo} ${tx.undoneType === 'PURCHASE' ? t.buy : (tx.undoneType ? (t[tx.undoneType.toLowerCase() as keyof typeof t] || tx.undoneType) : '')}`
+                                : (t[tx.type.toLowerCase() as keyof typeof t] || tx.type)}
                           </span>
-                          {(tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL') && (
+                          {(tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges)) && (
                             <Info className="w-3.5 h-3.5 text-purple-400 opacity-50 group-hover:opacity-100 transition-opacity" />
                           )}
 
                         <AnimatePresence>
-                          {(hoveredTxId === tx.id && (tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL')) && (
+                          {(hoveredTxId === tx.id && (tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges))) && (
                             <motion.div
                               initial={{ opacity: 0, scale: 0.95, y: index < 3 ? -10 : 10 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.95, y: index < 3 ? -10 : 10 }}
                               className={cn(
-                                "absolute z-50 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-black/5 p-4 pointer-events-auto",
+                                "absolute z-50 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-black/5 p-4 pointer-events-auto breakdown-popup",
                                 index < 3 ? "top-full mt-2" : "bottom-full mb-2"
                               )}
                               onClick={(e) => e.stopPropagation()}
@@ -142,10 +168,10 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                               <div className="space-y-3">
                                 <div className="flex items-center justify-between border-b border-black/5 pb-2">
                                   <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">
-                                    {tx.type === 'INSTALL' ? t.installComponents : t.goodComponents}
+                                    {tx.type === 'INSTALL' ? t.installComponents : tx.type === 'UNDO' ? t.undoneComponents : t.goodComponents}
                                   </span>
                                   <span className="text-[10px] font-medium text-gray-400">
-                                    {tx.type === 'INSTALL' || tx.type === 'PURCHASE' ? '' : `${tx.quantity} ${t.laptops}`}
+                                    {tx.type === 'INSTALL' || tx.type === 'PURCHASE' || tx.type === 'UNDO' ? '' : `${tx.quantity} ${t.laptops}`}
                                   </span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-2">
@@ -192,13 +218,15 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                               : t.installComponents}</>
                           ) : tx.type === 'UNDO' ? (
                             <span className="text-yellow-600 font-semibold">
-                              {tx.fromClass && tx.toClass 
-                                ? `${getClassName(tx.toClass)} → ${getClassName(tx.fromClass)}` 
-                                : tx.fromClass 
-                                  ? `${t.to} ${getClassName(tx.fromClass)}` 
-                                  : tx.toClass 
-                                    ? `${t.from} ${getClassName(tx.toClass)}` 
-                                    : t.undo}
+                              {tx.undoneType === 'BREAKDOWN' ? (
+                                <>{t.components} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.fromClass)}</>
+                              ) : tx.fromClass && tx.toClass ? (
+                                `${getClassName(tx.toClass)} → ${getClassName(tx.fromClass)}`
+                              ) : tx.fromClass ? (
+                                `${t.to} ${getClassName(tx.fromClass)}`
+                              ) : tx.toClass ? (
+                                `${t.from} ${getClassName(tx.toClass)}`
+                              ) : t.undo}
                             </span>
                           ) : (
                             <>{getClassName(tx.toClass) === t.spoiled ? t.spoiled : `${t.class} ${getClassName(tx.toClass)}`}</>

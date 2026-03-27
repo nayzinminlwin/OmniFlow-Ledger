@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { 
   Plus, 
@@ -10,7 +10,15 @@ import {
   FileSpreadsheet,
   Hammer,
   Info,
-  X
+  X,
+  Undo2,
+  ArrowDownLeft,
+  ArrowUpRight,
+  ShoppingCart,
+  Wrench,
+  Sliders,
+  PackagePlus,
+  PlusCircle
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Stock, Transaction, LaptopClass, Batch } from '../types';
@@ -39,6 +47,21 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
   loading = false
 }) => {
   const [hoveredTxId, setHoveredTxId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (hoveredTxId && !target.closest('.breakdown-trigger') && !target.closest('.breakdown-popup')) {
+        setHoveredTxId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [hoveredTxId]);
+
   const models = stock?.items || [];
   
   const getColumnTotal = (cls: LaptopClass) => {
@@ -238,7 +261,10 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
             transactions.slice(0, 5).map((tx, index) => (
               <div 
                 key={tx.id || index} 
-                className="px-8 py-5 flex items-center justify-between hover:bg-black/[0.02] transition-colors group relative cursor-pointer"
+                className={cn(
+                  "px-8 py-5 flex items-center justify-between hover:bg-black/[0.02] transition-colors group relative cursor-pointer",
+                  tx.type === 'BREAKDOWN' && "breakdown-trigger"
+                )}
                 onClick={() => {
                   if (tx.type === 'BREAKDOWN') {
                     setHoveredTxId(hoveredTxId === tx.id ? null : (tx.id || null));
@@ -254,18 +280,20 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                   tx.type === 'ADJUSTMENT' && "bg-gray-500/10 text-gray-600",
                   tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-600",
                   tx.type === 'PURCHASE' && "bg-emerald-500/10 text-emerald-600",
-                  tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-600"
+                  tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-600",
+                  tx.type === 'UNDO' && "bg-yellow-500/10 text-yellow-600"
                 )}>
-                  {tx.type === 'INCOMING' && <Plus className="w-5 h-5" />}
-                  {tx.type === 'SALE' && <Minus className="w-5 h-5" />}
-                  {tx.type === 'REPAIR' && <RefreshCw className="w-5 h-5" />}
-                  {tx.type === 'ADJUSTMENT' && <Settings className="w-5 h-5" />}
+                  {tx.type === 'INCOMING' && <ArrowDownLeft className="w-5 h-5" />}
+                  {tx.type === 'SALE' && <ArrowUpRight className="w-5 h-5" />}
+                  {tx.type === 'REPAIR' && (tx.fromClass === 'UNCLASSIFIED' ? <PlusCircle className="w-5 h-5" /> : <Wrench className="w-5 h-5" />)}
+                  {tx.type === 'ADJUSTMENT' && <Sliders className="w-5 h-5" />}
                   {tx.type === 'BREAKDOWN' && <Hammer className="w-5 h-5" />}
-                  {tx.type === 'PURCHASE' && <Plus className="w-5 h-5" />}
-                  {tx.type === 'INSTALL' && <Hammer className="w-5 h-5" />}
+                  {tx.type === 'PURCHASE' && <ShoppingCart className="w-5 h-5" />}
+                  {tx.type === 'INSTALL' && <PackagePlus className="w-5 h-5" />}
+                  {tx.type === 'UNDO' && <Undo2 className="w-5 h-5" />}
                 </div>
                 <div>
-                  <p className="font-semibold text-[17px] text-black tracking-tight flex items-center gap-2">
+                  <div className="font-semibold text-[17px] text-black tracking-tight flex items-center gap-2">
                     {tx.type === 'REPAIR' ? (
                       tx.fromClass === 'UNCLASSIFIED' ? (
                         <>{t.initClass} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.toClass)}</>
@@ -281,68 +309,51 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
 
                         <AnimatePresence>
                           {hoveredTxId === tx.id && (
-                            <>
-                              <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                className="fixed inset-0 bg-black/5 backdrop-blur-[1px] z-[90] cursor-default"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setHoveredTxId(null);
-                                }}
-                              />
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                className="absolute z-[100] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-72 bg-white rounded-[24px] shadow-2xl border border-black/5 p-6 pointer-events-auto cursor-default"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <div className="space-y-5">
-                                  <div className="flex items-center justify-between border-b border-black/5 pb-3">
-                                    <div>
-                                      <h3 className="text-[15px] font-bold text-black tracking-tight leading-none">{t.breakdownDetails}</h3>
-                                      <p className="text-[11px] text-gray-400 font-medium mt-1">{tx.brand} {tx.series}</p>
-                                    </div>
-                                    <button 
-                                      onClick={() => setHoveredTxId(null)}
-                                      className="p-1.5 hover:bg-black/5 rounded-full transition-colors"
-                                    >
-                                      <X className="w-4 h-4 text-gray-400" />
-                                    </button>
-                                  </div>
-                                  
-                                  <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">{t.goodComponents}</span>
-                                      <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-md">{tx.quantity} {t.laptops}</span>
-                                    </div>
-                                    <div className="grid grid-cols-1 gap-y-2">
-                                      {tx.componentChanges && Object.keys(tx.componentChanges).length > 0 ? (
-                                        Object.entries(tx.componentChanges).map(([comp, count]) => (
-                                          <div key={comp} className="flex items-center justify-between bg-black/[0.02] px-3 py-2 rounded-lg">
-                                            <span className="text-[13px] font-medium text-gray-700">{t[comp] || comp}</span>
-                                            <span className="text-[13px] font-bold text-black">{count}</span>
-                                          </div>
-                                        ))
-                                      ) : (
-                                        <div className="text-center py-2 text-[12px] text-gray-400 italic">
-                                          {t.noComponentsRecorded}
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-
-                                  {tx.notes && (
-                                    <div className="pt-3 border-t border-black/5">
-                                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{t.notes}</p>
-                                      <p className="text-[12px] text-gray-600 leading-snug line-clamp-2">{tx.notes}</p>
+                            <motion.div
+                              initial={{ opacity: 0, scale: 0.95, y: index < 3 ? -10 : 10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95, y: index < 3 ? -10 : 10 }}
+                              className={cn(
+                                "absolute z-50 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-black/5 p-4 pointer-events-auto cursor-default breakdown-popup",
+                                index < 3 ? "top-full mt-2" : "bottom-full mb-2"
+                              )}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between border-b border-black/5 pb-2">
+                                  <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">
+                                    {tx.type === 'INSTALL' ? t.installComponents : tx.type === 'UNDO' ? t.undoneComponents : t.goodComponents}
+                                  </span>
+                                  <span className="text-[10px] font-medium text-gray-400">
+                                    {tx.type === 'INSTALL' || tx.type === 'PURCHASE' || tx.type === 'UNDO' ? '' : `${tx.quantity} ${t.laptops}`}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                                  {tx.componentChanges && Object.keys(tx.componentChanges).length > 0 ? (
+                                    Object.entries(tx.componentChanges).map(([comp, count]) => (
+                                      <div key={comp} className="flex items-center justify-between">
+                                        <span className="text-[12px] text-gray-600 truncate mr-2">{t[comp] || comp}</span>
+                                        <span className="text-[12px] font-bold text-black">{count}</span>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <div className="col-span-2 text-center py-2 text-[12px] text-gray-400 italic">
+                                      {t.noComponentsRecorded}
                                     </div>
                                   )}
                                 </div>
-                              </motion.div>
-                            </>
+                                {tx.notes && (
+                                  <div className="pt-2 border-t border-black/5">
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">{t.notes}</p>
+                                    <p className="text-[11px] text-gray-600 leading-snug line-clamp-2 italic">{tx.notes}</p>
+                                  </div>
+                                )}
+                              </div>
+                              <div className={cn(
+                                "absolute left-6 w-4 h-4 bg-white border-black/5 rotate-45",
+                                index < 3 ? "-top-2 border-l border-t" : "-bottom-2 border-r border-b"
+                              )} />
+                            </motion.div>
                           )}
                         </AnimatePresence>
                       </span>
@@ -354,10 +365,12 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                       <>{tx.componentChanges && Object.keys(tx.componentChanges).length > 0 
                         ? `${t.install} ${Object.keys(tx.componentChanges).map(c => t[c] || c).join(', ')}`
                         : t.installComponents}</>
+                    ) : tx.type === 'UNDO' ? (
+                      <>{t.undo} {tx.undoneType === 'PURCHASE' ? t.buy : (tx.undoneType ? (t[tx.undoneType.toLowerCase() as keyof typeof t] || tx.undoneType) : '')}</>
                     ) : (
                       <>{tx.type === 'INCOMING' ? t.incoming : (t[tx.type.toLowerCase() as keyof typeof t] || tx.type)} {tx.type !== 'INCOMING' && getClassName(tx.toClass || tx.fromClass)}</>
                     )}
-                  </p>
+                  </div>
                   <p className="text-[13px] text-gray-500 font-medium mt-0.5">
                     {tx.brand} {tx.series} {tx.model} • {safeFormatDate(tx.timestamp, 'MMM d, HH:mm')}
                   </p>
@@ -366,9 +379,17 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
               <div className="text-right">
                 <p className={cn(
                   "text-[19px] font-semibold tabular-nums tracking-tight",
-                  (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE') ? "text-green-600" : tx.type === 'INSTALL' ? "text-pink-600" : "text-orange-600"
+                  (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' || (tx.type === 'UNDO' && tx.quantity > 0)) ? "text-green-600" : tx.type === 'INSTALL' ? "text-pink-600" : "text-orange-600"
                 )}>
-                  {tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' ? '+' : '-'}{tx.type === 'PURCHASE' || tx.type === 'INSTALL' ? (Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0) : tx.quantity}
+                  {tx.type === 'PURCHASE' ? (
+                    `+${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
+                  ) : tx.type === 'INSTALL' ? (
+                    `-${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
+                  ) : tx.type === 'UNDO' ? (
+                    tx.quantity >= 0 ? `+${tx.quantity}` : tx.quantity
+                  ) : (
+                    `${(tx.type === 'INCOMING' || tx.type === 'REPAIR') ? '+' : '-'}${tx.quantity}`
+                  )}
                 </p>
                 {tx.notes && <p className="text-[11px] text-gray-400 max-w-[120px] truncate mt-0.5">{tx.notes}</p>}
               </div>

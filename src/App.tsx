@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { translations, Language } from './translations';
 
@@ -64,6 +64,12 @@ export default function App() {
   const [selectedBatchId, setSelectedBatchId] = useState<string>('');
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [newBatchName, setNewBatchName] = useState('');
+
+  useEffect(() => {
+    if (!selectedBatchId && batches.length > 0) {
+      setSelectedBatchId(batches[0].batchId);
+    }
+  }, [batches, selectedBatchId]);
 
   const error = authError || invError || actionError;
   const setError = (err: string | null) => {
