@@ -30,25 +30,37 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function isAdmin() {
-      return isAuthenticated() && (
-        (request.auth.token.email in ["nayzinminlwin22@gmail.com", "tpl.pauline.pts2026@gmail.com"] && request.auth.token.email_verified == true) ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
-      );
-    }
-
     function isBootstrapAdmin() {
       return isAuthenticated() && 
              request.auth.token.email in ["nayzinminlwin22@gmail.com", "tpl.pauline.pts2026@gmail.com"] && 
              request.auth.token.email_verified == true;
     }
 
-    function isApproved() {
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isOriginalAdmin() {
       return isAuthenticated() && (
         isBootstrapAdmin() ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved' || 
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'))
+         getUserData().isOriginalAdmin == true)
+      );
+    }
+
+    function isUltimateAdmin() {
+      return isAuthenticated() && (
+        isOriginalAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         getUserData().isUltimateAdmin == true)
+      );
+    }
+
+    function isApproved() {
+      return isAuthenticated() && (
+        isUltimateAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         getUserData().status == 'approved')
       );
     }
 
@@ -100,42 +112,44 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (
                       (request.resource.data.role == 'user' && request.resource.data.status == 'pending') ||
-                      (isBootstrapAdmin() && request.resource.data.role == 'admin' && request.resource.data.status == 'approved')
+                      (isBootstrapAdmin() && request.resource.data.role == 'admin' && request.resource.data.status == 'approved' && request.resource.data.isOriginalAdmin == true)
                     );
       allow update: if isAuthenticated() && (
-                      (isOwner(userId) && request.resource.data.role == resource.data.role && 
-                       request.resource.data.status == resource.data.status && isValidUser(request.resource.data)) ||
-                      isAdmin()
+                      // Original Admin can do anything
+                      isOriginalAdmin() ||
+                      // Ultimate Admin can approve/deny others, but cannot touch Original Admins or promote to admin levels
+                      (isUltimateAdmin() && 
+                       !resource.data.isOriginalAdmin && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'notifiedApproved'])
+                      ) ||
+                      // User can update their own basic info
+                      (isOwner(userId) && 
+                       request.resource.data.diff(resource.data).affectedKeys().hasOnly(['username', 'email'])
+                      )
                     );
-      allow delete: if isAdmin();
+      allow delete: if isOriginalAdmin();
     }
 
     match /transactions/{txId} {
-      allow read: if isApproved();
-      allow create: if isApproved() && isValidTransaction(request.resource.data);
-      allow update, delete: if isAdmin();
+      allow read, create: if isApproved();
+      allow update, delete: if isUltimateAdmin();
     }
 
     match /component_transactions/{txId} {
-      allow read: if isApproved();
-      allow create: if isApproved() && isValidComponentTransaction(request.resource.data);
-      allow update, delete: if isAdmin();
+      allow read, create: if isApproved();
+      allow update, delete: if isUltimateAdmin();
     }
 
     match /batches/{batchId} {
-      allow read: if isApproved();
-      allow create, update: if isApproved() && isValidBatch(request.resource.data);
-      allow delete: if isAdmin();
+      allow read, write: if isApproved();
     }
 
     match /inventory/{docId} {
-      allow read: if isApproved();
-      allow write: if isAdmin();
+      allow read, write: if isApproved();
     }
 
     match /components/{docId} {
-      allow read: if isApproved();
-      allow write: if isAdmin();
+      allow read, write: if isApproved();
     }
   }
 }

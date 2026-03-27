@@ -165,7 +165,18 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
                       </div>
                     </td>
                     <td className="px-8 py-4 text-[14px] text-gray-700">
-                      {users[tx.userId]?.username || tx.userId || t.unknown}
+                      {(() => {
+                        const username = users[tx.userId]?.username || tx.userId || t.unknown;
+                        const wordCount = username.split(/\s+/).filter(Boolean).length;
+                        return (
+                          <span className={cn(
+                            "font-medium",
+                            wordCount > 5 ? "whitespace-nowrap" : ""
+                          )}>
+                            {username}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="px-8 py-4 text-[12px] text-gray-500 italic max-w-xs truncate">
                       {tx.notes || '-'}
