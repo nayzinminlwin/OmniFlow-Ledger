@@ -797,7 +797,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         // Create a new UNDO transaction record
         const undoTxRef = doc(collection(db, 'transactions'));
         const undoTxData: any = {
-          type: 'ADJUSTMENT', // Or a new type 'UNDO' if preferred, but ADJUSTMENT fits the ledger
+          type: 'UNDO',
           batchId: txData.batchId,
           batchActive: txData.batchActive,
           brand: txData.brand,
@@ -806,7 +806,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
           quantity: -txData.quantity, // Negative quantity to show reversal
           timestamp: new Date().toISOString(),
           userId: user.uid,
-          notes: `Undid transaction: ${transactionId}`,
+          notes: `Undid ${txData.type} for ${txData.brand} ${txData.model}`,
         };
         if (txData.fromClass) undoTxData.fromClass = txData.fromClass;
         if (txData.toClass) undoTxData.toClass = txData.toClass;

@@ -114,6 +114,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                             tx.type === 'SALE' && "bg-orange-500/10 text-orange-700",
                             tx.type === 'REPAIR' && "bg-blue-500/10 text-blue-700",
                             tx.type === 'ADJUSTMENT' && "bg-gray-500/10 text-gray-700",
+                            tx.type === 'UNDO' && "bg-yellow-500/10 text-yellow-700",
                             tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-700",
                             tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-700"
                           )}>
@@ -189,6 +190,16 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                             <>{tx.componentChanges && Object.keys(tx.componentChanges).length > 0 
                               ? `${t.install} ${Object.keys(tx.componentChanges).map(c => t[c] || c).join(', ')}`
                               : t.installComponents}</>
+                          ) : tx.type === 'UNDO' ? (
+                            <span className="text-yellow-600 font-semibold">
+                              {tx.fromClass && tx.toClass 
+                                ? `${getClassName(tx.toClass)} → ${getClassName(tx.fromClass)}` 
+                                : tx.fromClass 
+                                  ? `${t.to} ${getClassName(tx.fromClass)}` 
+                                  : tx.toClass 
+                                    ? `${t.from} ${getClassName(tx.toClass)}` 
+                                    : t.undo}
+                            </span>
                           ) : (
                             <>{getClassName(tx.toClass) === t.spoiled ? t.spoiled : `${t.class} ${getClassName(tx.toClass)}`}</>
                           )}
@@ -197,13 +208,13 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                       <td className="px-8 py-4 text-right">
                         <p className={cn(
                           "text-[17px] font-semibold tabular-nums tracking-tight",
-                          (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' || (tx.type === 'ADJUSTMENT' && tx.quantity > 0)) ? "text-green-600" : tx.type === 'INSTALL' ? "text-pink-600" : "text-orange-600"
+                          (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' || ((tx.type === 'ADJUSTMENT' || tx.type === 'UNDO') && tx.quantity > 0)) ? "text-green-600" : tx.type === 'INSTALL' ? "text-pink-600" : "text-orange-600"
                         )}>
                           {tx.type === 'PURCHASE' ? (
                             `+${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
                           ) : tx.type === 'INSTALL' ? (
                             `-${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
-                          ) : tx.type === 'ADJUSTMENT' ? (
+                          ) : (tx.type === 'ADJUSTMENT' || tx.type === 'UNDO') ? (
                             tx.quantity >= 0 ? `+${tx.quantity}` : tx.quantity
                           ) : (
                             `${(tx.type === 'INCOMING' || tx.type === 'REPAIR') ? '+' : '-'}${tx.quantity}`

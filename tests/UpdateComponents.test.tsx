@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { UpdateComponents } from '../src/components/UpdateComponents';
 import { translations } from '../src/translations';
 import { Stock, ComponentStock, Batch } from '../src/types';
+import { INITIAL_CLASS_COUNTS, INITIAL_COMPONENT_COUNTS } from '../src/constants';
 
 // Mock the hooks
 const mockRecordComponentBreakdown = vi.fn();
@@ -35,7 +36,7 @@ const mockStock: Stock = {
       brand: 'Apple',
       series: 'MacBook Pro',
       model: 'M1 2020',
-      counts: { 'A': 5, 'B': 2 }
+      counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2 }
     }
   ],
   lastUpdated: new Date().toISOString()
@@ -47,7 +48,7 @@ const mockComponentStock: ComponentStock = {
       brand: 'Apple',
       series: 'MacBook Pro',
       model: 'M1 2020',
-      counts: { 'Screen': 10, 'Battery': 5 }
+      counts: { ...INITIAL_COMPONENT_COUNTS, 'Screen': 10, 'Battery': 5 }
     }
   ],
   lastUpdated: new Date().toISOString()
@@ -63,11 +64,10 @@ const mockBatches: Batch[] = [
         brand: 'Apple',
         series: 'MacBook Pro',
         model: 'M1 2020',
-        counts: { 'A': 5, 'B': 2 }
+        counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2 }
       }
     ],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
+    createdAt: new Date().toISOString()
   }
 ];
 

@@ -5,6 +5,7 @@ import { UpdateComponents } from '../../src/components/UpdateComponents';
 import { useTransactionActions } from '../../src/hooks/useTransactionActions';
 import { translations } from '../../src/translations';
 import { Stock, ComponentStock, Batch } from '../../src/types';
+import { INITIAL_CLASS_COUNTS, INITIAL_COMPONENT_COUNTS } from '../../src/constants';
 import * as firestore from 'firebase/firestore';
 
 // Mock Firebase
@@ -70,7 +71,7 @@ describe('Integration: Update Components Flow', () => {
         brand: 'Apple',
         series: 'MacBook Pro',
         model: 'M1 2020',
-        counts: { 'A': 5, 'B': 2 }
+        counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2 }
       }
     ],
     lastUpdated: new Date().toISOString()
@@ -82,7 +83,7 @@ describe('Integration: Update Components Flow', () => {
         brand: 'Apple',
         series: 'MacBook Pro',
         model: 'M1 2020',
-        counts: { 'Screen': 10, 'Battery': 5 }
+        counts: { ...INITIAL_COMPONENT_COUNTS, 'Screen': 10, 'Battery': 5 }
       }
     ],
     lastUpdated: new Date().toISOString()
@@ -98,11 +99,10 @@ describe('Integration: Update Components Flow', () => {
           brand: 'Apple',
           series: 'MacBook Pro',
           model: 'M1 2020',
-          counts: { 'A': 5, 'B': 2 }
+          counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2 }
         }
       ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: new Date().toISOString()
     }
   ];
 
