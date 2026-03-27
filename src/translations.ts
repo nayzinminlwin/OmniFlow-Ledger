@@ -178,7 +178,8 @@ export const translations = {
     undo: 'Undo',
     undoSuccess: 'Transaction undone successfully!',
     undoFailed: 'Failed to undo transaction.',
-    undone: 'Undone'
+    undone: 'Undone',
+    searchTransactions: 'Search transactions...'
   },
   ms: {
     brand: 'Lejar Pembaikan Pro',
@@ -357,7 +358,8 @@ export const translations = {
     undo: 'Buat Asal',
     undoSuccess: 'Transaksi berjaya dibuat asal!',
     undoFailed: 'Gagal membuat asal transaksi.',
-    undone: 'Dibuat Asal'
+    undone: 'Dibuat Asal',
+    searchTransactions: 'Cari transaksi...'
   },
   zh: {
     brand: '专业维修分类账',
@@ -536,6 +538,7 @@ export const translations = {
     undo: '撤销',
     undoSuccess: '交易撤销成功！',
     undoFailed: '撤销交易失败。',
-    undone: '已撤销'
+    undone: '已撤销',
+    searchTransactions: '搜索交易...'
   }
 };

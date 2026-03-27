@@ -2,9 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { UpdateComponents } from '../../src/components/UpdateComponents';
+import { AddTransaction } from '../../src/components/AddTransaction';
 import { useTransactionActions } from '../../src/hooks/useTransactionActions';
 import { translations } from '../../src/translations';
-import { Stock, ComponentStock, Batch } from '../../src/types';
+import { Stock, ComponentStock, Batch, TransactionType, LaptopClass } from '../../src/types';
 import { INITIAL_CLASS_COUNTS, INITIAL_COMPONENT_COUNTS } from '../../src/constants';
 import * as firestore from 'firebase/firestore';
 
@@ -33,7 +34,7 @@ vi.mock('../../src/hooks/useAuth', () => ({
 }));
 
 // Create a wrapper component to provide the hook's context
-const IntegrationWrapper = ({ 
+const ComponentIntegrationWrapper = ({ 
   stock, 
   componentStock, 
   batches 
@@ -43,15 +44,6 @@ const IntegrationWrapper = ({
   batches: Batch[] 
 }) => {
   const t = translations.en;
-  
-  // We use the real hook here, but we mock the firestore calls it makes
-  const actions = useTransactionActions({ uid: 'user123' } as any, stock, 'en');
-  
-  // We need to inject the real hook's methods into the component.
-  // Since UpdateComponents calls useTransactionActions internally, we need to mock it 
-  // to return the instance we just created, OR we can just let UpdateComponents call it 
-  // and we mock firestore. UpdateComponents calls useTransactionActions internally.
-  
   return (
     <UpdateComponents 
       stock={stock} 
@@ -64,7 +56,26 @@ const IntegrationWrapper = ({
   );
 };
 
-describe('Integration: Update Components Flow', () => {
+const LaptopIntegrationWrapper = ({ 
+  batches,
+  onAddTransaction
+}: { 
+  batches: Batch[],
+  onAddTransaction: any
+}) => {
+  const t = translations.en;
+  return (
+    <AddTransaction 
+      t={t}
+      activeTab="add"
+      onAddTransaction={onAddTransaction}
+      batches={batches}
+      isSubmitting={false}
+    />
+  );
+};
+
+describe('Integration: Inventory Flows', () => {
   const mockStock: Stock = {
     items: [
       {
@@ -111,209 +122,406 @@ describe('Integration: Update Components Flow', () => {
     localStorage.clear();
   });
 
-  it('should successfully record a component purchase transaction', async () => {
-    const user = userEvent.setup();
-    
-    // Mock runTransaction to simulate a successful firestore transaction
-    const mockTransaction = {
-      get: vi.fn().mockResolvedValue({ 
-        exists: () => true, 
-        data: () => mockComponentStock 
-      }),
-      update: vi.fn(),
-      set: vi.fn(),
-    };
-    
-    vi.mocked(firestore.runTransaction).mockImplementation(async (db, updateFunction) => {
-      await updateFunction(mockTransaction as any);
-    });
-
-    render(
-      <IntegrationWrapper 
-        stock={mockStock} 
-        componentStock={mockComponentStock} 
-        batches={mockBatches} 
-      />
-    );
-
-    // Switch to buy mode
-    await user.click(screen.getByText(translations.en.buy));
-
-    // Select existing brand, series, model
-    const brandSelect = screen.getAllByRole('combobox')[0];
-    await user.selectOptions(brandSelect, 'Apple');
-
-    const seriesSelect = screen.getAllByRole('combobox')[1];
-    await user.selectOptions(seriesSelect, 'MacBook Pro');
-
-    const modelSelect = screen.getAllByRole('combobox')[2];
-    await user.selectOptions(modelSelect, 'M1 2020');
-
-    // Select component
-    const componentSelect = screen.getAllByRole('combobox')[3];
-    await user.selectOptions(componentSelect, 'Screen');
-
-    // Enter quantity
-    const quantityInput = screen.getByPlaceholderText('0');
-    await user.clear(quantityInput);
-    await user.type(quantityInput, '5');
-
-    // Submit
-    const submitButton = screen.getByText(translations.en.recordEntry);
-    await act(async () => {
-      await user.click(submitButton);
-    });
-
-    // Verify runTransaction was called
-    expect(firestore.runTransaction).toHaveBeenCalled();
-    
-    // Verify the transaction operations
-    expect(mockTransaction.get).toHaveBeenCalled();
-    expect(mockTransaction.set).toHaveBeenCalledTimes(3); // Updates component stock, creates comp tx, creates laptop tx
-  });
-
-  it('should successfully record a component installation transaction', async () => {
-    const user = userEvent.setup();
-    
-    // Mock runTransaction to simulate a successful firestore transaction
-    const mockTransaction = {
-      get: vi.fn().mockResolvedValue({ 
-        exists: () => true, 
-        data: () => mockComponentStock 
-      }),
-      update: vi.fn(),
-      set: vi.fn(),
-    };
-    
-    vi.mocked(firestore.runTransaction).mockImplementation(async (db, updateFunction) => {
-      await updateFunction(mockTransaction as any);
-    });
-
-    render(
-      <IntegrationWrapper 
-        stock={mockStock} 
-        componentStock={mockComponentStock} 
-        batches={mockBatches} 
-      />
-    );
-
-    // Switch to install mode
-    await user.click(screen.getByText(translations.en.install));
-
-    // Select existing brand, series, model
-    const brandSelect = screen.getAllByRole('combobox')[0];
-    await user.selectOptions(brandSelect, 'Apple');
-
-    const seriesSelect = screen.getAllByRole('combobox')[1];
-    await user.selectOptions(seriesSelect, 'MacBook Pro');
-
-    const modelSelect = screen.getAllByRole('combobox')[2];
-    await user.selectOptions(modelSelect, 'M1 2020');
-
-    // Select component
-    const componentSelect = screen.getAllByRole('combobox')[3];
-    await user.selectOptions(componentSelect, 'Screen');
-
-    // Enter quantity
-    const quantityInput = screen.getByPlaceholderText('0');
-    await user.clear(quantityInput);
-    await user.type(quantityInput, '2');
-
-    // Submit
-    const submitButton = screen.getByText(translations.en.recordEntry);
-    await act(async () => {
-      await user.click(submitButton);
-    });
-
-    // Verify runTransaction was called
-    expect(firestore.runTransaction).toHaveBeenCalled();
-    
-    // Verify the transaction operations
-    expect(mockTransaction.get).toHaveBeenCalled();
-    expect(mockTransaction.set).toHaveBeenCalledTimes(3); // Updates component stock, creates comp tx, creates laptop tx
-  });
-
-  it('should successfully record a component breakdown transaction', async () => {
-    const user = userEvent.setup();
-    
-    // Mock runTransaction to simulate a successful firestore transaction
-    const mockTransaction = {
-      get: vi.fn()
-        .mockResolvedValueOnce({ 
-          exists: () => true, 
-          data: () => mockStock 
-        })
-        .mockResolvedValueOnce({ 
+  describe('Component Transactions', () => {
+    it('should successfully record a component purchase transaction', async () => {
+      const user = userEvent.setup();
+      
+      const mockTransaction = {
+        get: vi.fn().mockResolvedValue({ 
           exists: () => true, 
           data: () => mockComponentStock 
-        })
-        .mockResolvedValueOnce({ 
-          exists: () => true, 
-          data: () => mockComponentStock 
-        })
-        .mockResolvedValueOnce({ 
-          exists: () => true, 
-          data: () => mockBatches[0] 
         }),
-      update: vi.fn(),
-      set: vi.fn(),
-    };
-    
-    vi.mocked(firestore.runTransaction).mockImplementation(async (db, updateFunction) => {
-      await updateFunction(mockTransaction as any);
+        update: vi.fn(),
+        set: vi.fn(),
+      };
+      
+      vi.mocked(firestore.runTransaction).mockImplementation(async (db, updateFunction) => {
+        await updateFunction(mockTransaction as any);
+      });
+
+      render(
+        <ComponentIntegrationWrapper 
+          stock={mockStock} 
+          componentStock={mockComponentStock} 
+          batches={mockBatches} 
+        />
+      );
+
+      await user.click(screen.getByText(translations.en.buy));
+
+      const brandSelect = screen.getAllByRole('combobox')[0];
+      await user.selectOptions(brandSelect, 'Apple');
+
+      const seriesSelect = screen.getAllByRole('combobox')[1];
+      await user.selectOptions(seriesSelect, 'MacBook Pro');
+
+      const modelSelect = screen.getAllByRole('combobox')[2];
+      await user.selectOptions(modelSelect, 'M1 2020');
+
+      const componentSelect = screen.getAllByRole('combobox')[3];
+      await user.selectOptions(componentSelect, 'Screen');
+
+      const quantityInput = screen.getByPlaceholderText('0');
+      await user.clear(quantityInput);
+      await user.type(quantityInput, '5');
+
+      const submitButton = screen.getByText(translations.en.recordEntry);
+      await act(async () => {
+        await user.click(submitButton);
+      });
+
+      expect(firestore.runTransaction).toHaveBeenCalled();
+      expect(mockTransaction.set).toHaveBeenCalledTimes(3);
     });
 
-    render(
-      <IntegrationWrapper 
-        stock={mockStock} 
-        componentStock={mockComponentStock} 
-        batches={mockBatches} 
-      />
-    );
+    it('should successfully record a component installation transaction', async () => {
+      const user = userEvent.setup();
+      
+      const mockTransaction = {
+        get: vi.fn().mockResolvedValue({ 
+          exists: () => true, 
+          data: () => mockComponentStock 
+        }),
+        update: vi.fn(),
+        set: vi.fn(),
+      };
+      
+      vi.mocked(firestore.runTransaction).mockImplementation(async (db, updateFunction) => {
+        await updateFunction(mockTransaction as any);
+      });
 
-    // Default is extract mode
-    // Select batch
-    const batchSelect = screen.getAllByRole('combobox')[0];
-    await user.selectOptions(batchSelect, 'B-2023-01');
+      render(
+        <ComponentIntegrationWrapper 
+          stock={mockStock} 
+          componentStock={mockComponentStock} 
+          batches={mockBatches} 
+        />
+      );
 
-    // Select brand, series, model
-    const brandSelect = screen.getAllByRole('combobox')[1];
-    await user.selectOptions(brandSelect, 'Apple');
+      await user.click(screen.getByText(translations.en.install));
 
-    const seriesSelect = screen.getAllByRole('combobox')[2];
-    await user.selectOptions(seriesSelect, 'MacBook Pro');
+      const brandSelect = screen.getAllByRole('combobox')[0];
+      await user.selectOptions(brandSelect, 'Apple');
 
-    const modelSelect = screen.getAllByRole('combobox')[3];
-    await user.selectOptions(modelSelect, 'M1 2020');
+      const seriesSelect = screen.getAllByRole('combobox')[1];
+      await user.selectOptions(seriesSelect, 'MacBook Pro');
 
-    // Select from class
-    const classSelect = screen.getAllByRole('combobox')[4];
-    await user.selectOptions(classSelect, 'A');
+      const modelSelect = screen.getAllByRole('combobox')[2];
+      await user.selectOptions(modelSelect, 'M1 2020');
 
-    // Enter laptop quantity
-    const laptopQtyInput = screen.getAllByRole('spinbutton')[0];
-    await user.clear(laptopQtyInput);
-    await user.type(laptopQtyInput, '1');
+      const componentSelect = screen.getAllByRole('combobox')[3];
+      await user.selectOptions(componentSelect, 'Screen');
 
-    // Add a component (e.g., Screen)
-    // The component inputs are the remaining spinbuttons. Screen is the first one based on COMPONENTS array.
-    // Let's just find the input next to the "Screen" label or use the spinbutton index.
-    // In UpdateComponents, the component inputs are rendered in order of COMPONENTS array.
-    const screenInput = screen.getAllByRole('spinbutton')[1]; // First component input
-    await user.clear(screenInput);
-    await user.type(screenInput, '1');
+      const quantityInput = screen.getByPlaceholderText('0');
+      await user.clear(quantityInput);
+      await user.type(quantityInput, '2');
 
-    // Submit
-    const submitButton = screen.getByText(translations.en.recordEntry);
-    await act(async () => {
+      const submitButton = screen.getByText(translations.en.recordEntry);
+      await act(async () => {
+        await user.click(submitButton);
+      });
+
+      expect(firestore.runTransaction).toHaveBeenCalled();
+      expect(mockTransaction.set).toHaveBeenCalledTimes(3);
+    });
+
+    it('should successfully record a component breakdown transaction', async () => {
+      const user = userEvent.setup();
+      
+      const mockTransaction = {
+        get: vi.fn()
+          .mockResolvedValueOnce({ exists: () => true, data: () => mockStock })
+          .mockResolvedValueOnce({ exists: () => true, data: () => mockComponentStock })
+          .mockResolvedValueOnce({ exists: () => true, data: () => mockComponentStock })
+          .mockResolvedValueOnce({ exists: () => true, data: () => mockBatches[0] }),
+        update: vi.fn(),
+        set: vi.fn(),
+      };
+      
+      vi.mocked(firestore.runTransaction).mockImplementation(async (db, updateFunction) => {
+        await updateFunction(mockTransaction as any);
+      });
+
+      render(
+        <ComponentIntegrationWrapper 
+          stock={mockStock} 
+          componentStock={mockComponentStock} 
+          batches={mockBatches} 
+        />
+      );
+
+      const batchSelect = screen.getAllByRole('combobox')[0];
+      await user.selectOptions(batchSelect, 'B-2023-01');
+
+      const brandSelect = screen.getAllByRole('combobox')[1];
+      await user.selectOptions(brandSelect, 'Apple');
+
+      const seriesSelect = screen.getAllByRole('combobox')[2];
+      await user.selectOptions(seriesSelect, 'MacBook Pro');
+
+      const modelSelect = screen.getAllByRole('combobox')[3];
+      await user.selectOptions(modelSelect, 'M1 2020');
+
+      const classSelect = screen.getAllByRole('combobox')[4];
+      await user.selectOptions(classSelect, 'A');
+
+      const laptopQtyInput = screen.getAllByRole('spinbutton')[0];
+      await user.clear(laptopQtyInput);
+      await user.type(laptopQtyInput, '1');
+
+      const screenInput = screen.getAllByRole('spinbutton')[1];
+      await user.clear(screenInput);
+      await user.type(screenInput, '1');
+
+      const submitButton = screen.getByText(translations.en.recordEntry);
+      await act(async () => {
+        await user.click(submitButton);
+      });
+
+      expect(firestore.runTransaction).toHaveBeenCalled();
+      expect(mockTransaction.set).toHaveBeenCalled();
+    });
+  });
+
+  describe('Laptop Transactions', () => {
+    it('should successfully record an incoming laptop transaction', async () => {
+      const user = userEvent.setup();
+      const onAddTransaction = vi.fn().mockResolvedValue(true);
+
+      render(
+        <LaptopIntegrationWrapper 
+          batches={mockBatches}
+          onAddTransaction={onAddTransaction}
+        />
+      );
+
+      // Select batch
+      const batchSelect = screen.getAllByRole('combobox')[0];
+      await user.selectOptions(batchSelect, 'B-2023-01');
+
+      // Select brand, series, model
+      const brandSelect = screen.getAllByRole('combobox')[1];
+      await user.selectOptions(brandSelect, 'Apple');
+
+      const seriesSelect = screen.getAllByRole('combobox')[2];
+      await user.selectOptions(seriesSelect, 'MacBook Pro');
+
+      const modelSelect = screen.getAllByRole('combobox')[3];
+      await user.selectOptions(modelSelect, 'M1 2020');
+
+      // Enter quantity
+      const quantityInput = screen.getByRole('spinbutton');
+      await user.clear(quantityInput);
+      await user.type(quantityInput, '10');
+
+      // Submit
+      const submitButton = screen.getByText(translations.en.recordEntry);
+      await act(async () => {
+        await user.click(submitButton);
+      });
+
+      expect(onAddTransaction).toHaveBeenCalledWith(
+        'INCOMING',
+        'B-2023-01',
+        'Apple',
+        'MacBook Pro',
+        'M1 2020',
+        'D', // Default fromClass
+        'UNCLASSIFIED', // Default toClass for INCOMING
+        10,
+        ''
+      );
+    });
+
+    it('should successfully record a laptop repair transaction', async () => {
+      const user = userEvent.setup();
+      const onAddTransaction = vi.fn().mockResolvedValue(true);
+
+      render(
+        <LaptopIntegrationWrapper 
+          batches={mockBatches}
+          onAddTransaction={onAddTransaction}
+        />
+      );
+
+      // Switch to repair
+      await user.click(screen.getByText(translations.en.repair));
+
+      // Select batch
+      const batchSelect = screen.getAllByRole('combobox')[0];
+      await user.selectOptions(batchSelect, 'B-2023-01');
+
+      // Select brand, series, model
+      const brandSelect = screen.getAllByRole('combobox')[1];
+      await user.selectOptions(brandSelect, 'Apple');
+
+      const seriesSelect = screen.getAllByRole('combobox')[2];
+      await user.selectOptions(seriesSelect, 'MacBook Pro');
+
+      const modelSelect = screen.getAllByRole('combobox')[3];
+      await user.selectOptions(modelSelect, 'M1 2020');
+
+      // Select from class
+      const fromClassSelect = screen.getAllByRole('combobox')[4];
+      await user.selectOptions(fromClassSelect, 'UNCLASSIFIED');
+
+      // Select to class
+      const toClassSelect = screen.getAllByRole('combobox')[5];
+      await user.selectOptions(toClassSelect, 'A');
+
+      // Enter quantity
+      const quantityInput = screen.getByRole('spinbutton');
+      await user.clear(quantityInput);
+      await user.type(quantityInput, '5');
+
+      // Submit
+      const submitButton = screen.getByText(translations.en.recordEntry);
+      await act(async () => {
+        await user.click(submitButton);
+      });
+
+      expect(onAddTransaction).toHaveBeenCalledWith(
+        'REPAIR',
+        'B-2023-01',
+        'Apple',
+        'MacBook Pro',
+        'M1 2020',
+        'UNCLASSIFIED',
+        'A',
+        5,
+        ''
+      );
+    });
+
+    it('should successfully record a laptop sale transaction', async () => {
+      const user = userEvent.setup();
+      const onAddTransaction = vi.fn().mockResolvedValue(true);
+
+      render(
+        <LaptopIntegrationWrapper 
+          batches={mockBatches}
+          onAddTransaction={onAddTransaction}
+        />
+      );
+
+      // Switch to sale
+      await user.click(screen.getByText(translations.en.sale));
+
+      // Select batch
+      const batchSelect = screen.getAllByRole('combobox')[0];
+      await user.selectOptions(batchSelect, 'B-2023-01');
+
+      // Select brand, series, model
+      const brandSelect = screen.getAllByRole('combobox')[1];
+      await user.selectOptions(brandSelect, 'Apple');
+
+      const seriesSelect = screen.getAllByRole('combobox')[2];
+      await user.selectOptions(seriesSelect, 'MacBook Pro');
+
+      const modelSelect = screen.getAllByRole('combobox')[3];
+      await user.selectOptions(modelSelect, 'M1 2020');
+
+      // Select from class
+      const fromClassSelect = screen.getAllByRole('combobox')[4];
+      await user.selectOptions(fromClassSelect, 'A');
+
+      // Enter quantity
+      const quantityInput = screen.getByRole('spinbutton');
+      await user.clear(quantityInput);
+      await user.type(quantityInput, '3');
+
+      // Submit
+      const submitButton = screen.getByText(translations.en.recordEntry);
+      await act(async () => {
+        await user.click(submitButton);
+      });
+
+      expect(onAddTransaction).toHaveBeenCalledWith(
+        'SALE',
+        'B-2023-01',
+        'Apple',
+        'MacBook Pro',
+        'M1 2020',
+        'A',
+        'D', // Default toClass for SALE
+        3,
+        ''
+      );
+    });
+
+    it('should successfully record a laptop adjustment transaction', async () => {
+      const user = userEvent.setup();
+      const onAddTransaction = vi.fn().mockResolvedValue(true);
+
+      render(
+        <LaptopIntegrationWrapper 
+          batches={mockBatches}
+          onAddTransaction={onAddTransaction}
+        />
+      );
+
+      // Switch to adjustment
+      await user.click(screen.getByText(translations.en.adjustment));
+
+      // Select batch
+      const batchSelect = screen.getAllByRole('combobox')[0];
+      await user.selectOptions(batchSelect, 'B-2023-01');
+
+      // Select brand, series, model
+      const brandSelect = screen.getAllByRole('combobox')[1];
+      await user.selectOptions(brandSelect, 'Apple');
+
+      const seriesSelect = screen.getAllByRole('combobox')[2];
+      await user.selectOptions(seriesSelect, 'MacBook Pro');
+
+      const modelSelect = screen.getAllByRole('combobox')[3];
+      await user.selectOptions(modelSelect, 'M1 2020');
+
+      // Select class
+      const classSelect = screen.getAllByRole('combobox')[4];
+      await user.selectOptions(classSelect, 'B');
+
+      // Enter quantity
+      const quantityInput = screen.getByRole('spinbutton');
+      await user.clear(quantityInput);
+      await user.type(quantityInput, '-2');
+
+      // Submit
+      const submitButton = screen.getByText(translations.en.recordEntry);
+      await act(async () => {
+        await user.click(submitButton);
+      });
+
+      expect(onAddTransaction).toHaveBeenCalledWith(
+        'ADJUSTMENT',
+        'B-2023-01',
+        'Apple',
+        'MacBook Pro',
+        'M1 2020',
+        'B',
+        'D', // Default toClass for ADJUSTMENT
+        -2,
+        ''
+      );
+    });
+
+    it('should show validation error for missing fields', async () => {
+      const user = userEvent.setup();
+      const onAddTransaction = vi.fn();
+
+      render(
+        <LaptopIntegrationWrapper 
+          batches={mockBatches}
+          onAddTransaction={onAddTransaction}
+        />
+      );
+
+      // Try to submit without filling fields
+      const submitButton = screen.getByText(translations.en.recordEntry);
       await user.click(submitButton);
-    });
 
-    // Verify runTransaction was called
-    expect(firestore.runTransaction).toHaveBeenCalled();
-    
-    // Verify the transaction operations
-    expect(mockTransaction.get).toHaveBeenCalledTimes(4); // Gets globalStock, compStock, spoiledCompStock, batch
-    expect(mockTransaction.set).toHaveBeenCalledTimes(6); // Updates globalStock, compStock, spoiledCompStock, batch, creates 2 tx records
+      // Should not call onAddTransaction because brand/series/model are empty
+      expect(onAddTransaction).not.toHaveBeenCalled();
+    });
   });
 });
