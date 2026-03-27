@@ -112,7 +112,8 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       const b: Batch[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data() as Batch;
-        if (data.active !== false) {
+        // Filter out empty skeleton documents and inactive batches
+        if (data.batchId && data.active !== false) {
           b.push({ id: doc.id, ...data } as Batch);
         }
       });
@@ -127,8 +128,8 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       const txs: Transaction[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data() as Transaction;
-        // Only show transactions for active batches
-        if (data.batchActive !== false) {
+        // Only show transactions for active batches and filter out empty skeleton documents
+        if (data.type && data.batchActive !== false) {
           txs.push({ id: doc.id, ...data } as Transaction);
         }
       });
@@ -142,7 +143,11 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
     const unsubCompTx = onSnapshot(compTxQuery, { includeMetadataChanges: true }, (snapshot) => {
       const txs: ComponentTransaction[] = [];
       snapshot.forEach((doc) => {
-        txs.push({ id: doc.id, ...doc.data() } as ComponentTransaction);
+        const data = doc.data() as ComponentTransaction;
+        // Filter out empty skeleton documents
+        if (data.type) {
+          txs.push({ id: doc.id, ...data } as ComponentTransaction);
+        }
       });
       setComponentTransactions(txs);
       setLoadingStates(prev => ({ ...prev, componentTransactions: false }));
@@ -154,7 +159,11 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
     const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
       const uMap: Record<string, UserProfile> = {};
       snapshot.forEach((doc) => {
-        uMap[doc.id] = doc.data() as UserProfile;
+        const data = doc.data() as UserProfile;
+        // Filter out empty skeleton documents
+        if (data.uid || data.email) {
+          uMap[doc.id] = data;
+        }
       });
       setUsers(uMap);
       setLoadingStates(prev => ({ ...prev, users: false }));
