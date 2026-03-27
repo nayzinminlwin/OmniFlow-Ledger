@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { db } from '../firebase';
-import { Stock, TransactionType, Batch, LaptopClass, ModelStock, Transaction, ComponentType, ComponentModelStock, ComponentStock } from '../types';
+import { UserProfile, Stock, TransactionType, Batch, LaptopClass, ModelStock, Transaction, ComponentType, ComponentModelStock, ComponentStock } from '../types';
 import { COMPONENTS, INITIAL_CLASS_COUNTS, INITIAL_COMPONENT_COUNTS, INITIAL_COMPONENT_STOCK } from '../constants';
 import { translations, Language } from '../translations';
 
@@ -614,5 +614,217 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
     }
   };
 
-  return { handleAddTransaction, handleRenameBatch, handleDeleteBatch, recordComponentBreakdown, recordComponentPurchase, recordComponentInstallation, isSubmitting, isRenaming, error, setError, success, setSuccess };
+  const handleUndoTransaction = async (transactionId: string, currentUserProfile: UserProfile | null) => {
+    if (!user || !currentUserProfile || !transactionId) return;
+
+    setIsSubmitting(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const txRef = doc(db, 'transactions', transactionId);
+        const txDoc = await transaction.get(txRef);
+
+        if (!txDoc.exists()) {
+          throw new Error('Transaction not found');
+        }
+
+        const txData = txDoc.data() as Transaction;
+
+        if (txData.isUndone) {
+          throw new Error('Transaction is already undone');
+        }
+
+        // Permission Check
+        const isOwnTransaction = txData.userId === user.uid;
+        const isUltimateAdmin = currentUserProfile.isUltimateAdmin;
+        const isOriginalAdmin = currentUserProfile.isOriginalAdmin;
+
+        let canUndo = false;
+
+        if (isOriginalAdmin) {
+          canUndo = true; // Original Admin can undo anything
+        } else if (isUltimateAdmin) {
+          // Ultimate Admin can undo their own, or normal users' transactions
+          if (isOwnTransaction) {
+            canUndo = true;
+          } else {
+            // Need to fetch the user profile of the transaction owner to check their role
+            const ownerRef = doc(db, 'users', txData.userId);
+            const ownerDoc = await transaction.get(ownerRef);
+            if (ownerDoc.exists()) {
+              const ownerProfile = ownerDoc.data() as UserProfile;
+              if (!ownerProfile.isUltimateAdmin && !ownerProfile.isOriginalAdmin) {
+                canUndo = true;
+              }
+            }
+          }
+        } else if (isOwnTransaction) {
+          canUndo = true; // Normal users can only undo their own
+        }
+
+        if (!canUndo) {
+          throw new Error('You do not have permission to undo this transaction.');
+        }
+
+        // Reverse the transaction logic
+        const stockRef = doc(db, 'inventory', 'current');
+        const batchRef = doc(db, 'batches', txData.batchId);
+        
+        const stockDoc = await transaction.get(stockRef);
+        const batchDoc = await transaction.get(batchRef);
+
+        if (!stockDoc.exists()) {
+          throw new Error(t.globalStockMissing);
+        }
+
+        const currentStock = stockDoc.data() as Stock;
+        const newStock: Stock = { 
+          items: (currentStock.items || []).filter(i => typeof i === 'object' && i !== null),
+          lastUpdated: new Date().toISOString() 
+        };
+
+        let newBatchStock: Batch | null = null;
+        if (batchDoc.exists()) {
+          const data = batchDoc.data() as Batch;
+          newBatchStock = {
+            ...data,
+            batchId: data.batchId || txData.batchId,
+            items: (data.items || []).filter(i => typeof i === 'object' && i !== null),
+          };
+        }
+
+        const globalModelStock = getModelStock(newStock.items, txData.brand, txData.series, txData.model);
+        let batchModelStock: ModelStock | null = null;
+        if (newBatchStock) {
+           batchModelStock = getModelStock(newBatchStock.items, txData.brand, txData.series, txData.model);
+        }
+
+        const quantity = txData.quantity;
+
+        if (txData.type === 'INCOMING') {
+          globalModelStock.counts['UNCLASSIFIED'] -= quantity;
+          if (batchModelStock) batchModelStock.counts['UNCLASSIFIED'] -= quantity;
+        } else if (txData.type === 'SALE') {
+          if (txData.fromClass) {
+            globalModelStock.counts[txData.fromClass] += quantity;
+            if (batchModelStock) batchModelStock.counts[txData.fromClass] += quantity;
+          }
+        } else if (txData.type === 'REPAIR') {
+          if (txData.fromClass && txData.toClass) {
+            globalModelStock.counts[txData.toClass] -= quantity;
+            globalModelStock.counts[txData.fromClass] += quantity;
+            if (batchModelStock) {
+              batchModelStock.counts[txData.toClass] -= quantity;
+              batchModelStock.counts[txData.fromClass] += quantity;
+            }
+          }
+        } else if (txData.type === 'ADJUSTMENT') {
+           if (txData.toClass) {
+              globalModelStock.counts[txData.toClass] -= quantity;
+              if (batchModelStock) batchModelStock.counts[txData.toClass] -= quantity;
+           }
+        } else if (txData.type === 'BREAKDOWN') {
+           if (txData.fromClass) {
+              globalModelStock.counts[txData.fromClass] += quantity;
+              if (batchModelStock) batchModelStock.counts[txData.fromClass] += quantity;
+           }
+           // Reverse component changes
+           const compStockRef = doc(db, 'components', 'current');
+           const spoiledCompStockRef = doc(db, 'components', 'spoiled');
+           const compStockDoc = await transaction.get(compStockRef);
+           const spoiledCompStockDoc = await transaction.get(spoiledCompStockRef);
+
+           let compData = compStockDoc.exists() ? compStockDoc.data() as ComponentStock : { ...INITIAL_COMPONENT_STOCK };
+           let spoiledCompData = spoiledCompStockDoc.exists() ? spoiledCompStockDoc.data() as ComponentStock : { ...INITIAL_COMPONENT_STOCK };
+           
+           const compModel = getComponentModelStock(compData.items, txData.brand, txData.series, txData.model);
+           const spoiledCompModel = getComponentModelStock(spoiledCompData.items, txData.brand, txData.series, txData.model);
+
+           if (txData.componentChanges) {
+             COMPONENTS.forEach(comp => {
+               const goodQty = txData.componentChanges![comp] || 0;
+               const spoiledQty = quantity - goodQty;
+               
+               compModel.counts[comp] = (compModel.counts[comp] || 0) - goodQty;
+               spoiledCompModel.counts[comp] = (spoiledCompModel.counts[comp] || 0) - spoiledQty;
+             });
+           }
+           compData.lastUpdated = new Date().toISOString();
+           spoiledCompData.lastUpdated = new Date().toISOString();
+           transaction.set(compStockRef, compData);
+           transaction.set(spoiledCompStockRef, spoiledCompData);
+        } else if (txData.type === 'PURCHASE') {
+           const compStockRef = doc(db, 'components', 'current');
+           const compStockDoc = await transaction.get(compStockRef);
+           let compData = compStockDoc.exists() ? compStockDoc.data() as ComponentStock : { ...INITIAL_COMPONENT_STOCK };
+           const compModel = getComponentModelStock(compData.items, txData.brand, txData.series, txData.model);
+
+           if (txData.componentChanges) {
+             Object.entries(txData.componentChanges).forEach(([comp, qty]) => {
+               compModel.counts[comp as ComponentType] = (compModel.counts[comp as ComponentType] || 0) - (qty || 0);
+             });
+           }
+           compData.lastUpdated = new Date().toISOString();
+           transaction.set(compStockRef, compData);
+        } else if (txData.type === 'INSTALL') {
+           const compStockRef = doc(db, 'components', 'current');
+           const compStockDoc = await transaction.get(compStockRef);
+           let compData = compStockDoc.exists() ? compStockDoc.data() as ComponentStock : { ...INITIAL_COMPONENT_STOCK };
+           const compModel = getComponentModelStock(compData.items, txData.brand, txData.series, txData.model);
+
+           if (txData.componentChanges) {
+             Object.entries(txData.componentChanges).forEach(([comp, qty]) => {
+               compModel.counts[comp as ComponentType] = (compModel.counts[comp as ComponentType] || 0) + (qty || 0);
+             });
+           }
+           compData.lastUpdated = new Date().toISOString();
+           transaction.set(compStockRef, compData);
+        }
+
+        // Update global stock
+        transaction.update(stockRef, newStock as any);
+        
+        // Update batch stock if it exists
+        if (newBatchStock && batchDoc.exists()) {
+           transaction.set(batchRef, newBatchStock);
+        }
+
+        // Mark original transaction as undone
+        transaction.update(txRef, { isUndone: true });
+
+        // Create a new UNDO transaction record
+        const undoTxRef = doc(collection(db, 'transactions'));
+        const undoTxData: any = {
+          type: 'ADJUSTMENT', // Or a new type 'UNDO' if preferred, but ADJUSTMENT fits the ledger
+          batchId: txData.batchId,
+          batchActive: txData.batchActive,
+          brand: txData.brand,
+          series: txData.series,
+          model: txData.model,
+          quantity: -txData.quantity, // Negative quantity to show reversal
+          timestamp: new Date().toISOString(),
+          userId: user.uid,
+          notes: `Undid transaction: ${transactionId}`,
+        };
+        if (txData.fromClass) undoTxData.fromClass = txData.fromClass;
+        if (txData.toClass) undoTxData.toClass = txData.toClass;
+        if (txData.componentChanges) undoTxData.componentChanges = txData.componentChanges;
+
+        transaction.set(undoTxRef, undoTxData);
+      });
+
+      setSuccess(t.undoSuccess);
+      return true;
+    } catch (err: any) {
+      console.error('Undo failed:', err);
+      setError(err.message || t.undoFailed);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { handleAddTransaction, handleRenameBatch, handleDeleteBatch, recordComponentBreakdown, recordComponentPurchase, recordComponentInstallation, handleUndoTransaction, isSubmitting, isRenaming, error, setError, success, setSuccess };
 }

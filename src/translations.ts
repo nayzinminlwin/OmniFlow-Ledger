@@ -174,7 +174,11 @@ export const translations = {
     deleteBatch: 'Delete Batch',
     dateExample: 'e.g., 16-03-2026',
     invalidBatchDate: 'Invalid batch date. Please use a real date (DD-MM-YYYY).',
-    noBatchesFound: 'No matching batches found'
+    noBatchesFound: 'No matching batches found',
+    undo: 'Undo',
+    undoSuccess: 'Transaction undone successfully!',
+    undoFailed: 'Failed to undo transaction.',
+    undone: 'Undone'
   },
   ms: {
     brand: 'Lejar Pembaikan Pro',
@@ -349,7 +353,11 @@ export const translations = {
     deleteBatch: 'Padam Batch',
     dateExample: 'cth., 16-03-2026',
     invalidBatchDate: 'Tarikh batch tidak sah. Sila gunakan tarikh sebenar (HH-BB-TTTT).',
-    noBatchesFound: 'Tiada batch yang sepadan dijumpai'
+    noBatchesFound: 'Tiada batch yang sepadan dijumpai',
+    undo: 'Buat Asal',
+    undoSuccess: 'Transaksi berjaya dibuat asal!',
+    undoFailed: 'Gagal membuat asal transaksi.',
+    undone: 'Dibuat Asal'
   },
   zh: {
     brand: '专业维修分类账',
@@ -524,6 +532,10 @@ export const translations = {
     deleteBatch: '删除批次',
     dateExample: '例如：16-03-2026',
     invalidBatchDate: '无效的批次日期。请使用真实的日期 (日-月-年)。',
-    noBatchesFound: '未找到匹配的批次'
+    noBatchesFound: '未找到匹配的批次',
+    undo: '撤销',
+    undoSuccess: '交易撤销成功！',
+    undoFailed: '撤销交易失败。',
+    undone: '已撤销'
   }
 };

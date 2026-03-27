@@ -51,6 +51,7 @@ export default function App() {
     handleAddTransaction, 
     handleRenameBatch, 
     handleDeleteBatch,
+    handleUndoTransaction,
     isSubmitting, 
     isRenaming, 
     error: actionError, 
@@ -173,6 +174,8 @@ export default function App() {
             t={t} 
             activeTab={activeTab} 
             loading={loading}
+            onUndo={handleUndoTransaction}
+            currentUserProfile={profile}
           />
 
           <AddTransaction 

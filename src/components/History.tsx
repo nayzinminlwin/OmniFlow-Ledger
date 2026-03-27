@@ -1,6 +1,6 @@
 import React, { memo, useState } from 'react';
 import { format } from 'date-fns';
-import { ArrowRightLeft, Info, Hammer } from 'lucide-react';
+import { ArrowRightLeft, Info, Hammer, Undo2 } from 'lucide-react';
 import { Transaction, UserProfile } from '../types';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
@@ -12,10 +12,13 @@ interface HistoryProps {
   t: any;
   activeTab: string;
   loading?: boolean;
+  onUndo: (transactionId: string, currentUserProfile: UserProfile | null) => Promise<boolean | undefined>;
+  currentUserProfile: UserProfile | null;
 }
 
-export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, activeTab, loading = false }) => {
+export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, activeTab, loading = false, onUndo, currentUserProfile }) => {
   const [hoveredTxId, setHoveredTxId] = useState<string | null>(null);
+  const [undoingTxId, setUndoingTxId] = useState<string | null>(null);
 
   if (activeTab !== 'history') return null;
 
@@ -51,6 +54,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-right bg-[#F8F8F8]">{t.qty}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.user}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.notes}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.undo}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
@@ -64,6 +68,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                     <td className="px-8 py-4"><Skeleton className="w-32 h-5" /></td>
                     <td className="px-8 py-4 text-right"><Skeleton className="w-12 h-6 ml-auto" /></td>
                     <td className="px-8 py-4"><Skeleton className="w-40 h-4" /></td>
+                    <td className="px-8 py-4"><Skeleton className="w-8 h-8 rounded-full" /></td>
                   </tr>
                 ))
               ) : (
@@ -216,13 +221,49 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                       <td className="px-8 py-4">
                         <p className="text-[13px] text-gray-500 italic max-w-xs truncate">{tx.notes || '-'}</p>
                       </td>
+                      <td className="px-8 py-4">
+                        {tx.isUndone ? (
+                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.undone}</span>
+                        ) : (
+                          <button
+                            onClick={async () => {
+                              if (tx.id) {
+                                setUndoingTxId(tx.id);
+                                await onUndo(tx.id, currentUserProfile);
+                                setUndoingTxId(null);
+                              }
+                            }}
+                            disabled={undoingTxId === tx.id || !currentUserProfile || (
+                              !currentUserProfile.isOriginalAdmin && 
+                              !(currentUserProfile.isUltimateAdmin && (!users[tx.userId]?.isUltimateAdmin && !users[tx.userId]?.isOriginalAdmin || tx.userId === currentUserProfile.uid)) &&
+                              tx.userId !== currentUserProfile.uid
+                            )}
+                            className={cn(
+                              "p-2 rounded-full transition-colors",
+                              undoingTxId === tx.id ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-100 text-gray-400 hover:text-red-500",
+                              (!currentUserProfile || (
+                                !currentUserProfile.isOriginalAdmin && 
+                                !(currentUserProfile.isUltimateAdmin && (!users[tx.userId]?.isUltimateAdmin && !users[tx.userId]?.isOriginalAdmin || tx.userId === currentUserProfile.uid)) &&
+                                tx.userId !== currentUserProfile.uid
+                              )) && "opacity-30 cursor-not-allowed hover:bg-transparent hover:text-gray-400"
+                            )}
+                            title={t.undo}
+                          >
+                            {undoingTxId === tx.id ? (
+                              <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Undo2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+                      </td>
                     </tr>
                   );
                 })
               )}
             {!loading && transactions.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-8 py-12 text-center text-gray-400 font-medium text-[15px]">
+                  <td colSpan={11} className="px-8 py-12 text-center text-gray-400 font-medium text-[15px]">
                     {t.noTransactions}
                   </td>
                 </tr>

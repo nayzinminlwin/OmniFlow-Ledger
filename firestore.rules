@@ -132,7 +132,11 @@ service cloud.firestore {
 
     match /transactions/{txId} {
       allow read, create: if isApproved();
-      allow update, delete: if isUltimateAdmin();
+      allow update: if isApproved() && (
+        isUltimateAdmin() || 
+        (resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isUndone']))
+      );
+      allow delete: if isUltimateAdmin();
     }
 
     match /component_transactions/{txId} {

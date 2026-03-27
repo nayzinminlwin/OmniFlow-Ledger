@@ -58,6 +58,7 @@ export interface ComponentTransaction {
   timestamp: string;
   userId: string;
   notes?: string;
+  isUndone?: boolean;
 }
 
 export interface Transaction {
@@ -75,6 +76,7 @@ export interface Transaction {
   userId: string;
   notes?: string;
   componentChanges?: Partial<Record<ComponentType, number>>;
+  isUndone?: boolean;
 }
 
 export interface UserProfile {
