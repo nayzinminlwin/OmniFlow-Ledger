@@ -24,14 +24,14 @@ export function useAuth(lang: Language) {
   const t = translations[lang];
 
   const bootstrapAdminEmails = ["tpl.pauline.pts2026@gmail.com", "nayzinminlwin22@gmail.com"];
-  const originalAdminEmail = "nayzinminlwin22@gmail.com";
+  const originalAdminEmails = ["nayzinminlwin22@gmail.com", "tpl.pauline.pts2026@gmail.com"];
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('Auth state changed:', user?.email, 'Verified:', user?.emailVerified);
       if (user) {
         const isBootstrapAdmin = bootstrapAdminEmails.includes(user.email || "") && user.emailVerified;
-        const isOriginalByEmail = user.email === originalAdminEmail && user.emailVerified;
+        const isOriginalByEmail = originalAdminEmails.includes(user.email || "") && user.emailVerified;
         try {
           console.log("Fetching profile for UID:", user.uid);
           const profileDoc = await getDoc(doc(db, 'users', user.uid));
@@ -173,6 +173,6 @@ export function useAuth(lang: Language) {
     requestSent,
     setRequestSent,
     isUltimateAdmin: bootstrapAdminEmails.includes(user?.email || "") || profile?.isUltimateAdmin === true || profile?.isOriginalAdmin === true,
-    isOriginalAdmin: user?.email === originalAdminEmail || profile?.isOriginalAdmin === true
+    isOriginalAdmin: originalAdminEmails.includes(user?.email || "") || profile?.isOriginalAdmin === true
   };
 }
