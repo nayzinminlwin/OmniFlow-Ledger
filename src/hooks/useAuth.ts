@@ -138,7 +138,11 @@ export function useAuth(lang: Language) {
       setIsAuthReady(true);
       setIsLoggingIn(false);
     });
-    return () => unsubscribe();
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, [t.pendingApproval, t.rejectedApproval, t.accountApprovedToast, t.originalAdmin, t.ultimateAdmin, t.defaultUser]);
 
   const handleGoogleLogin = async () => {

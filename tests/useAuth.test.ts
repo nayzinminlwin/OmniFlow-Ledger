@@ -9,7 +9,7 @@ vi.mock('firebase/auth', async () => {
   const actual = await vi.importActual('firebase/auth');
   return {
     ...actual,
-    onAuthStateChanged: vi.fn(),
+    onAuthStateChanged: vi.fn(() => vi.fn()),
     signOut: vi.fn(),
     signInWithPopup: vi.fn(),
     GoogleAuthProvider: vi.fn(),

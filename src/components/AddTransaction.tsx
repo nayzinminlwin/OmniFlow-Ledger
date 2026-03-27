@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo, memo, useRef, useEffect } from 'react';
 import { RefreshCw, CheckCircle2, X } from 'lucide-react';
 import { Batch, LaptopClass, TransactionType } from '../types';
 import { CLASSES } from '../constants';
@@ -46,6 +46,27 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
   const [quantity, setQuantity] = useState<number | ''>(1);
   const [notes, setNotes] = useState('');
   const [isNewBatch, setIsNewBatch] = useState(false);
+
+  const batchInputRef = useRef<HTMLInputElement>(null);
+  const brandInputRef = useRef<HTMLInputElement>(null);
+  const seriesInputRef = useRef<HTMLInputElement>(null);
+  const modelInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isNewBatch) batchInputRef.current?.focus();
+  }, [isNewBatch]);
+
+  useEffect(() => {
+    if (isNewBrand) brandInputRef.current?.focus();
+  }, [isNewBrand]);
+
+  useEffect(() => {
+    if (isNewSeries && !isNewBrand) seriesInputRef.current?.focus();
+  }, [isNewSeries, isNewBrand]);
+
+  useEffect(() => {
+    if (isNewModel && !isNewBrand && !isNewSeries) modelInputRef.current?.focus();
+  }, [isNewModel, isNewBrand, isNewSeries]);
 
   // Persist values to localStorage
   React.useEffect(() => {
@@ -225,13 +246,13 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      ref={batchInputRef}
                       type="text"
                       placeholder={t.dateExample}
                       value={batchId}
                       onChange={(e) => setBatchId(formatBatchId(e.target.value, batchId))}
                       onBlur={handleBatchIdBlur}
                       className="ios-input w-full pr-10"
-                      autoFocus
                       required
                     />
                     <button 
@@ -286,12 +307,12 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      ref={brandInputRef}
                       type="text"
                       placeholder={t.newBrand}
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
                       className="ios-input w-full text-[15px] py-3 pr-10"
-                      autoFocus
                       required
                     />
                     <button 
@@ -324,12 +345,12 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      ref={seriesInputRef}
                       type="text"
                       placeholder={t.newSeries}
                       value={series}
                       onChange={(e) => setSeries(e.target.value)}
                       className="ios-input w-full text-[15px] py-3 pr-10"
-                      autoFocus={!isNewBrand}
                       required
                     />
                     <button 
@@ -362,12 +383,12 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      ref={modelInputRef}
                       type="text"
                       placeholder={t.newModel}
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
                       className="ios-input w-full text-[15px] py-3 pr-10"
-                      autoFocus={!isNewBrand && !isNewSeries}
                       required
                     />
                     <button 

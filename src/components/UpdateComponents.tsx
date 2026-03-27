@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Package, Plus, Minus, X } from 'lucide-react';
 import { Stock, ComponentStock, ComponentType, LaptopClass, Batch } from '../types';
 import { COMPONENTS } from '../constants';
@@ -43,6 +43,27 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
   const [isNewSeries, setIsNewSeries] = useState(() => localStorage.getItem('comp_last_isNewSeries') === 'true');
   const [isNewModel, setIsNewModel] = useState(() => localStorage.getItem('comp_last_isNewModel') === 'true');
   const [isNewBatch, setIsNewBatch] = useState(false);
+
+  const batchInputRef = useRef<HTMLInputElement>(null);
+  const brandInputRef = useRef<HTMLInputElement>(null);
+  const seriesInputRef = useRef<HTMLInputElement>(null);
+  const modelInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isNewBatch) batchInputRef.current?.focus();
+  }, [isNewBatch]);
+
+  useEffect(() => {
+    if (isNewBrand) brandInputRef.current?.focus();
+  }, [isNewBrand]);
+
+  useEffect(() => {
+    if (isNewSeries && !isNewBrand) seriesInputRef.current?.focus();
+  }, [isNewSeries, isNewBrand]);
+
+  useEffect(() => {
+    if (isNewModel && !isNewBrand && !isNewSeries) modelInputRef.current?.focus();
+  }, [isNewModel, isNewBrand, isNewSeries]);
 
   // Persist values to localStorage
   React.useEffect(() => {
@@ -419,16 +440,16 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     </div>
                   ) : (
                     <div className="relative flex items-center">
-                      <input
-                        type="text"
-                        placeholder={t.dateExample}
-                        value={batchId}
-                        onChange={(e) => setBatchId(formatBatchId(e.target.value, batchId))}
-                        onBlur={() => setBatchId(prev => padBatchId(prev))}
-                        className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none pr-10"
-                        autoFocus
-                        required
-                      />
+                    <input
+                      ref={batchInputRef}
+                      type="text"
+                      placeholder={t.dateExample}
+                      value={batchId}
+                      onChange={(e) => setBatchId(formatBatchId(e.target.value, batchId))}
+                      onBlur={() => setBatchId(prev => padBatchId(prev))}
+                      className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none pr-10"
+                      required
+                    />
                       <button 
                         type="button" 
                         onClick={() => {
@@ -465,12 +486,12 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      ref={brandInputRef}
                       type="text"
                       placeholder={t.newBrand}
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
                       className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none pr-10"
-                      autoFocus
                       required
                     />
                     <button 
@@ -503,12 +524,12 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      ref={seriesInputRef}
                       type="text"
                       placeholder={t.newSeries}
                       value={series}
                       onChange={(e) => setSeries(e.target.value)}
                       className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none pr-10"
-                      autoFocus={!isNewBrand}
                       required
                     />
                     <button 
@@ -541,12 +562,12 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      ref={modelInputRef}
                       type="text"
                       placeholder={t.newModel}
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
                       className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none pr-10"
-                      autoFocus={!isNewBrand && !isNewSeries}
                       required
                     />
                     <button 
