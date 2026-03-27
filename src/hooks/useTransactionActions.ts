@@ -104,8 +104,8 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
 
         let adjustmentDiff = 0;
         if (txType === 'INCOMING') {
-          globalModelStock.counts['UNCLASSIFIED'] += quantity;
-          batchModelStock.counts['UNCLASSIFIED'] += quantity;
+          globalModelStock.counts[toClass] += quantity;
+          batchModelStock.counts[toClass] += quantity;
         } else if (txType === 'SALE') {
           if (batchModelStock.counts[fromClass] < quantity) {
             throw new Error(t.insufficientStock(batchId, fromClass));
@@ -138,7 +138,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
           }
         }
 
-        transaction.update(stockRef, newStock as any);
+        transaction.set(stockRef, newStock);
         transaction.set(batchRef, newBatchStock);
         
         const txRef = doc(collection(db, 'transactions'));
@@ -376,7 +376,7 @@ export function useTransactionActions(user: User | null, stock: Stock | null, la
         const globalModel = getModelStock(globalData.items, brand, series, model);
         const batchModel = getModelStock(batchData.items, brand, series, model);
 
-        const allowedClasses: LaptopClass[] = ['C1', 'C2', 'C3', 'C4', 'C5', 'Spoiled', 'UNCLASSIFIED'];
+        const allowedClasses: LaptopClass[] = ['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', 'C5', 'Spoiled', 'UNCLASSIFIED'];
         if (!allowedClasses.includes(fromClass)) {
           throw new Error(`Breakdown not allowed for class ${fromClass}`);
         }

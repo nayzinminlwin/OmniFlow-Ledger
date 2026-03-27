@@ -84,6 +84,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
     setTxType(type);
     if (type === 'INCOMING') {
       setToClass('UNCLASSIFIED');
+    } else if (type === 'REPAIR') {
+      setFromClass('UNCLASSIFIED');
+      if (toClass === 'UNCLASSIFIED') setToClass('A');
     } else if (type !== 'ADJUSTMENT' && toClass === 'UNCLASSIFIED') {
       setToClass('A');
     }
@@ -451,11 +454,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                   </select>
                 </div>
               )}
-              {(txType === 'REPAIR' || txType === 'ADJUSTMENT') && (
-                <div className={cn("space-y-2", txType === 'ADJUSTMENT' && "col-span-2")}>
+              {(txType === 'REPAIR' || txType === 'ADJUSTMENT' || txType === 'INCOMING') && (
+                <div className={cn("space-y-2", (txType === 'ADJUSTMENT' || txType === 'INCOMING') && "col-span-2")}>
                   <div className="flex justify-between items-center">
                     <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">
-                      {txType === 'ADJUSTMENT' ? t.targetClass : t.toClass}
+                      {(txType === 'ADJUSTMENT' || txType === 'INCOMING') ? t.targetClass : t.toClass}
                     </label>
                     {currentBatch && (
                       <span className="text-[11px] font-bold text-ios-blue bg-ios-blue/10 px-2 py-0.5 rounded-full">
@@ -468,7 +471,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     onChange={(e) => setToClass(e.target.value as LaptopClass)}
                     className="ios-input w-full"
                   >
-                    {txType === 'ADJUSTMENT' ? <option key="unclassified" value="UNCLASSIFIED">{t.unclassified}</option> : null}
+                    {(txType === 'ADJUSTMENT' || txType === 'INCOMING' || txType === 'REPAIR') ? <option key="unclassified" value="UNCLASSIFIED">{t.unclassified}</option> : null}
                     {CLASSES.map((c, i) => <option key={`class-to-${c}-${i}`} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
                   </select>
                 </div>
