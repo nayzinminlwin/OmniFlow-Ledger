@@ -24,7 +24,7 @@ export interface Batch {
   active?: boolean;
 }
 
-export type TransactionType = 'INCOMING' | 'REPAIR' | 'SALE' | 'ADJUSTMENT' | 'BREAKDOWN' | 'PURCHASE' | 'INSTALL' | 'UNDO';
+export type TransactionType = 'INCOMING' | 'REPAIR' | 'SALE' | 'ADJUSTMENT' | 'BREAKDOWN' | 'PURCHASE' | 'INSTALL' | 'UNDO' | 'DELETION';
 
 export type ComponentType = 'A Cover' | 'B Cover' | 'C Cover' | 'D Cover' | 'Screen' | 'Motherboard' | 'Battery' | 'Keyboard' | 'RAM' | 'SSD' | 'Speaker' | 'Charging Adapter';
 
@@ -59,6 +59,7 @@ export interface ComponentTransaction {
   userId: string;
   notes?: string;
   isUndone?: boolean;
+  undoneType?: TransactionType;
 }
 
 export interface Transaction {

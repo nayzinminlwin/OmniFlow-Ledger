@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Stock, Transaction, LaptopClass, Batch } from '../types';
-import { CLASSES } from '../constants';
+import { CLASSES, COMPONENTS } from '../constants';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
@@ -281,6 +281,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                   tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-600",
                   tx.type === 'PURCHASE' && "bg-emerald-500/10 text-emerald-600",
                   tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-600",
+                  tx.type === 'DELETION' && "bg-red-500/10 text-red-600",
                   tx.type === 'UNDO' && "bg-yellow-500/10 text-yellow-600"
                 )}>
                   {tx.type === 'INCOMING' && <ArrowDownLeft className="w-5 h-5" />}
@@ -290,6 +291,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                   {tx.type === 'BREAKDOWN' && <Hammer className="w-5 h-5" />}
                   {tx.type === 'PURCHASE' && <ShoppingCart className="w-5 h-5" />}
                   {tx.type === 'INSTALL' && <PackagePlus className="w-5 h-5" />}
+                  {tx.type === 'DELETION' && <PlusCircle className="w-5 h-5 rotate-45" />}
                   {tx.type === 'UNDO' && <Undo2 className="w-5 h-5" />}
                 </div>
                 <div>
@@ -330,12 +332,14 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                                 </div>
                                 <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                                   {tx.componentChanges && Object.keys(tx.componentChanges).length > 0 ? (
-                                    Object.entries(tx.componentChanges).map(([comp, count]) => (
-                                      <div key={comp} className="flex items-center justify-between">
-                                        <span className="text-[12px] text-gray-600 truncate mr-2">{t[comp] || comp}</span>
-                                        <span className="text-[12px] font-bold text-black">{count}</span>
-                                      </div>
-                                    ))
+                                    Object.entries(tx.componentChanges)
+                                      .sort(([a], [b]) => COMPONENTS.indexOf(a as any) - COMPONENTS.indexOf(b as any))
+                                      .map(([comp, count]) => (
+                                        <div key={comp} className="flex items-center justify-between">
+                                          <span className="text-[12px] text-gray-600 truncate mr-2">{t[comp] || comp}</span>
+                                          <span className="text-[12px] font-bold text-black">{count}</span>
+                                        </div>
+                                      ))
                                   ) : (
                                     <div className="col-span-2 text-center py-2 text-[12px] text-gray-400 italic">
                                       {t.noComponentsRecorded}
@@ -367,6 +371,8 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                         : t.installComponents}</>
                     ) : tx.type === 'UNDO' ? (
                       <>{t.undo} {tx.undoneType === 'PURCHASE' ? t.buy : (tx.undoneType ? (t[tx.undoneType.toLowerCase() as keyof typeof t] || tx.undoneType) : '')}</>
+                    ) : tx.type === 'DELETION' ? (
+                      <span className="text-red-600 font-semibold">{t.batchDeletion}</span>
                     ) : (
                       <>{tx.type === 'INCOMING' ? t.incoming : (t[tx.type.toLowerCase() as keyof typeof t] || tx.type)} {tx.type !== 'INCOMING' && getClassName(tx.toClass || tx.fromClass)}</>
                     )}
@@ -379,13 +385,13 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
               <div className="text-right">
                 <p className={cn(
                   "text-[19px] font-semibold tabular-nums tracking-tight",
-                  (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' || (tx.type === 'UNDO' && tx.quantity > 0)) ? "text-green-600" : tx.type === 'INSTALL' ? "text-pink-600" : "text-orange-600"
+                  (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' || (tx.type === 'UNDO' && tx.quantity > 0)) ? "text-green-600" : (tx.type === 'INSTALL' || tx.type === 'DELETION') ? "text-red-600" : "text-orange-600"
                 )}>
                   {tx.type === 'PURCHASE' ? (
                     `+${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
                   ) : tx.type === 'INSTALL' ? (
                     `-${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
-                  ) : tx.type === 'UNDO' ? (
+                  ) : (tx.type === 'UNDO' || tx.type === 'DELETION') ? (
                     tx.quantity >= 0 ? `+${tx.quantity}` : tx.quantity
                   ) : (
                     `${(tx.type === 'INCOMING' || tx.type === 'REPAIR') ? '+' : '-'}${tx.quantity}`

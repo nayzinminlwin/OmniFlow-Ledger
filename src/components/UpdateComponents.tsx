@@ -27,7 +27,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
   activeTab
 }) => {
   const { user } = useAuth(lang);
-  const { recordComponentBreakdown, recordComponentPurchase, recordComponentInstallation, isSubmitting, error, setError, success, setSuccess } = useTransactionActions(user, stock, lang);
+  const { recordComponentBreakdown, recordComponentPurchase, recordComponentInstallation, isSubmitting, error, setError, success, setSuccess } = useTransactionActions(user, lang);
   const [mode, setMode] = useState<'extract' | 'buy' | 'install'>(() => (localStorage.getItem('comp_last_mode') as 'extract' | 'buy' | 'install') || 'extract');
   const [batchId, setBatchId] = useState(() => localStorage.getItem('comp_last_batchId') || '');
   const [brand, setBrand] = useState(() => localStorage.getItem('comp_last_brand') || '');
@@ -222,7 +222,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
     setFromClass('');
   };
 
-  const eligibleClasses: LaptopClass[] = ['C1', 'C2', 'C3', 'C4', 'C5', 'Spoiled', 'UNCLASSIFIED'];
+  const eligibleClasses: LaptopClass[] = ['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', 'C5', 'D', 'Spoiled', 'UNCLASSIFIED'];
 
   const selectedModelStock = useMemo(() => {
     if (!brand || !series || !model || !selectedBatch) return null;
@@ -248,24 +248,56 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
 
   // Set default brand if empty
   useEffect(() => {
-    if (!brand && brands.length > 0 && !isNewBrand) {
-      setBrand(brands[0]);
+    if (brands.length > 0) {
+      if (!brand) {
+        setBrand(brands[0]);
+        setIsNewBrand(false);
+      }
+    } else if (mode === 'buy' && brands.length === 0 && !isNewBrand) {
+      // Auto-switch to new brand if no existing brands for 'buy' mode
+      setIsNewBrand(true);
+      setBrand('');
+      setIsNewSeries(true);
+      setSeries('');
+      setIsNewModel(true);
+      setModel('');
     }
-  }, [brands, brand, isNewBrand]);
+  }, [brands, brand, isNewBrand, mode]);
 
   // Set default series if empty
   useEffect(() => {
-    if (!series && seriesList.length > 0 && !isNewSeries) {
+    if (seriesList.length > 0 && !series) {
       setSeries(seriesList[0]);
+      setIsNewSeries(false);
     }
-  }, [seriesList, series, isNewSeries]);
+  }, [seriesList, series]);
 
   // Set default model if empty
   useEffect(() => {
-    if (!model && modelList.length > 0 && !isNewModel) {
+    if (modelList.length > 0 && !model) {
       setModel(modelList[0]);
+      setIsNewModel(false);
     }
-  }, [modelList, model, isNewModel]);
+  }, [modelList, model]);
+
+  // Reconcile "New" state with existing data on load or list update to fix sticky localStorage
+  useEffect(() => {
+    if (brands.length > 0 && isNewBrand && brand && brands.includes(brand)) {
+      setIsNewBrand(false);
+    }
+  }, [brands]);
+
+  useEffect(() => {
+    if (seriesList.length > 0 && isNewSeries && series && seriesList.includes(series)) {
+      setIsNewSeries(false);
+    }
+  }, [seriesList]);
+
+  useEffect(() => {
+    if (modelList.length > 0 && isNewModel && model && modelList.includes(model)) {
+      setIsNewModel(false);
+    }
+  }, [modelList]);
 
   // Set default fromClass if empty and eligible classes exist
   useEffect(() => {
@@ -274,6 +306,30 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
       setFromClass(availableClasses[0] as LaptopClass);
     }
   }, [selectedModelStock, fromClass, eligibleClasses]);
+
+  const maxLaptopQuantity = useMemo(() => {
+    if (!selectedModelStock || !fromClass) return 0;
+    return selectedModelStock.counts?.[fromClass as LaptopClass] || 0;
+  }, [selectedModelStock, fromClass]);
+
+  // Cap laptop quantity to max available stock when max stock changes
+  useEffect(() => {
+    if (typeof laptopQuantity === 'number' && laptopQuantity > maxLaptopQuantity) {
+      setLaptopQuantity(maxLaptopQuantity);
+      
+      // Also cap component quantities
+      setComponentChanges(prev => {
+        const next = { ...prev };
+        Object.keys(next).forEach(key => {
+          const comp = key as ComponentType;
+          if (Number(next[comp]) > maxLaptopQuantity) {
+            next[comp] = maxLaptopQuantity;
+          }
+        });
+        return next;
+      });
+    }
+  }, [maxLaptopQuantity, laptopQuantity]);
 
   // Set default selectedComponent if empty
   useEffect(() => {
@@ -288,11 +344,6 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
       setSelectedComponent(availableComponents[0] as ComponentType);
     }
   }, [mode, selectedComponentModelStock, selectedComponent]);
-
-  const maxLaptopQuantity = useMemo(() => {
-    if (!selectedModelStock || !fromClass) return 0;
-    return selectedModelStock.counts?.[fromClass as LaptopClass] || 0;
-  }, [selectedModelStock, fromClass]);
 
   const handleComponentChange = (component: ComponentType, val: number | '') => {
     const finalVal = val === '' ? '' : Math.max(0, Math.min(val, Number(laptopQuantity)));
@@ -526,6 +577,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
                     required
                   >
+                    <option value="" disabled>{t.selectBrand}</option>
                     {brands.map((b, i) => <option key={`brand-${b}-${i}`} value={b}>{b}</option>)}
                     {mode === 'buy' ? (
                       <option key="new-brand" value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
@@ -563,6 +615,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
                     required
                   >
+                    <option value="" disabled>{t.selectSeries}</option>
                     {seriesList.map((s, i) => <option key={`series-${s}-${i}`} value={s}>{s}</option>)}
                     {mode === 'buy' ? (
                       <option key="new-series" value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
@@ -600,6 +653,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
                     required
                   >
+                    <option value="" disabled>{t.selectModel}</option>
                     {modelList.map((m, i) => <option key={`model-${m}-${i}`} value={m}>{m}</option>)}
                     {mode === 'buy' ? (
                       <option key="new-model" value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
@@ -668,7 +722,10 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                       }}
                       onChange={(e) => {
                         const val = e.target.value;
-                        const numVal = val === '' ? '' : Math.max(0, parseInt(val));
+                        let numVal = val === '' ? '' : Math.max(0, parseInt(val));
+                        if (typeof numVal === 'number' && numVal > maxLaptopQuantity) {
+                          numVal = maxLaptopQuantity;
+                        }
                         setLaptopQuantity(numVal);
                         
                         if (numVal !== '') {
@@ -677,8 +734,8 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                             const next = { ...prev };
                             Object.keys(next).forEach(key => {
                               const comp = key as ComponentType;
-                              if (Number(next[comp]) > numVal) {
-                                next[comp] = numVal;
+                              if (Number(next[comp]) > Number(numVal)) {
+                                next[comp] = Number(numVal);
                               }
                             });
                             return next;

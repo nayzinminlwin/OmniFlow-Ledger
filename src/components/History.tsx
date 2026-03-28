@@ -1,7 +1,9 @@
 import React, { memo, useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { format } from 'date-fns';
 import { ArrowRightLeft, Info, Hammer, Undo2, ArrowDownLeft, ArrowUpRight, ShoppingCart, Wrench, Sliders, PackagePlus, PlusCircle } from 'lucide-react';
 import { Transaction, UserProfile } from '../types';
+import { COMPONENTS } from '../constants';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
@@ -18,13 +20,38 @@ interface HistoryProps {
 
 export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, activeTab, loading = false, onUndo, currentUserProfile }) => {
   const [hoveredTxId, setHoveredTxId] = useState<string | null>(null);
+  const [popupConfig, setPopupConfig] = useState<{ top: number, left: number, index: number, tx: Transaction } | null>(null);
   const [undoingTxId, setUndoingTxId] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (hoveredTxId) {
+        setHoveredTxId(null);
+        setPopupConfig(null);
+      }
+    };
+
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll, { passive: true });
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+      window.removeEventListener('scroll', handleScroll, { capture: true });
+    };
+  }, [hoveredTxId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       if (hoveredTxId && !target.closest('.breakdown-trigger') && !target.closest('.breakdown-popup')) {
         setHoveredTxId(null);
+        setPopupConfig(null);
       }
     };
 
@@ -54,7 +81,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
             {t.showingLast50}
           </div>
         </div>
-        <div className="overflow-x-auto overflow-y-auto custom-scrollbar max-h-[calc(100vh-320px)] relative">
+        <div ref={scrollContainerRef} className="overflow-x-auto overflow-y-auto custom-scrollbar max-h-[calc(100vh-320px)] relative">
           <table className="w-full text-left border-separate border-spacing-0">
             <thead className="sticky top-0 z-20">
               <tr className="bg-[#F8F8F8] shadow-[0_1px_0_rgba(0,0,0,0.05)]">
@@ -89,9 +116,10 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                 transactions.map((tx, index) => {
                   const username = users[tx.userId]?.username || tx.userId || t.unknown;
                   const wordCount = username.split(/\s+/).filter(Boolean).length;
+                  const txUniqueId = tx.id || `tx-${index}`;
                   
                   return (
-                    <tr key={tx.id || index} className="hover:bg-black/[0.02] transition-colors group">
+                    <tr key={txUniqueId} className="hover:bg-black/[0.02] transition-colors group">
                       <td className="px-8 py-4 whitespace-nowrap">
                         <span className="text-[14px] font-semibold text-black">
                           {safeFormatDate(tx.timestamp, 'MMM d, yyyy')}
@@ -118,9 +146,29 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                             "inline-flex items-center gap-1.5",
                             (tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges)) && "cursor-pointer breakdown-trigger"
                           )}
-                          onClick={() => {
+                          onClick={(e) => {
                             if (tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges)) {
-                              setHoveredTxId(hoveredTxId === tx.id ? null : (tx.id || null));
+                              if (hoveredTxId === txUniqueId) {
+                                setHoveredTxId(null);
+                                setPopupConfig(null);
+                              } else {
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                // Center the popup horizontally (w-64 is 256px)
+                                let left = rect.left + (rect.width / 2) - 128;
+                                
+                                // Keep within viewport bounds
+                                const padding = 20;
+                                if (left < padding) left = padding;
+                                if (left + 256 > window.innerWidth - padding) left = window.innerWidth - 256 - padding;
+
+                                setHoveredTxId(txUniqueId);
+                                setPopupConfig({
+                                  top: rect.top,
+                                  left: left,
+                                  index: index,
+                                  tx: tx
+                                });
+                              }
                             }
                           }}
                         >
@@ -131,6 +179,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                             tx.type === 'SALE' && "bg-orange-500/10 text-orange-700",
                             tx.type === 'REPAIR' && "bg-blue-500/10 text-blue-700",
                             tx.type === 'ADJUSTMENT' && "bg-gray-500/10 text-gray-700",
+                            tx.type === 'DELETION' && "bg-red-500/10 text-red-700",
                             tx.type === 'UNDO' && "bg-yellow-500/10 text-yellow-700",
                             tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-700",
                             tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-700"
@@ -140,6 +189,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                             {tx.type === 'SALE' && <ArrowUpRight className="w-3 h-3" />}
                             {tx.type === 'REPAIR' && (tx.fromClass === 'UNCLASSIFIED' ? <PlusCircle className="w-3 h-3" /> : <Wrench className="w-3 h-3" />)}
                             {tx.type === 'ADJUSTMENT' && <Sliders className="w-3 h-3" />}
+                            {tx.type === 'DELETION' && <PlusCircle className="w-3 h-3 rotate-45" />}
                             {tx.type === 'UNDO' && <Undo2 className="w-3 h-3" />}
                             {tx.type === 'BREAKDOWN' && <Hammer className="w-3 h-3" />}
                             {tx.type === 'INSTALL' && <PackagePlus className="w-3 h-3" />}
@@ -152,50 +202,6 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                           {(tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges)) && (
                             <Info className="w-3.5 h-3.5 text-purple-400 opacity-50 group-hover:opacity-100 transition-opacity" />
                           )}
-
-                        <AnimatePresence>
-                          {(hoveredTxId === tx.id && (tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges))) && (
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.95, y: index < 3 ? -10 : 10 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
-                              exit={{ opacity: 0, scale: 0.95, y: index < 3 ? -10 : 10 }}
-                              className={cn(
-                                "absolute z-50 left-0 w-64 bg-white rounded-2xl shadow-2xl border border-black/5 p-4 pointer-events-auto breakdown-popup",
-                                index < 3 ? "top-full mt-2" : "bottom-full mb-2"
-                              )}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <div className="space-y-3">
-                                <div className="flex items-center justify-between border-b border-black/5 pb-2">
-                                  <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">
-                                    {tx.type === 'INSTALL' ? t.installComponents : tx.type === 'UNDO' ? t.undoneComponents : t.goodComponents}
-                                  </span>
-                                  <span className="text-[10px] font-medium text-gray-400">
-                                    {tx.type === 'INSTALL' || tx.type === 'PURCHASE' || tx.type === 'UNDO' ? '' : `${tx.quantity} ${t.laptops}`}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                                  {tx.componentChanges && Object.keys(tx.componentChanges).length > 0 ? (
-                                    Object.entries(tx.componentChanges).map(([comp, count]) => (
-                                      <div key={comp} className="flex items-center justify-between">
-                                        <span className="text-[12px] text-gray-600 truncate mr-2">{t[comp] || comp}</span>
-                                        <span className="text-[12px] font-bold text-black">{count}</span>
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <div className="col-span-2 text-center py-2 text-[12px] text-gray-400 italic">
-                                      No components recorded
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className={cn(
-                                "absolute left-6 w-4 h-4 bg-white border-black/5 rotate-45",
-                                index < 3 ? "-top-2 border-l border-t" : "-bottom-2 border-r border-b"
-                              )} />
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
                         </div>
                       </td>
                       <td className="px-8 py-4">
@@ -228,6 +234,8 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                                 `${t.from} ${getClassName(tx.toClass)}`
                               ) : t.undo}
                             </span>
+                          ) : tx.type === 'DELETION' ? (
+                            <span className="text-red-600 font-semibold">{t.batchDeletion}</span>
                           ) : (
                             <>{getClassName(tx.toClass) === t.spoiled ? t.spoiled : `${t.class} ${getClassName(tx.toClass)}`}</>
                           )}
@@ -236,13 +244,13 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                       <td className="px-8 py-4 text-right">
                         <p className={cn(
                           "text-[17px] font-semibold tabular-nums tracking-tight",
-                          (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' || ((tx.type === 'ADJUSTMENT' || tx.type === 'UNDO') && tx.quantity > 0)) ? "text-green-600" : tx.type === 'INSTALL' ? "text-pink-600" : "text-orange-600"
+                          (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' || ((tx.type === 'ADJUSTMENT' || tx.type === 'UNDO') && tx.quantity > 0)) ? "text-green-600" : (tx.type === 'INSTALL' || tx.type === 'DELETION' || (tx.type === 'ADJUSTMENT' && tx.quantity < 0)) ? "text-red-600" : "text-orange-600"
                         )}>
                           {tx.type === 'PURCHASE' ? (
                             `+${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
                           ) : tx.type === 'INSTALL' ? (
                             `-${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
-                          ) : (tx.type === 'ADJUSTMENT' || tx.type === 'UNDO') ? (
+                          ) : (tx.type === 'ADJUSTMENT' || tx.type === 'UNDO' || tx.type === 'DELETION') ? (
                             tx.quantity >= 0 ? `+${tx.quantity}` : tx.quantity
                           ) : (
                             `${(tx.type === 'INCOMING' || tx.type === 'REPAIR') ? '+' : '-'}${tx.quantity}`
@@ -263,6 +271,10 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                       <td className="px-8 py-4">
                         {tx.isUndone ? (
                           <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.undone}</span>
+                        ) : tx.batchActive === false ? (
+                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.batchDeleted}</span>
+                        ) : tx.type === 'UNDO' ? (
+                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest opacity-50">{t.undo}</span>
                         ) : (
                           <button
                             onClick={async () => {
@@ -311,6 +323,65 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
           </table>
         </div>
       </div>
+
+      {createPortal(
+        <AnimatePresence>
+          {popupConfig && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: popupConfig.index < 10 ? -10 : 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: popupConfig.index < 10 ? -10 : 10 }}
+              style={{
+                position: 'fixed',
+                top: popupConfig.index < 10 ? popupConfig.top + 40 : popupConfig.top - 10,
+                left: popupConfig.left,
+                transform: popupConfig.index < 10 ? 'none' : 'translateY(-100%)',
+                zIndex: 9999
+              }}
+              className={cn(
+                "w-64 bg-white rounded-2xl shadow-2xl border border-black/5 p-4 pointer-events-auto breakdown-popup"
+              )}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-3">
+                <div className="flex items-center justify-between border-b border-black/5 pb-2">
+                  <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider">
+                    {popupConfig.tx.type === 'INSTALL' ? t.installComponents : popupConfig.tx.type === 'UNDO' ? t.undoneComponents : t.goodComponents}
+                  </span>
+                  <span className="text-[10px] font-medium text-gray-400">
+                    {popupConfig.tx.type === 'INSTALL' || popupConfig.tx.type === 'PURCHASE' || popupConfig.tx.type === 'UNDO' ? '' : `${popupConfig.tx.quantity} ${t.laptops}`}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  {popupConfig.tx.componentChanges && Object.keys(popupConfig.tx.componentChanges).length > 0 ? (
+                    Object.entries(popupConfig.tx.componentChanges)
+                      .sort(([a], [b]) => COMPONENTS.indexOf(a as any) - COMPONENTS.indexOf(b as any))
+                      .map(([comp, count]) => (
+                        <div key={comp} className="flex items-center justify-between">
+                          <span className="text-[12px] text-gray-600 truncate mr-2">{t[comp] || comp}</span>
+                          <span className="text-[12px] font-bold text-black">{count}</span>
+                        </div>
+                      ))
+                  ) : (
+                    <div className="col-span-2 text-center py-2 text-[12px] text-gray-400 italic">
+                      No components recorded
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className={cn(
+                "absolute w-4 h-4 bg-white border-black/5 rotate-45",
+                popupConfig.index < 10 ? "-top-2 border-l border-t" : "-bottom-2 border-r border-b"
+              )} 
+              style={{
+                left: 'calc(50% - 8px)'
+              }}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 });

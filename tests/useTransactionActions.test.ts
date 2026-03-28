@@ -10,11 +10,16 @@ vi.mock('firebase/firestore', async () => {
   const actual = await vi.importActual('firebase/firestore');
   return {
     ...actual,
-    doc: vi.fn(),
-    collection: vi.fn(),
+    doc: vi.fn((db, coll, id) => ({ id: id || 'mock-id', type: 'document', path: `${coll}/${id}` })),
+    collection: vi.fn((db, path) => ({ id: path, type: 'collection', path })),
     runTransaction: vi.fn(),
-    writeBatch: vi.fn(),
-    query: vi.fn(),
+    writeBatch: vi.fn(() => ({
+      set: vi.fn(),
+      update: vi.fn(),
+      delete: vi.fn(),
+      commit: vi.fn().mockResolvedValue(undefined),
+    })),
+    query: vi.fn((ref) => ref),
     where: vi.fn(),
     getDocs: vi.fn(),
     getDoc: vi.fn(),
@@ -35,7 +40,7 @@ describe('useTransactionActions', () => {
   });
 
   it('should initialize with default state', () => {
-    const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+    const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
 
     expect(result.current.isSubmitting).toBe(false);
     expect(result.current.isRenaming).toBe(false);
@@ -45,13 +50,13 @@ describe('useTransactionActions', () => {
 
   describe('handleUndoTransaction', () => {
     it('should return early if user or transactionId is missing', async () => {
-      const { result } = renderHook(() => useTransactionActions(null, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(null, mockLang));
       const res = await result.current.handleUndoTransaction('tx1', null);
       expect(res).toBeUndefined();
     });
 
     it('should throw an error if transaction is not found', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
       const mockTransaction = {
         get: vi.fn().mockResolvedValueOnce({ exists: () => false }),
@@ -71,7 +76,7 @@ describe('useTransactionActions', () => {
     });
 
     it('should throw an error if transaction is already undone', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
       const mockTransaction = {
         get: vi.fn().mockResolvedValueOnce({ 
@@ -94,7 +99,7 @@ describe('useTransactionActions', () => {
     });
 
     it('should deny permission for normal user trying to undo another user transaction', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
       const mockTransaction = {
         get: vi.fn().mockResolvedValueOnce({ 
@@ -117,7 +122,7 @@ describe('useTransactionActions', () => {
     });
 
     it('should allow Original Admin to undo any transaction', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
       const mockTxData = { 
         isUndone: false, 
@@ -156,7 +161,7 @@ describe('useTransactionActions', () => {
 
   describe('handleAddTransaction', () => {
     it('should successfully record an incoming transaction', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
       const mockTransaction = {
         get: vi.fn().mockResolvedValue({ exists: () => true, data: () => mockStock }),
@@ -184,12 +189,12 @@ describe('useTransactionActions', () => {
       });
 
       expect(firestore.runTransaction).toHaveBeenCalled();
-      expect(mockTransaction.set).toHaveBeenCalledTimes(3); // Stock, Batch, Transaction
+      expect(mockTransaction.set).toHaveBeenCalledTimes(2); // Batch, Transaction
       expect(result.current.success).toBe('Transaction recorded successfully!');
     });
 
     it('should handle errors in transaction', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
       vi.mocked(firestore.runTransaction).mockRejectedValue(new Error('Firestore error'));
 
@@ -212,10 +217,16 @@ describe('useTransactionActions', () => {
     });
 
     it('should successfully record a repair transaction', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
+      const mockBatch = {
+        batchId: 'B-2023-01',
+        items: [{ brand: 'Apple', series: 'MacBook', model: 'Pro', counts: { UNCLASSIFIED: 10 } }],
+        active: true
+      };
+
       const mockTransaction = {
-        get: vi.fn().mockResolvedValue({ exists: () => true, data: () => mockStock }),
+        get: vi.fn().mockResolvedValue({ exists: () => true, data: () => mockBatch }),
         set: vi.fn(),
         update: vi.fn(),
       };
@@ -240,12 +251,12 @@ describe('useTransactionActions', () => {
       });
 
       expect(firestore.runTransaction).toHaveBeenCalled();
-      expect(mockTransaction.set).toHaveBeenCalledTimes(3); // Stock, Batch, Transaction
+      expect(mockTransaction.set).toHaveBeenCalledTimes(2); // Batch, Transaction
       expect(result.current.success).toBe('Transaction recorded successfully!');
     });
 
     it('should successfully record an adjustment transaction', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
       const mockTransaction = {
         get: vi.fn().mockResolvedValue({ exists: () => true, data: () => mockStock }),
@@ -273,14 +284,14 @@ describe('useTransactionActions', () => {
       });
 
       expect(firestore.runTransaction).toHaveBeenCalled();
-      expect(mockTransaction.set).toHaveBeenCalledTimes(3); // Stock, Batch, Transaction
+      expect(mockTransaction.set).toHaveBeenCalledTimes(2); // Batch, Transaction
       expect(result.current.success).toBe('Transaction recorded successfully!');
     });
   });
 
   describe('handleRenameBatch', () => {
     it('should successfully rename a batch', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
       vi.mocked(firestore.getDoc)
         .mockResolvedValueOnce({ exists: () => true, data: () => ({ batchId: 'oldBatch' }) } as any)
@@ -307,7 +318,7 @@ describe('useTransactionActions', () => {
 
   describe('handleDeleteBatch', () => {
     it('should successfully delete a batch', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
       const mockBatch = { batchId: 'batch1', items: [{ brand: 'Apple', series: 'MacBook', model: 'Pro', counts: { A: 5 } }] };
       const mockTransaction = {
@@ -339,7 +350,7 @@ describe('useTransactionActions', () => {
 
   describe('recordComponentPurchase', () => {
     it('should successfully record a component purchase', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
       const mockTransaction = {
         get: vi.fn().mockResolvedValue({ exists: () => true, data: () => ({ items: [] }) }),
@@ -369,7 +380,7 @@ describe('useTransactionActions', () => {
 
   describe('recordComponentInstallation', () => {
     it('should successfully record a component installation', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
       const mockTransaction = {
         get: vi.fn().mockResolvedValue({ exists: () => true, data: () => ({ items: [{ brand: 'Apple', series: 'MacBook', model: 'Pro', counts: { Screen: 10 } }] }) }),
@@ -399,15 +410,18 @@ describe('useTransactionActions', () => {
 
   describe('recordComponentBreakdown', () => {
     it('should successfully record a component breakdown', async () => {
-      const { result } = renderHook(() => useTransactionActions(mockUser, mockStock, mockLang));
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
-      const mockBatch = { batchId: 'batch1', items: [{ brand: 'Apple', series: 'MacBook', model: 'Pro', counts: { A: 5 } }] };
+      const mockBatch = { 
+        batchId: 'batch1', 
+        items: [{ brand: 'Apple', series: 'MacBook', model: 'Pro', counts: { A: 10 } }],
+        active: true
+      };
       const mockTransaction = {
         get: vi.fn()
-          .mockResolvedValueOnce({ exists: () => true, data: () => mockStock })
-          .mockResolvedValueOnce({ exists: () => true, data: () => ({ items: [] }) })
-          .mockResolvedValueOnce({ exists: () => true, data: () => ({ items: [] }) })
-          .mockResolvedValueOnce({ exists: () => true, data: () => mockBatch }),
+          .mockResolvedValueOnce({ exists: () => true, data: () => ({ items: [] }) }) // compStock
+          .mockResolvedValueOnce({ exists: () => true, data: () => ({ items: [] }) }) // spoiledCompStock
+          .mockResolvedValueOnce({ exists: () => true, data: () => mockBatch }), // batch
         set: vi.fn(),
       };
       

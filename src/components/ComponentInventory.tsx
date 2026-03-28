@@ -147,9 +147,10 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
                         tx.type === 'INCOMING' ? "bg-green-500/10 text-green-700" : 
                         tx.type === 'PURCHASE' ? "bg-emerald-500/10 text-emerald-700" :
                         tx.type === 'INSTALL' ? "bg-pink-500/10 text-pink-700" :
+                        tx.type === 'UNDO' ? "bg-red-500/10 text-red-700" :
                         "bg-purple-500/10 text-purple-700"
                       )}>
-                        {t[tx.type.toLowerCase() as keyof typeof t] || tx.type}
+                        {tx.type === 'UNDO' && tx.undoneType ? `${t.undo} ${t[tx.undoneType.toLowerCase() as keyof typeof t] || tx.undoneType}` : (t[tx.type.toLowerCase() as keyof typeof t] || tx.type)}
                       </span>
                     </td>
                     <td className="px-8 py-4 text-[14px] font-medium text-black">{tx.brand}</td>
@@ -157,11 +158,13 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
                     <td className="px-8 py-4 text-[14px] text-gray-600">{tx.model}</td>
                     <td className="px-8 py-4">
                       <div className="flex flex-wrap gap-1">
-                        {Object.entries(tx.componentChanges || {}).map(([comp, qty]) => (
-                          <span key={comp} className="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-[11px] font-medium text-gray-700">
-                            {t[comp] || comp}: {qty}
-                          </span>
-                        ))}
+                        {Object.entries(tx.componentChanges || {})
+                          .sort(([a], [b]) => COMPONENTS.indexOf(a as any) - COMPONENTS.indexOf(b as any))
+                          .map(([comp, qty]) => (
+                            <span key={comp} className="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-[11px] font-medium text-gray-700">
+                              {t[comp] || comp}: {qty}
+                            </span>
+                          ))}
                       </div>
                     </td>
                     <td className="px-8 py-4 text-[14px] text-gray-700">

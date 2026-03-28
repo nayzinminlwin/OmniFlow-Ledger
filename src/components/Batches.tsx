@@ -5,6 +5,7 @@ import { Batch, LaptopClass } from '../types';
 import { CLASSES } from '../constants';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface BatchesProps {
   t: any;
@@ -31,6 +32,9 @@ export const Batches: React.FC<BatchesProps> = memo(({
 }) => {
   const [sortField, setSortField] = useState<'batchId' | 'createdAt'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
     if (!dateStr) return t.na;
@@ -267,7 +271,8 @@ export const Batches: React.FC<BatchesProps> = memo(({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onDeleteBatch(b.batchId, setSelectedBatchId);
+                            setBatchToDelete(b.batchId);
+                            setIsDeleteDialogOpen(true);
                           }}
                           className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors active:scale-95"
                           title={t.deleteBatch}
@@ -283,6 +288,31 @@ export const Batches: React.FC<BatchesProps> = memo(({
           </table>
         </div>
       </section>
+
+      <ConfirmationModal
+        isOpen={isDeleteDialogOpen}
+        title={t.deleteBatch}
+        message={t.confirmDeleteBatch}
+        confirmText={t.deleteBatch}
+        cancelText={t.cancel}
+        isProcessing={isDeleting}
+        onConfirm={async () => {
+          if (batchToDelete) {
+            setIsDeleting(true);
+            try {
+              await onDeleteBatch(batchToDelete, setSelectedBatchId);
+            } finally {
+              setIsDeleting(false);
+              setIsDeleteDialogOpen(false);
+              setBatchToDelete(null);
+            }
+          }
+        }}
+        onCancel={() => {
+          setIsDeleteDialogOpen(false);
+          setBatchToDelete(null);
+        }}
+      />
     </div>
   );
 });

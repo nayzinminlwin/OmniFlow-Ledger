@@ -9,17 +9,34 @@ vi.mock('firebase/firestore', async () => {
   const actual = await vi.importActual('firebase/firestore');
   return {
     ...actual,
-    doc: vi.fn(),
-    collection: vi.fn(),
+    doc: vi.fn((db, coll, id) => ({ id: id || 'mock-id', type: 'document', path: `${coll}/${id}` })),
+    collection: vi.fn((db, path) => ({ id: path, type: 'collection', path })),
     onSnapshot: vi.fn((ref, options, callback) => {
-      if (typeof options === 'function') {
-        options({ exists: () => false, data: () => ({}) });
-      } else {
-        callback({ exists: () => false, data: () => ({}) });
-      }
-      return vi.fn();
+      const cb = typeof options === 'function' ? options : callback;
+      
+      const safeRef = ref || {};
+      const isQuery = (safeRef as any).type !== 'document';
+
+      const mockSnapshot = {
+        exists: () => true,
+        data: () => ({}),
+        forEach: (fn: any) => {},
+        docs: [],
+        size: 0,
+        empty: true,
+        metadata: { fromCache: false, hasPendingWrites: false },
+        query: {},
+        docChanges: () => []
+      };
+
+      // Trigger callback in next tick to allow hook to initialize
+      setTimeout(() => {
+        if (cb) cb(mockSnapshot);
+      }, 0);
+      
+      return vi.fn(); // Unsubscribe function
     }),
-    query: vi.fn(),
+    query: vi.fn((ref) => ref),
     orderBy: vi.fn(),
     limit: vi.fn(),
     getDocFromServer: vi.fn().mockResolvedValue({ exists: () => true }),
@@ -42,7 +59,7 @@ describe('useInventory', () => {
     const { result } = renderHook(() => useInventory(null, false, mockLang, false));
 
     expect(result.current.loading).toBe(true);
-    expect(result.current.stock).toBeNull();
+    // Stock initializes to { items: [], ... } if batches is empty
     expect(result.current.batches).toEqual([]);
   });
 
@@ -64,23 +81,39 @@ describe('useInventory', () => {
   });
 
   it('should handle snapshot data correctly', async () => {
-    const mockStock = { items: [], lastUpdated: 'now' };
+    const mockBatch = { 
+      batchId: 'B-2023-01', 
+      items: [{ brand: 'Apple', series: 'MacBook', model: 'Pro', counts: { A: 5 } }],
+      createdAt: new Date().toISOString(),
+      active: true
+    };
     
-    vi.mocked(firestore.onSnapshot).mockImplementation((ref, options, callback, errorCallback) => {
+    vi.mocked(firestore.onSnapshot).mockImplementation((ref, options, callback) => {
       const cb = typeof options === 'function' ? options : callback;
       
-      // Simulate snapshot for stock
-      if (ref && (ref as any).path === 'inventory/current') {
-        cb({ exists: () => true, data: () => mockStock } as any);
+      const isQuery = (ref as any)?.type !== 'document';
+
+      if (isQuery) {
+        cb({ 
+          forEach: (fn: any) => {
+            // Only provide data for the batches query in this test
+            // We can check the path if we want to be more specific
+            if ((ref as any)?.path === 'batches') {
+              fn({ id: 'batch1', data: () => mockBatch });
+            }
+          },
+          docs: (ref as any)?.path === 'batches' ? [{ id: 'batch1', data: () => mockBatch }] : [],
+          size: (ref as any)?.path === 'batches' ? 1 : 0,
+          empty: (ref as any)?.path !== 'batches',
+          metadata: { fromCache: false, hasPendingWrites: false },
+          query: {},
+          docChanges: () => []
+        } as any);
       } else {
         cb({ 
-          forEach: (fn: any) => {},
-          docs: [],
-          size: 0,
-          empty: true,
-          metadata: {} as any,
-          query: {} as any,
-          docChanges: () => []
+          exists: () => true, 
+          data: () => ({ items: [], lastUpdated: new Date().toISOString() }),
+          metadata: { fromCache: false, hasPendingWrites: false }
         } as any);
       }
       return vi.fn();
@@ -89,7 +122,14 @@ describe('useInventory', () => {
     const { result } = renderHook(() => useInventory(mockUser, true, mockLang, true));
 
     await waitFor(() => {
-      expect(result.current.stock).toEqual(mockStock);
+      expect(result.current.loading).toBe(false);
     });
+
+    expect(result.current.batches.length).toBe(1);
+    expect(result.current.batches[0].batchId).toBe('B-2023-01');
+    expect(result.current.stock).not.toBeNull();
+    expect(result.current.stock?.items.length).toBe(1);
+    expect(result.current.stock?.items[0].model).toBe('Pro');
+    expect(result.current.stock?.items[0].counts.A).toBe(5);
   });
 });

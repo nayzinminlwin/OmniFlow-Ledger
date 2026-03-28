@@ -11,15 +11,15 @@ import {
 } from 'firebase/firestore';
 import { User } from 'firebase/auth';
 import { db } from '../firebase';
-import { Stock, Transaction, Batch, UserProfile, ComponentStock, ComponentTransaction } from '../types';
-import { INITIAL_STOCK, INITIAL_COMPONENT_STOCK } from '../constants';
+import { Stock, Transaction, Batch, UserProfile, ComponentStock, ComponentTransaction, ModelStock } from '../types';
+import { INITIAL_STOCK, INITIAL_COMPONENT_STOCK, INITIAL_CLASS_COUNTS } from '../constants';
 import { handleFirestoreError, OperationType } from '../services/firestore';
 import { translations, Language } from '../translations';
 
 export function useInventory(user: User | null, isAuthReady: boolean, lang: Language, isApproved: boolean) {
-  const [stock, setStock] = useState<Stock | null>(null);
   const [batches, setBatches] = useState<Batch[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [stock, setStock] = useState<Stock | null>(null);
   const [componentStock, setComponentStock] = useState<ComponentStock | null>(null);
   const [spoiledComponentStock, setSpoiledComponentStock] = useState<ComponentStock | null>(null);
   const [componentTransactions, setComponentTransactions] = useState<ComponentTransaction[]>([]);
@@ -38,23 +38,65 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
 
   const loading = loadingStates.stock || loadingStates.batches || loadingStates.transactions || loadingStates.users || loadingStates.componentStock || loadingStates.componentTransactions;
 
-  // Test connection
+  // Test connection - removed inventory/current check as it's being deprecated
   useEffect(() => {
     if (!isAuthReady || !user || !isApproved) return;
     
     async function testConnection() {
       try {
-        await getDocFromServer(doc(db, 'inventory', 'current'));
+        // Test with batches collection instead
+        await getDocFromServer(doc(collection(db, 'batches'), 'test'));
       } catch (err) {
         if (err instanceof Error && err.message.includes('the client is offline')) {
           setError(t.firestoreOffline);
-        } else {
-          handleFirestoreError(err, OperationType.GET, 'inventory/current');
         }
       }
     }
     testConnection();
   }, [isAuthReady, user, isApproved, t.firestoreOffline]);
+
+  // Derive global stock from batches
+  useEffect(() => {
+    if (batches.length === 0) {
+      setStock({ items: [], lastUpdated: new Date().toISOString() });
+      setLoadingStates(prev => ({ ...prev, stock: false }));
+      return;
+    }
+
+    const aggregatedItems: ModelStock[] = [];
+    
+    batches.forEach(batch => {
+      if (batch.active === false) return;
+      
+      batch.items.forEach(batchItem => {
+        let globalItem = aggregatedItems.find(i => 
+          i.brand === batchItem.brand && 
+          i.series === batchItem.series && 
+          i.model === batchItem.model
+        );
+        
+        if (!globalItem) {
+          globalItem = {
+            brand: batchItem.brand,
+            series: batchItem.series,
+            model: batchItem.model,
+            counts: { ...INITIAL_CLASS_COUNTS }
+          };
+          aggregatedItems.push(globalItem);
+        }
+        
+        Object.entries(batchItem.counts).forEach(([cls, count]) => {
+          globalItem!.counts[cls as any] += (count || 0);
+        });
+      });
+    });
+    
+    setStock({
+      items: aggregatedItems,
+      lastUpdated: new Date().toISOString()
+    });
+    setLoadingStates(prev => ({ ...prev, stock: false }));
+  }, [batches]);
 
   useEffect(() => {
     if (!isAuthReady || !user || !isApproved) {
@@ -64,25 +106,12 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       return;
     }
 
-    const stockRef = doc(db, 'inventory', 'current');
     const compStockRef = doc(db, 'components', 'current');
     const spoiledCompStockRef = doc(db, 'components', 'spoiled');
     const txQuery = query(collection(db, 'transactions'), orderBy('timestamp', 'desc'), limit(50));
     const compTxQuery = query(collection(db, 'component_transactions'), orderBy('timestamp', 'desc'), limit(50));
     const batchesQuery = query(collection(db, 'batches'), orderBy('createdAt', 'desc'));
     const usersQuery = query(collection(db, 'users'));
-
-    const unsubStock = onSnapshot(stockRef, { includeMetadataChanges: true }, (snapshot: any) => {
-      if (snapshot.exists()) {
-        setStock(snapshot.data() as Stock);
-      } else {
-        setStock(null);
-      }
-      setLoadingStates(prev => ({ ...prev, stock: false }));
-    }, (err) => {
-      handleFirestoreError(err, OperationType.GET, 'inventory/current');
-      setLoadingStates(prev => ({ ...prev, stock: false }));
-    });
 
     const unsubCompStock = onSnapshot(compStockRef, { includeMetadataChanges: true }, (snapshot: any) => {
       if (snapshot.exists()) {
@@ -128,8 +157,8 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
       const txs: Transaction[] = [];
       snapshot.forEach((doc) => {
         const data = doc.data() as Transaction;
-        // Only show transactions for active batches and filter out empty skeleton documents
-        if (data.type && data.batchActive !== false) {
+        // Filter out empty skeleton documents
+        if (data.type) {
           txs.push({ id: doc.id, ...data } as Transaction);
         }
       });
@@ -173,7 +202,6 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
     });
 
     return () => {
-      unsubStock();
       unsubCompStock();
       unsubSpoiledCompStock();
       unsubBatches();

@@ -42,7 +42,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
   const [isNewModel, setIsNewModel] = useState(() => localStorage.getItem('last_isNewModel') === 'true');
   const [error, setError] = useState<string | null>(null);
   const [fromClass, setFromClass] = useState<LaptopClass>('D');
-  const [toClass, setToClass] = useState<LaptopClass>('A');
+  const [toClass, setToClass] = useState<LaptopClass>(txType === 'INCOMING' ? 'UNCLASSIFIED' : 'A');
   const [quantity, setQuantity] = useState<number | ''>(1);
   const [notes, setNotes] = useState('');
   const [isNewBatch, setIsNewBatch] = useState(false);
@@ -134,6 +134,13 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
     return Array.from(modelsSet).sort();
   }, [batches, brand, series, isNewBrand, isNewSeries]);
 
+  // Ensure toClass is 'UNCLASSIFIED' for INCOMING transactions
+  useEffect(() => {
+    if (txType === 'INCOMING') {
+      setToClass('UNCLASSIFIED');
+    }
+  }, [txType]);
+
   // Set default batchId if empty
   useEffect(() => {
     if (!batchId && batches.length > 0 && !isNewBatch) {
@@ -143,24 +150,56 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
 
   // Set default brand if empty
   useEffect(() => {
-    if (!brand && existingBrands.length > 0 && !isNewBrand) {
-      setBrand(existingBrands[0]);
+    if (existingBrands.length > 0) {
+      if (!brand) {
+        setBrand(existingBrands[0]);
+        setIsNewBrand(false);
+      }
+    } else if (txType === 'INCOMING' && !isNewBrand) {
+      // Auto-switch to new brand if no existing brands for INCOMING
+      setIsNewBrand(true);
+      setBrand('');
+      setIsNewSeries(true);
+      setSeries('');
+      setIsNewModel(true);
+      setModel('');
     }
-  }, [existingBrands, brand, isNewBrand]);
+  }, [existingBrands, brand, isNewBrand, txType]);
 
   // Set default series if empty
   useEffect(() => {
-    if (!series && filteredSeries.length > 0 && !isNewSeries) {
+    if (filteredSeries.length > 0 && !series) {
       setSeries(filteredSeries[0]);
+      setIsNewSeries(false);
     }
-  }, [filteredSeries, series, isNewSeries]);
+  }, [filteredSeries, series]);
 
   // Set default model if empty
   useEffect(() => {
-    if (!model && filteredModels.length > 0 && !isNewModel) {
+    if (filteredModels.length > 0 && !model) {
       setModel(filteredModels[0]);
+      setIsNewModel(false);
     }
-  }, [filteredModels, model, isNewModel]);
+  }, [filteredModels, model]);
+
+  // Reconcile "New" state with existing data on load or list update to fix sticky localStorage
+  useEffect(() => {
+    if (existingBrands.length > 0 && isNewBrand && brand && existingBrands.includes(brand)) {
+      setIsNewBrand(false);
+    }
+  }, [existingBrands]);
+
+  useEffect(() => {
+    if (filteredSeries.length > 0 && isNewSeries && series && filteredSeries.includes(series)) {
+      setIsNewSeries(false);
+    }
+  }, [filteredSeries]);
+
+  useEffect(() => {
+    if (filteredModels.length > 0 && isNewModel && model && filteredModels.includes(model)) {
+      setIsNewModel(false);
+    }
+  }, [filteredModels]);
 
   const handleBrandChange = (val: string) => {
     if (val === '__NEW__') {
@@ -243,6 +282,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
       // Reset only quantity and notes, keeping batch and model info for faster workflow
       setQuantity(1);
       setNotes('');
+      // Reset "New" flags so the next entry for the same item uses the dropdown
+      setIsNewBrand(false);
+      setIsNewSeries(false);
+      setIsNewModel(false);
     }
   };
 
@@ -258,10 +301,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
           <form onSubmit={handleSubmit} className="space-y-10">
             <div className="space-y-8">
               <div className="space-y-3">
-                <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.batchId}</label>
+                <label htmlFor="batch-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.batchId}</label>
                 {!isNewBatch ? (
                   <div className="relative">
                       <select
+                        id="batch-select"
                         value={batchId}
                         onChange={(e) => handleBatchIdChange(e.target.value)}
                         className="ios-input w-full pr-10"
@@ -276,6 +320,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      id="batch-input"
                       ref={batchInputRef}
                       type="text"
                       placeholder={t.dateExample}
@@ -320,14 +365,16 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t.brandLabel}</label>
+                <label htmlFor="brand-select" className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t.brandLabel}</label>
                 {!isNewBrand ? (
                   <select
+                    id="brand-select"
                     value={brand}
                     onChange={(e) => handleBrandChange(e.target.value)}
                     className="ios-input w-full text-[15px] py-3"
                     required
                   >
+                    <option value="" disabled>{t.selectBrand}</option>
                     {existingBrands.map((b, i) => <option key={`brand-${b}-${i}`} value={b}>{b}</option>)}
                     {txType === 'INCOMING' ? (
                       <option key="new-brand" value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
@@ -336,6 +383,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      id="brand-input"
                       ref={brandInputRef}
                       type="text"
                       placeholder={t.newBrand}
@@ -356,15 +404,17 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
               </div>
 
               <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t.seriesLabel}</label>
+                <label htmlFor="series-select" className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t.seriesLabel}</label>
                 {!isNewSeries ? (
                   <select
+                    id="series-select"
                     value={series}
                     onChange={(e) => handleSeriesChange(e.target.value)}
                     className="ios-input w-full text-[15px] py-3"
                     disabled={!brand && !isNewBrand}
                     required
                   >
+                    <option value="" disabled>{t.selectSeries}</option>
                     {filteredSeries.map((s, i) => <option key={`series-${s}-${i}`} value={s}>{s}</option>)}
                     {txType === 'INCOMING' ? (
                       <option key="new-series" value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
@@ -373,6 +423,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      id="series-input"
                       ref={seriesInputRef}
                       type="text"
                       placeholder={t.newSeries}
@@ -393,15 +444,17 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
               </div>
 
               <div className="space-y-2">
-                <label className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t.modelLabel}</label>
+                <label htmlFor="model-select" className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t.modelLabel}</label>
                 {!isNewModel ? (
                   <select
+                    id="model-select"
                     value={model}
                     onChange={(e) => handleModelChange(e.target.value)}
                     className="ios-input w-full text-[15px] py-3"
                     disabled={(!series && !isNewSeries) || (!brand && !isNewBrand)}
                     required
                   >
+                    <option value="" disabled>{t.selectModel}</option>
                     {filteredModels.map((m, i) => <option key={`model-${m}-${i}`} value={m}>{m}</option>)}
                     {txType === 'INCOMING' ? (
                       <option key="new-model" value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
@@ -410,6 +463,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      id="model-input"
                       ref={modelInputRef}
                       type="text"
                       placeholder={t.newModel}
@@ -434,7 +488,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
               {(txType === 'REPAIR' || txType === 'SALE') && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.fromClass}</label>
+                    <label htmlFor="from-class-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.fromClass}</label>
                     {currentBatch && (
                       <span className={cn(
                         "text-[11px] font-bold px-2 py-0.5 rounded-full",
@@ -445,6 +499,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     )}
                   </div>
                   <select
+                    id="from-class-select"
                     value={fromClass}
                     onChange={(e) => setFromClass(e.target.value as LaptopClass)}
                     className="ios-input w-full"
@@ -457,7 +512,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
               {(txType === 'REPAIR' || txType === 'ADJUSTMENT' || txType === 'INCOMING') && (
                 <div className={cn("space-y-2", (txType === 'ADJUSTMENT' || txType === 'INCOMING') && "col-span-2")}>
                   <div className="flex justify-between items-center">
-                    <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">
+                    <label htmlFor="to-class-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">
                       {(txType === 'ADJUSTMENT' || txType === 'INCOMING') ? t.targetClass : t.toClass}
                     </label>
                     {currentBatch && (
@@ -467,9 +522,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     )}
                   </div>
                   <select
+                    id="to-class-select"
                     value={toClass}
                     onChange={(e) => setToClass(e.target.value as LaptopClass)}
-                    className="ios-input w-full"
+                    className={cn("ios-input w-full", txType === 'INCOMING' && "bg-gray-100 cursor-not-allowed")}
+                    disabled={txType === 'INCOMING'}
                   >
                     {(txType === 'ADJUSTMENT' || txType === 'INCOMING' || txType === 'REPAIR') ? <option key="unclassified" value="UNCLASSIFIED">{t.unclassified}</option> : null}
                     {CLASSES.map((c, i) => <option key={`class-to-${c}-${i}`} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
@@ -480,10 +537,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">
+                <label htmlFor="quantity-input" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">
                   {txType === 'ADJUSTMENT' ? t.newTotalCount : t.quantity}
                 </label>
                 <input
+                  id="quantity-input"
                   type="number"
                   value={quantity}
                   onKeyDown={(e) => {
@@ -505,8 +563,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
               </div>
 
               <div className="space-y-2">
-                <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.notes}</label>
+                <label htmlFor="notes-input" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.notes}</label>
                 <textarea
+                  id="notes-input"
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   className="ios-input w-full min-h-[80px] py-3 resize-none"

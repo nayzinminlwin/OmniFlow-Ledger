@@ -1,5 +1,5 @@
 {
-  "name": "Repair Ledger Pro",
-  "description": "A transaction-based inventory system for tracking second-hand laptop classes and repair transitions.",
+  "name": "OmniFlow Ledger",
+  "description": "The all-encompassing inventory system for laptop batches and component lifecycles.",
   "requestFramePermissions": []
 }

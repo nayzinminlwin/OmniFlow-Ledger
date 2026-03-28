@@ -4,9 +4,10 @@ import { db } from '../firebase';
 import { UserProfile } from '../types';
 import { Check, X, User as UserIcon, Clock, Shield, ShieldOff, UserMinus, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '../lib/utils';
+import { cn, withTimeout } from '../lib/utils';
 import { handleFirestoreError, OperationType } from '../services/firestore';
 import { auth } from '../firebase';
+import { toast } from 'sonner';
 
 interface UserManagementProps {
   t: any;
@@ -17,7 +18,6 @@ interface UserManagementProps {
 export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, isOriginalAdmin }) => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeTab !== 'users') return;
@@ -38,29 +38,43 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
   }, [activeTab]);
 
   const handleUpdateStatus = async (uid: string, status: 'approved' | 'rejected') => {
-    try {
-      setActionLoading(uid);
-      const updateData: any = { status };
-      if (status === 'approved') {
-        updateData.notifiedApproved = false;
+    const attempt = async () => {
+      try {
+        const updateData: any = { status };
+        if (status === 'approved') {
+          updateData.notifiedApproved = false;
+        }
+        await withTimeout(updateDoc(doc(db, 'users', uid), updateData), 10000, t.transactionTimeout || 'Request timed out');
+        toast.success(status === 'approved' ? 'User approved' : 'User rejected');
+      } catch (error: any) {
+        console.error('Update status failed:', error);
+        toast.error(error.message || 'Failed to update user status', {
+          action: {
+            label: t.retry || 'Retry',
+            onClick: () => attempt()
+          }
+        });
       }
-      await updateDoc(doc(db, 'users', uid), updateData);
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
-    } finally {
-      setActionLoading(null);
-    }
+    };
+    attempt();
   };
 
   const handleToggleUltimateAdmin = async (uid: string, currentStatus: boolean) => {
-    try {
-      setActionLoading(uid);
-      await updateDoc(doc(db, 'users', uid), { isUltimateAdmin: !currentStatus });
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `users/${uid}`);
-    } finally {
-      setActionLoading(null);
-    }
+    const attempt = async () => {
+      try {
+        await withTimeout(updateDoc(doc(db, 'users', uid), { isUltimateAdmin: !currentStatus }), 10000, t.transactionTimeout || 'Request timed out');
+        toast.success(currentStatus ? 'Admin privileges removed' : 'Admin privileges granted');
+      } catch (error: any) {
+        console.error('Toggle admin failed:', error);
+        toast.error(error.message || 'Failed to toggle admin privileges', {
+          action: {
+            label: t.retry || 'Retry',
+            onClick: () => attempt()
+          }
+        });
+      }
+    };
+    attempt();
   };
 
   if (activeTab !== 'users') return null;
@@ -134,19 +148,17 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
                       <>
                         <button
                           onClick={() => handleUpdateStatus(user.uid, 'approved')}
-                          disabled={actionLoading === user.uid}
                           className="p-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                           title={t.approve}
                         >
-                          {actionLoading === user.uid ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Check className="w-5 h-5" />}
+                          <Check className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleUpdateStatus(user.uid, 'rejected')}
-                          disabled={actionLoading === user.uid}
                           className="p-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                           title={t.reject}
                         >
-                          {actionLoading === user.uid ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <X className="w-5 h-5" />}
+                          <X className="w-5 h-5" />
                         </button>
                       </>
                     )}
@@ -156,23 +168,21 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
                         {isOriginalAdmin && (
                           <button
                             onClick={() => handleToggleUltimateAdmin(user.uid, !!user.isUltimateAdmin)}
-                            disabled={actionLoading === user.uid}
                             className={cn(
                               "p-2 rounded-xl transition-all active:scale-95 shadow-sm disabled:opacity-50",
                               user.isUltimateAdmin ? "bg-orange-100 text-orange-600 hover:bg-orange-200" : "bg-purple-600 text-white hover:bg-purple-700"
                             )}
                             title={user.isUltimateAdmin ? t.removeUltimate : t.makeUltimate}
                           >
-                            {actionLoading === user.uid ? <div className="w-5 h-5 border-2 border-current/30 border-t-current rounded-full animate-spin" /> : (user.isUltimateAdmin ? <ShieldOff className="w-5 h-5" /> : <Shield className="w-5 h-5" />)}
+                            {user.isUltimateAdmin ? <ShieldOff className="w-5 h-5" /> : <Shield className="w-5 h-5" />}
                           </button>
                         )}
                         <button
                           onClick={() => handleUpdateStatus(user.uid, 'rejected')}
-                          disabled={actionLoading === user.uid}
                           className="p-2 bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                           title={t.revoke}
                         >
-                          {actionLoading === user.uid ? <div className="w-5 h-5 border-2 border-red-600/30 border-t-red-600 rounded-full animate-spin" /> : <UserMinus className="w-5 h-5" />}
+                          <UserMinus className="w-5 h-5" />
                         </button>
                       </>
                     )}
@@ -180,11 +190,10 @@ export const UserManagement: React.FC<UserManagementProps> = ({ t, activeTab, is
                     {user.status === 'rejected' && !user.isOriginalAdmin && user.email !== 'nayzinminlwin22@gmail.com' && (
                       <button
                         onClick={() => handleUpdateStatus(user.uid, 'approved')}
-                        disabled={actionLoading === user.uid}
                         className="p-2 bg-green-100 text-green-600 rounded-xl hover:bg-green-200 transition-all active:scale-95 shadow-sm disabled:opacity-50"
                         title={t.regrant}
                       >
-                        {actionLoading === user.uid ? <div className="w-5 h-5 border-2 border-green-600/30 border-t-green-600 rounded-full animate-spin" /> : <UserPlus className="w-5 h-5" />}
+                        <UserPlus className="w-5 h-5" />
                       </button>
                     )}
                   </div>
