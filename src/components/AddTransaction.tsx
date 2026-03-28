@@ -1,11 +1,11 @@
-import React, { useState, useMemo, memo, useRef, useEffect } from 'react';
+import React, { memo } from 'react';
 import { RefreshCw, CheckCircle2, X } from 'lucide-react';
 import { Batch, LaptopClass, TransactionType } from '../types';
 import { CLASSES } from '../constants';
 import { cn } from '../lib/utils';
 import { Toast } from './Toast';
-
-import { isValidBatchDate, formatBatchId, padBatchId } from '../lib/dateUtils';
+import { useAddTransactionForm } from '../hooks/useAddTransactionForm';
+import { formatBatchId } from '../lib/dateUtils';
 
 interface AddTransactionProps {
   t: any;
@@ -32,262 +32,47 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
   batches,
   isSubmitting,
 }) => {
-  const [txType, setTxType] = useState<TransactionType>(() => (localStorage.getItem('last_txType') as TransactionType) || 'INCOMING');
-  const [batchId, setBatchId] = useState(() => localStorage.getItem('last_batchId') || '');
-  const [brand, setBrand] = useState(() => localStorage.getItem('last_brand') || '');
-  const [series, setSeries] = useState(() => localStorage.getItem('last_series') || '');
-  const [model, setModel] = useState(() => localStorage.getItem('last_model') || '');
-  const [isNewBrand, setIsNewBrand] = useState(() => localStorage.getItem('last_isNewBrand') === 'true');
-  const [isNewSeries, setIsNewSeries] = useState(() => localStorage.getItem('last_isNewSeries') === 'true');
-  const [isNewModel, setIsNewModel] = useState(() => localStorage.getItem('last_isNewModel') === 'true');
-  const [error, setError] = useState<string | null>(null);
-  const [fromClass, setFromClass] = useState<LaptopClass>('D');
-  const [toClass, setToClass] = useState<LaptopClass>(txType === 'INCOMING' ? 'UNCLASSIFIED' : 'A');
-  const [quantity, setQuantity] = useState<number | ''>(1);
-  const [notes, setNotes] = useState('');
-  const [isNewBatch, setIsNewBatch] = useState(false);
-
-  const batchInputRef = useRef<HTMLInputElement>(null);
-  const brandInputRef = useRef<HTMLInputElement>(null);
-  const seriesInputRef = useRef<HTMLInputElement>(null);
-  const modelInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isNewBatch) batchInputRef.current?.focus();
-  }, [isNewBatch]);
-
-  useEffect(() => {
-    if (isNewBrand) brandInputRef.current?.focus();
-  }, [isNewBrand]);
-
-  useEffect(() => {
-    if (isNewSeries && !isNewBrand) seriesInputRef.current?.focus();
-  }, [isNewSeries, isNewBrand]);
-
-  useEffect(() => {
-    if (isNewModel && !isNewBrand && !isNewSeries) modelInputRef.current?.focus();
-  }, [isNewModel, isNewBrand, isNewSeries]);
-
-  // Persist values to localStorage
-  React.useEffect(() => {
-    localStorage.setItem('last_txType', txType);
-    localStorage.setItem('last_batchId', batchId);
-    localStorage.setItem('last_brand', brand);
-    localStorage.setItem('last_series', series);
-    localStorage.setItem('last_model', model);
-    localStorage.setItem('last_isNewBrand', String(isNewBrand));
-    localStorage.setItem('last_isNewSeries', String(isNewSeries));
-    localStorage.setItem('last_isNewModel', String(isNewModel));
-  }, [txType, batchId, brand, series, model, isNewBrand, isNewSeries, isNewModel]);
-
-  const handleTxTypeChange = (type: TransactionType) => {
-    setTxType(type);
-    if (type === 'INCOMING') {
-      setToClass('UNCLASSIFIED');
-    } else if (type === 'REPAIR') {
-      setFromClass('UNCLASSIFIED');
-      if (toClass === 'UNCLASSIFIED') setToClass('A');
-    } else if (type !== 'ADJUSTMENT' && toClass === 'UNCLASSIFIED') {
-      setToClass('A');
-    }
-    // Reset "New" states if not INCOMING
-    if (type !== 'INCOMING') {
-      setIsNewBrand(false);
-      setIsNewSeries(false);
-      setIsNewModel(false);
-      // If we were in "New" mode, we should also clear the values to avoid invalid state
-      // or we can keep them if they happen to match existing ones, but safer to clear
-      // or reset to empty so user has to pick from list.
-      if (isNewBrand || isNewSeries || isNewModel) {
-        setBrand('');
-        setSeries('');
-        setModel('');
-      }
-    }
-  };
-
-  const currentBatch = useMemo(() => batches.find(b => b.batchId === batchId), [batches, batchId]);
-  
-  const existingBrands = useMemo(() => {
-    const brandsSet = new Set<string>();
-    batches.forEach(b => b.items?.forEach(i => {
-      if (i.brand) brandsSet.add(i.brand);
-    }));
-    return Array.from(brandsSet).sort();
-  }, [batches]);
-
-  const filteredSeries = useMemo(() => {
-    if (!brand || isNewBrand) return [];
-    const seriesSet = new Set<string>();
-    batches.forEach(b => b.items?.forEach(i => {
-      if (i.brand === brand && i.series) seriesSet.add(i.series);
-    }));
-    return Array.from(seriesSet).sort();
-  }, [batches, brand, isNewBrand]);
-
-  const filteredModels = useMemo(() => {
-    if (!brand || isNewBrand || !series || isNewSeries) return [];
-    const modelsSet = new Set<string>();
-    batches.forEach(b => b.items?.forEach(i => {
-      if (i.brand === brand && i.series === series && i.model) modelsSet.add(i.model);
-    }));
-    return Array.from(modelsSet).sort();
-  }, [batches, brand, series, isNewBrand, isNewSeries]);
-
-  // Ensure toClass is 'UNCLASSIFIED' for INCOMING transactions
-  useEffect(() => {
-    if (txType === 'INCOMING') {
-      setToClass('UNCLASSIFIED');
-    }
-  }, [txType]);
-
-  // Set default batchId if empty
-  useEffect(() => {
-    if (!batchId && batches.length > 0 && !isNewBatch) {
-      setBatchId(batches[0].batchId);
-    }
-  }, [batches, batchId, isNewBatch]);
-
-  // Set default brand if empty
-  useEffect(() => {
-    if (existingBrands.length > 0) {
-      if (!brand) {
-        setBrand(existingBrands[0]);
-        setIsNewBrand(false);
-      }
-    } else if (txType === 'INCOMING' && !isNewBrand) {
-      // Auto-switch to new brand if no existing brands for INCOMING
-      setIsNewBrand(true);
-      setBrand('');
-      setIsNewSeries(true);
-      setSeries('');
-      setIsNewModel(true);
-      setModel('');
-    }
-  }, [existingBrands, brand, isNewBrand, txType]);
-
-  // Set default series if empty
-  useEffect(() => {
-    if (filteredSeries.length > 0 && !series) {
-      setSeries(filteredSeries[0]);
-      setIsNewSeries(false);
-    }
-  }, [filteredSeries, series]);
-
-  // Set default model if empty
-  useEffect(() => {
-    if (filteredModels.length > 0 && !model) {
-      setModel(filteredModels[0]);
-      setIsNewModel(false);
-    }
-  }, [filteredModels, model]);
-
-  // Reconcile "New" state with existing data on load or list update to fix sticky localStorage
-  useEffect(() => {
-    if (existingBrands.length > 0 && isNewBrand && brand && existingBrands.includes(brand)) {
-      setIsNewBrand(false);
-    }
-  }, [existingBrands]);
-
-  useEffect(() => {
-    if (filteredSeries.length > 0 && isNewSeries && series && filteredSeries.includes(series)) {
-      setIsNewSeries(false);
-    }
-  }, [filteredSeries]);
-
-  useEffect(() => {
-    if (filteredModels.length > 0 && isNewModel && model && filteredModels.includes(model)) {
-      setIsNewModel(false);
-    }
-  }, [filteredModels]);
-
-  const handleBrandChange = (val: string) => {
-    if (val === '__NEW__') {
-      setIsNewBrand(true);
-      setBrand('');
-      setIsNewSeries(true);
-      setSeries('');
-      setIsNewModel(true);
-      setModel('');
-    } else {
-      setIsNewBrand(false);
-      setBrand(val);
-      setSeries('');
-      setIsNewSeries(false);
-      setModel('');
-      setIsNewModel(false);
-    }
-  };
-
-  const handleSeriesChange = (val: string) => {
-    if (val === '__NEW__') {
-      setIsNewSeries(true);
-      setSeries('');
-      setIsNewModel(true);
-      setModel('');
-    } else {
-      setIsNewSeries(false);
-      setSeries(val);
-      setModel('');
-      setIsNewModel(false);
-    }
-  };
-
-  const handleModelChange = (val: string) => {
-    if (val === '__NEW__') {
-      setIsNewModel(true);
-      setModel('');
-    } else {
-      setIsNewModel(false);
-      setModel(val);
-    }
-  };
-
-  const getStockCount = (className: LaptopClass) => {
-    if (!currentBatch || !brand || !series || !model) return 0;
-    const modelStock = currentBatch.items?.find(i => i.brand === brand && i.series === series && i.model === model);
-    return modelStock?.counts?.[className] || 0;
-  };
-
-  const isFromStockEmpty = (txType === 'REPAIR' || txType === 'SALE') && batchId && brand && series && model && getStockCount(fromClass) <= 0;
-
-  const handleBatchIdChange = (val: string) => {
-    if (val === '__NEW__') {
-      setIsNewBatch(true);
-      setBatchId('');
-    } else {
-      setIsNewBatch(false);
-      setBatchId(val);
-    }
-  };
-
-  const handleBatchIdBlur = () => {
-    setBatchId(prev => padBatchId(prev));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!brand.trim() || !series.trim() || !model.trim()) return;
-    
-    // Final padding and validation
-    const finalBatchId = padBatchId(batchId);
-    
-    if (!isValidBatchDate(finalBatchId)) {
-      setError(t.invalidBatchDate);
-      return;
-    }
-
-    const success = await onAddTransaction(txType, finalBatchId, brand.trim(), series.trim(), model.trim(), fromClass, toClass, Number(quantity), notes);
-    if (success) {
-      // Reset only quantity and notes, keeping batch and model info for faster workflow
-      setQuantity(1);
-      setNotes('');
-      // Reset "New" flags so the next entry for the same item uses the dropdown
-      setIsNewBrand(false);
-      setIsNewSeries(false);
-      setIsNewModel(false);
-    }
-  };
+  const {
+    txType,
+    batchId,
+    setBatchId,
+    brand,
+    setBrand,
+    series,
+    setSeries,
+    model,
+    setModel,
+    isNewBrand,
+    isNewSeries,
+    isNewModel,
+    error,
+    setError,
+    fromClass,
+    setFromClass,
+    toClass,
+    setToClass,
+    quantity,
+    setQuantity,
+    notes,
+    setNotes,
+    isNewBatch,
+    batchInputRef,
+    brandInputRef,
+    seriesInputRef,
+    modelInputRef,
+    handleTxTypeChange,
+    existingBrands,
+    filteredSeries,
+    filteredModels,
+    handleBrandChange,
+    handleSeriesChange,
+    handleModelChange,
+    getStockCount,
+    isFromStockEmpty,
+    handleBatchIdChange,
+    handleBatchIdBlur,
+    handleSubmit
+  } = useAddTransactionForm({ batches, onAddTransaction, t });
 
   return (
     <div className={cn(
@@ -489,14 +274,12 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <label htmlFor="from-class-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.fromClass}</label>
-                    {currentBatch && (
-                      <span className={cn(
-                        "text-[11px] font-bold px-2 py-0.5 rounded-full",
-                        getStockCount(fromClass) <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
-                      )}>
-                        {t.currentStock}: {getStockCount(fromClass)}
-                      </span>
-                    )}
+                    <span className={cn(
+                      "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                      getStockCount(fromClass) <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
+                    )}>
+                      {t.currentStock}: {getStockCount(fromClass)}
+                    </span>
                   </div>
                   <select
                     id="from-class-select"
@@ -515,11 +298,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     <label htmlFor="to-class-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">
                       {(txType === 'ADJUSTMENT' || txType === 'INCOMING') ? t.targetClass : t.toClass}
                     </label>
-                    {currentBatch && (
-                      <span className="text-[11px] font-bold text-ios-blue bg-ios-blue/10 px-2 py-0.5 rounded-full">
-                        {t.currentStock}: {getStockCount(toClass)}
-                      </span>
-                    )}
+                    <span className="text-[11px] font-bold text-ios-blue bg-ios-blue/10 px-2 py-0.5 rounded-full">
+                      {t.currentStock}: {getStockCount(toClass)}
+                    </span>
                   </div>
                   <select
                     id="to-class-select"
@@ -592,6 +373,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
         message={error} 
         type="error" 
         onClose={() => setError(null)} 
+        t={t}
       />
     </div>
   );

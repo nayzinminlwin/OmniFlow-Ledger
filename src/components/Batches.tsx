@@ -1,11 +1,11 @@
-import React, { memo, useState, useMemo } from 'react';
-import { format } from 'date-fns';
+import React, { memo, useMemo } from 'react';
 import { Settings, Edit2, ChevronUp, ChevronDown, Trash2 } from 'lucide-react';
 import { Batch, LaptopClass } from '../types';
 import { CLASSES } from '../constants';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
 import { ConfirmationModal } from './ConfirmationModal';
+import { useBatchesLogic } from '../hooks/useBatchesLogic';
 
 interface BatchesProps {
   t: any;
@@ -30,68 +30,35 @@ export const Batches: React.FC<BatchesProps> = memo(({
   onDeleteBatch,
   loading = false,
 }) => {
-  const [sortField, setSortField] = useState<'batchId' | 'createdAt'>('createdAt');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [batchToDelete, setBatchToDelete] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
-    if (!dateStr) return t.na;
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return t.invalidDate;
-    return format(d, formatStr);
-  };
-
-  const sortedBatches = useMemo(() => {
-    return [...batches].sort((a, b) => {
-      let comparison = 0;
-      if (sortField === 'batchId') {
-        comparison = (a.batchId || '').localeCompare(b.batchId || '');
-      } else {
-        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-        comparison = (isNaN(dateA) ? 0 : dateA) - (isNaN(dateB) ? 0 : dateB);
-      }
-      return sortOrder === 'asc' ? comparison : -comparison;
-    });
-  }, [batches, sortField, sortOrder]);
+  const {
+    sortField,
+    sortOrder,
+    isDeleteDialogOpen,
+    isDeleting,
+    safeFormatDate,
+    sortedBatches,
+    getColumnTotal,
+    getRowTotal,
+    getClassifiedRowTotal,
+    getBatchTotal,
+    handleSort,
+    handleDeleteConfirm,
+    handleDeleteCancel,
+    initiateDelete
+  } = useBatchesLogic({
+    batches,
+    t,
+    onDeleteBatch,
+    setSelectedBatchId
+  });
 
   if (activeTab !== 'batches') return null;
 
   const selectedBatch = batches.find(x => x.batchId === selectedBatchId);
   const models = selectedBatch?.items || [];
 
-  const getColumnTotal = (cls: LaptopClass) => {
-    return models.reduce((sum, m) => sum + (m?.counts?.[cls] || 0), 0);
-  };
-
-  const getRowTotal = (counts: Record<LaptopClass, number>) => {
-    if (!counts) return 0;
-    return Object.values(counts).reduce((sum, count) => sum + (count || 0), 0);
-  };
-
   const grandTotal = models.reduce((sum, m) => sum + getRowTotal(m?.counts), 0);
-
-  const getClassifiedRowTotal = (counts: Record<LaptopClass, number>) => {
-    if (!counts) return 0;
-    return CLASSES.reduce((sum, cls) => sum + (counts[cls] || 0), 0);
-  };
-
   const getClassifiedGrandTotal = models.reduce((sum, m) => sum + getClassifiedRowTotal(m?.counts), 0);
-
-  const getBatchTotal = (batch: Batch, cls: LaptopClass | 'UNCLASSIFIED') => {
-    return batch.items?.reduce((sum, m) => sum + (m?.counts?.[cls as LaptopClass] || 0), 0) || 0;
-  };
-
-  const handleSort = (field: 'batchId' | 'createdAt') => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('asc');
-    }
-  };
 
   const SortIcon = ({ field }: { field: 'batchId' | 'createdAt' }) => {
     if (sortField !== field) return null;
@@ -157,9 +124,9 @@ export const Batches: React.FC<BatchesProps> = memo(({
                       )),
                       <tr key="batch-total" className="bg-black/[0.03] border-t-2 border-black/10">
                         <td colSpan={3} className="px-6 py-4 font-bold text-black uppercase tracking-wider text-[13px]">{t.batchTotal}</td>
-                        <td className="px-6 py-4 font-bold text-blue-600 tabular-nums">{getColumnTotal('UNCLASSIFIED')}</td>
+                        <td className="px-6 py-4 font-bold text-blue-600 tabular-nums">{getColumnTotal(models, 'UNCLASSIFIED')}</td>
                         {CLASSES.map(cls => (
-                          <td key={cls} className="px-6 py-4 font-bold text-black tabular-nums">{getColumnTotal(cls)}</td>
+                          <td key={cls} className="px-6 py-4 font-bold text-black tabular-nums">{getColumnTotal(models, cls)}</td>
                         ))}
                         <td className="px-6 py-4 font-bold text-gray-700 tabular-nums">{getClassifiedGrandTotal}</td>
                         <td className="px-6 py-4 font-black text-black tabular-nums text-[17px]">{grandTotal}</td>
@@ -271,8 +238,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setBatchToDelete(b.batchId);
-                            setIsDeleteDialogOpen(true);
+                            initiateDelete(b.batchId);
                           }}
                           className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors active:scale-95"
                           title={t.deleteBatch}
@@ -296,22 +262,8 @@ export const Batches: React.FC<BatchesProps> = memo(({
         confirmText={t.deleteBatch}
         cancelText={t.cancel}
         isProcessing={isDeleting}
-        onConfirm={async () => {
-          if (batchToDelete) {
-            setIsDeleting(true);
-            try {
-              await onDeleteBatch(batchToDelete, setSelectedBatchId);
-            } finally {
-              setIsDeleting(false);
-              setIsDeleteDialogOpen(false);
-              setBatchToDelete(null);
-            }
-          }
-        }}
-        onCancel={() => {
-          setIsDeleteDialogOpen(false);
-          setBatchToDelete(null);
-        }}
+        onConfirm={handleDeleteConfirm}
+        onCancel={handleDeleteCancel}
       />
     </div>
   );

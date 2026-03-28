@@ -1,16 +1,10 @@
-import React, { memo, useState, useEffect, useRef } from 'react';
-import { format } from 'date-fns';
+import React, { memo } from 'react';
 import { 
-  Plus, 
-  Minus, 
   RefreshCw, 
   ChevronRight, 
   ArrowRightLeft, 
-  Settings,
-  FileSpreadsheet,
   Hammer,
   Info,
-  X,
   Undo2,
   ArrowDownLeft,
   ArrowUpRight,
@@ -20,12 +14,12 @@ import {
   PackagePlus,
   PlusCircle
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
-import { Stock, Transaction, LaptopClass, Batch } from '../types';
+import { Stock, Transaction, Batch } from '../types';
 import { CLASSES, COMPONENTS } from '../constants';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
+import { useDashboardLogic } from '../hooks/useDashboardLogic';
 
 interface DashboardProps {
   stock: Stock | null;
@@ -46,106 +40,19 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
   activeTab,
   loading = false
 }) => {
-  const [hoveredTxId, setHoveredTxId] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (hoveredTxId && !target.closest('.breakdown-trigger') && !target.closest('.breakdown-popup')) {
-        setHoveredTxId(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [hoveredTxId]);
-
-  const models = stock?.items || [];
-  
-  const getColumnTotal = (cls: LaptopClass) => {
-    return models.reduce((sum, m) => sum + (m?.counts?.[cls] || 0), 0);
-  };
-
-  const getRowTotal = (counts: Record<LaptopClass, number>) => {
-    if (!counts) return 0;
-    return Object.values(counts).reduce((sum, count) => sum + (count || 0), 0);
-  };
-
-  const grandTotal = models.reduce((sum, m) => sum + getRowTotal(m?.counts), 0);
-
-  const getClassifiedRowTotal = (counts: Record<LaptopClass, number>) => {
-    if (!counts) return 0;
-    return CLASSES.reduce((sum, cls) => sum + (counts[cls] || 0), 0);
-  };
-
-  const getClassifiedGrandTotal = models.reduce((sum, m) => sum + getClassifiedRowTotal(m?.counts), 0);
-
-  const getClassName = (cls?: string) => cls === 'Spoiled' ? t.spoiled : cls;
-
-  const handleExport = () => {
-    if (!batches.length) return;
-
-    const exportData: any[] = [];
-
-    // Iterate through each batch to include Batch ID
-    batches.forEach(batch => {
-      if (!batch.items || !Array.isArray(batch.items)) return;
-      
-      batch.items.forEach(m => {
-        const rowTotal = getRowTotal(m.counts);
-        if (rowTotal === 0) return; // Skip empty rows in this batch
-
-        const row: any = {
-          [t.batchId]: batch.batchId,
-          [t.brandLabel]: m.brand,
-          [t.seriesLabel]: m.series,
-          [t.modelLabel]: m.model,
-          [t.unclassified]: m.counts?.['UNCLASSIFIED'] || 0
-        };
-        
-        CLASSES.forEach(cls => {
-          row[cls === 'Spoiled' ? t.spoiled : `${t.class} ${cls}`] = m.counts?.[cls] || 0;
-        });
-        
-        row[t.classified] = getClassifiedRowTotal(m.counts);
-        row[t.total] = rowTotal;
-        exportData.push(row);
-      });
-    });
-
-    // Add a separator or just the Grand Total at the end
-    exportData.push({}); // Empty row for separation
-    
-    const totalRow: any = {
-      [t.batchId]: t.grandTotal,
-      [t.brandLabel]: '',
-      [t.seriesLabel]: '',
-      [t.modelLabel]: '',
-      [t.unclassified]: getColumnTotal('UNCLASSIFIED')
-    };
-    CLASSES.forEach(cls => {
-      totalRow[cls === 'Spoiled' ? t.spoiled : `${t.class} ${cls}`] = getColumnTotal(cls);
-    });
-    totalRow[t.classified] = getClassifiedGrandTotal;
-    totalRow[t.total] = grandTotal;
-    exportData.push(totalRow);
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, t.inventoryByBatch);
-    
-    const fileName = `Inventory_By_Batch_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
-  };
-
-  const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
-    if (!dateStr) return t.na;
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return t.invalidDate;
-    return format(d, formatStr);
-  };
+  const {
+    hoveredTxId,
+    setHoveredTxId,
+    models,
+    getColumnTotal,
+    getRowTotal,
+    grandTotal,
+    getClassifiedRowTotal,
+    getClassifiedGrandTotal,
+    getClassName,
+    handleExport,
+    safeFormatDate
+  } = useDashboardLogic({ stock, batches, transactions, t });
 
   return (
     <div className={cn(
@@ -161,7 +68,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
               disabled={!batches.length || loading}
               className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-[14px] font-bold hover:bg-green-700 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-sm"
             >
-              <FileSpreadsheet className="w-4 h-4" />
+              <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
               {t.export}
             </button>
           </div>
@@ -280,7 +187,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                   tx.type === 'ADJUSTMENT' && "bg-gray-500/10 text-gray-600",
                   tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-600",
                   tx.type === 'PURCHASE' && "bg-emerald-500/10 text-emerald-600",
-                  tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-600",
+                  tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-700",
                   tx.type === 'DELETION' && "bg-red-500/10 text-red-600",
                   tx.type === 'UNDO' && "bg-yellow-500/10 text-yellow-600"
                 )}>

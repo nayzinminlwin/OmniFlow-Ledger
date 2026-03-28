@@ -86,7 +86,7 @@ describe('UpdateComponents Component', () => {
     const buyBtn = screen.getByText(t.buyComponents);
     fireEvent.click(buyBtn);
 
-    // In buy mode, we should see batch selection or input
-    expect(screen.getByText(t.batchId)).toBeDefined();
+    // In buy mode, we should see brand selection
+    expect(screen.getByText(t.brandLabel)).toBeDefined();
   });
 });

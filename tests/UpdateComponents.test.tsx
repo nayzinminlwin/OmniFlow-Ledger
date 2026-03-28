@@ -57,7 +57,7 @@ const mockComponentStock: ComponentStock = {
 const mockBatches: Batch[] = [
   {
     id: 'batch1',
-    batchId: 'B-2023-01',
+    batchId: '16-03-2026',
     active: true,
     items: [
       {
@@ -90,7 +90,7 @@ describe('UpdateComponents', () => {
         activeTab="dashboard" 
       />
     );
-    expect(container.firstChild).toBeNull();
+    expect(container.firstChild).toHaveClass('hidden');
   });
 
   it('renders correctly when activeTab is components', () => {
@@ -104,10 +104,9 @@ describe('UpdateComponents', () => {
         activeTab="components" 
       />
     );
-    expect(screen.getByText(t.updateComponents)).toBeInTheDocument();
-    expect(screen.getByText(t.extractFromLaptop)).toBeInTheDocument();
-    expect(screen.getByText(t.buy)).toBeInTheDocument();
-    expect(screen.getByText(t.install)).toBeInTheDocument();
+    expect(screen.getByText(translations.en.extractFromLaptop)).toBeInTheDocument();
+    expect(screen.getByText(translations.en.buyComponents)).toBeInTheDocument();
+    expect(screen.getByText(translations.en.installComponents)).toBeInTheDocument();
   });
 
   it('switches modes correctly', async () => {
@@ -124,15 +123,15 @@ describe('UpdateComponents', () => {
     );
 
     // Default is extract
-    expect(screen.getByText(t.breakdown)).toBeInTheDocument();
+    expect(screen.getByText(translations.en.extractFromLaptop)).toBeInTheDocument();
 
     // Switch to buy
-    await user.click(screen.getByText(t.buy));
-    expect(screen.getByText(t.buyComponents)).toBeInTheDocument();
+    await user.click(screen.getByText(translations.en.buyComponents));
+    expect(screen.getByText(translations.en.buyComponents)).toBeInTheDocument();
 
     // Switch to install
-    await user.click(screen.getByText(t.install));
-    expect(screen.getByText(t.installComponents)).toBeInTheDocument();
+    await user.click(screen.getByText(translations.en.installComponents));
+    expect(screen.getByText(translations.en.installComponents)).toBeInTheDocument();
   });
 
   it('handles buy component submission', async () => {
@@ -149,7 +148,7 @@ describe('UpdateComponents', () => {
     );
 
     // Switch to buy mode
-    await user.click(screen.getByText(t.buy));
+    await user.click(screen.getByText(t.buyComponents));
 
     // Select existing brand, series, model
     const brandSelect = screen.getAllByRole('combobox')[0];
@@ -166,7 +165,7 @@ describe('UpdateComponents', () => {
     await user.selectOptions(componentSelect, 'Screen');
 
     // Enter quantity
-    const quantityInput = screen.getByPlaceholderText('0');
+    const quantityInput = screen.getByLabelText(translations.en.quantity);
     await user.clear(quantityInput);
     await user.type(quantityInput, '5');
 
@@ -197,35 +196,45 @@ describe('UpdateComponents', () => {
     );
 
     // Switch to install mode
-    await user.click(screen.getByText(t.install));
+    await user.click(screen.getByText(t.installComponents));
 
-    // Select existing brand, series, model
-    const brandSelect = screen.getAllByRole('combobox')[0];
+    // Select batch first
+    const batchSelectInstall = screen.getByLabelText(translations.en.selectBatch);
+    await user.selectOptions(batchSelectInstall, '16-03-2026');
+
+    // Select brand, series, model
+    const brandSelect = screen.getAllByRole('combobox')[1];
     await user.selectOptions(brandSelect, 'Apple');
 
-    const seriesSelect = screen.getAllByRole('combobox')[1];
+    const seriesSelect = screen.getAllByRole('combobox')[2];
     await user.selectOptions(seriesSelect, 'MacBook Pro');
 
-    const modelSelect = screen.getAllByRole('combobox')[2];
+    const modelSelect = screen.getAllByRole('combobox')[3];
     await user.selectOptions(modelSelect, 'M1 2020');
 
     // Select component
-    const componentSelect = screen.getAllByRole('combobox')[3];
+    const componentSelect = screen.getAllByRole('combobox')[4];
     await user.selectOptions(componentSelect, 'Screen');
 
     // Enter quantity
-    const quantityInput = screen.getByPlaceholderText('0');
+    const quantityInput = screen.getByLabelText(translations.en.quantity);
     await user.clear(quantityInput);
     await user.type(quantityInput, '2');
+
+    // Select class
+    const classSelect = screen.getByLabelText(t.fromClass);
+    await user.selectOptions(classSelect, 'A');
 
     // Submit
     const submitButton = screen.getByText(t.recordEntry);
     await user.click(submitButton);
 
     expect(mockRecordComponentInstallation).toHaveBeenCalledWith({
+      batchId: '16-03-2026',
       brand: 'Apple',
       series: 'MacBook Pro',
       model: 'M1 2020',
+      fromClass: 'A',
       componentChanges: { Screen: 2 },
       notes: ''
     });

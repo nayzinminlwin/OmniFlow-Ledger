@@ -103,7 +103,7 @@ describe('Integration: Inventory Flows', () => {
   const mockBatches: Batch[] = [
     {
       id: 'batch1',
-      batchId: 'B-2023-01',
+      batchId: '16-03-2026',
       active: true,
       items: [
         {
@@ -147,7 +147,7 @@ describe('Integration: Inventory Flows', () => {
         />
       );
 
-      await user.click(screen.getByText(translations.en.buy));
+      await user.click(screen.getByRole('button', { name: translations.en.buyComponents }));
 
       const brandSelect = screen.getAllByRole('combobox')[0];
       await user.selectOptions(brandSelect, 'Apple');
@@ -161,7 +161,7 @@ describe('Integration: Inventory Flows', () => {
       const componentSelect = screen.getAllByRole('combobox')[3];
       await user.selectOptions(componentSelect, 'Screen');
 
-      const quantityInput = screen.getByPlaceholderText('0');
+      const quantityInput = screen.getByLabelText(translations.en.quantity);
       await user.clear(quantityInput);
       await user.type(quantityInput, '5');
 
@@ -198,21 +198,24 @@ describe('Integration: Inventory Flows', () => {
         />
       );
 
-      await user.click(screen.getByText(translations.en.install));
+      await user.click(screen.getByRole('button', { name: translations.en.installComponents }));
 
-      const brandSelect = screen.getAllByRole('combobox')[0];
+      const batchSelect = screen.getByLabelText(translations.en.selectBatch);
+      await user.selectOptions(batchSelect, '16-03-2026');
+
+      const brandSelect = screen.getByLabelText(translations.en.brandLabel);
       await user.selectOptions(brandSelect, 'Apple');
 
-      const seriesSelect = screen.getAllByRole('combobox')[1];
+      const seriesSelect = screen.getByLabelText(translations.en.seriesLabel);
       await user.selectOptions(seriesSelect, 'MacBook Pro');
 
-      const modelSelect = screen.getAllByRole('combobox')[2];
+      const modelSelect = screen.getByLabelText(translations.en.modelLabel);
       await user.selectOptions(modelSelect, 'M1 2020');
 
-      const componentSelect = screen.getAllByRole('combobox')[3];
+      const componentSelect = screen.getByLabelText(translations.en.selectComponent);
       await user.selectOptions(componentSelect, 'Screen');
 
-      const quantityInput = screen.getByPlaceholderText('0');
+      const quantityInput = screen.getByLabelText(translations.en.quantity);
       await user.clear(quantityInput);
       await user.type(quantityInput, '2');
 
@@ -249,26 +252,26 @@ describe('Integration: Inventory Flows', () => {
         />
       );
 
-      const batchSelect = screen.getAllByRole('combobox')[0];
-      await user.selectOptions(batchSelect, 'B-2023-01');
+      const batchSelect = screen.getByLabelText(translations.en.selectBatch);
+      await user.selectOptions(batchSelect, '16-03-2026');
 
-      const brandSelect = screen.getAllByRole('combobox')[1];
+      const brandSelect = screen.getByLabelText(translations.en.brandLabel);
       await user.selectOptions(brandSelect, 'Apple');
 
-      const seriesSelect = screen.getAllByRole('combobox')[2];
+      const seriesSelect = screen.getByLabelText(translations.en.seriesLabel);
       await user.selectOptions(seriesSelect, 'MacBook Pro');
 
-      const modelSelect = screen.getAllByRole('combobox')[3];
+      const modelSelect = screen.getByLabelText(translations.en.modelLabel);
       await user.selectOptions(modelSelect, 'M1 2020');
 
-      const classSelect = screen.getAllByRole('combobox')[4];
+      const classSelect = screen.getByLabelText(translations.en.fromClass);
       await user.selectOptions(classSelect, 'A');
 
-      const laptopQtyInput = screen.getAllByRole('spinbutton')[0];
+      const laptopQtyInput = screen.getByLabelText(translations.en.laptopQuantity);
       await user.clear(laptopQtyInput);
       await user.type(laptopQtyInput, '1');
 
-      const screenInput = screen.getAllByRole('spinbutton')[1];
+      const screenInput = screen.getByLabelText('Screen');
       await user.clear(screenInput);
       await user.type(screenInput, '1');
 
@@ -311,7 +314,7 @@ describe('Integration: Inventory Flows', () => {
       await waitFor(() => {
         expect(onAddTransaction).toHaveBeenCalledWith(
           'INCOMING',
-          'B-2023-01',
+          '16-03-2026',
           'Apple',
           'MacBook Pro',
           'M1 2020',
@@ -358,7 +361,7 @@ describe('Integration: Inventory Flows', () => {
       await waitFor(() => {
         expect(onAddTransaction).toHaveBeenCalledWith(
           'REPAIR',
-          'B-2023-01',
+          '16-03-2026',
           'Apple',
           'MacBook Pro',
           'M1 2020',
@@ -387,7 +390,7 @@ describe('Integration: Inventory Flows', () => {
       });
 
       // Switch to sale
-      await user.click(screen.getByText(translations.en.sale));
+      await user.click(screen.getByRole('button', { name: translations.en.sale }));
 
       // Select from class
       await user.selectOptions(screen.getByLabelText(translations.en.fromClass), 'A');
@@ -404,7 +407,7 @@ describe('Integration: Inventory Flows', () => {
       await waitFor(() => {
         expect(onAddTransaction).toHaveBeenCalledWith(
           'SALE',
-          'B-2023-01',
+          '16-03-2026',
           'Apple',
           'MacBook Pro',
           'M1 2020',
@@ -450,7 +453,7 @@ describe('Integration: Inventory Flows', () => {
       await waitFor(() => {
         expect(onAddTransaction).toHaveBeenCalledWith(
           'ADJUSTMENT',
-          'B-2023-01',
+          '16-03-2026',
           'Apple',
           'MacBook Pro',
           'M1 2020',

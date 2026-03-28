@@ -393,9 +393,11 @@ describe('useTransactionActions', () => {
 
       await act(async () => {
         const res = await result.current.recordComponentInstallation({
+          batchId: '20240328',
           brand: 'Apple',
           series: 'MacBook',
           model: 'Pro',
+          fromClass: 'A',
           componentChanges: { Screen: 2 },
           notes: 'Installed screens'
         });

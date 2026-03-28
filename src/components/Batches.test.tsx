@@ -43,7 +43,7 @@ describe('Batches Component', () => {
       />
     );
 
-    expect(screen.getByText('01-01-2024')).toBeDefined();
+    expect(screen.getAllByText('01-01-2024').length).toBeGreaterThan(0);
     expect(screen.getByText('02-01-2024')).toBeDefined();
   });
 
@@ -78,7 +78,7 @@ describe('Batches Component', () => {
       />
     );
 
-    const batchRow = screen.getByText('01-01-2024');
+    const batchRow = screen.getAllByText('01-01-2024')[1]; // The one in the table
     fireEvent.click(batchRow);
 
     expect(mockSetSelectedBatchId).toHaveBeenCalledWith('01-01-2024');
@@ -98,7 +98,9 @@ describe('Batches Component', () => {
       />
     );
 
-    expect(screen.getByText('Dell Latitude 5400')).toBeDefined();
+    expect(screen.getByText('Dell')).toBeDefined();
+    expect(screen.getByText('Latitude')).toBeDefined();
+    expect(screen.getByText('5400')).toBeDefined();
     expect(screen.getByText('5')).toBeDefined();
   });
 });

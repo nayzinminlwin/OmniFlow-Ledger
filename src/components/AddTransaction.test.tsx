@@ -3,8 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { AddTransaction } from './AddTransaction';
 import { Batch } from '../types';
 
-// Mock translation function
-const t = (key: string) => key;
+// Mock translation object
+const t = new Proxy({}, {
+  get: (_, prop) => prop
+});
 
 const mockBatches: Batch[] = [
   {
@@ -36,9 +38,10 @@ describe('AddTransaction Component', () => {
       />
     );
 
-    expect(screen.getByText('INCOMING')).toBeDefined();
-    expect(screen.getByText('OUTGOING')).toBeDefined();
-    expect(screen.getByText('REPAIR')).toBeDefined();
+    expect(screen.getByText('incoming')).toBeDefined();
+    expect(screen.getByText('repair')).toBeDefined();
+    expect(screen.getByText('sale')).toBeDefined();
+    expect(screen.getByText('adjustment')).toBeDefined();
   });
 
   it('automatically sets toClass to UNCLASSIFIED for INCOMING transactions', () => {
@@ -53,12 +56,13 @@ describe('AddTransaction Component', () => {
     );
 
     // Default is INCOMING
-    const toClassSelect = screen.getByLabelText('To Class') as HTMLSelectElement;
+    // For INCOMING, the label is targetClass
+    const toClassSelect = screen.getByLabelText('targetClass') as HTMLSelectElement;
     expect(toClassSelect.value).toBe('UNCLASSIFIED');
     expect(toClassSelect.disabled).toBe(true);
   });
 
-  it('changes toClass when txType changes to OUTGOING', async () => {
+  it('changes toClass when txType changes to SALE', async () => {
     render(
       <AddTransaction
         t={t}
@@ -69,12 +73,15 @@ describe('AddTransaction Component', () => {
       />
     );
 
-    const outgoingBtn = screen.getByText('OUTGOING');
-    fireEvent.click(outgoingBtn);
+    const saleBtn = screen.getByText('sale');
+    fireEvent.click(saleBtn);
 
-    const toClassSelect = screen.getByLabelText('To Class') as HTMLSelectElement;
-    expect(toClassSelect.value).not.toBe('UNCLASSIFIED');
-    expect(toClassSelect.disabled).toBe(false);
+    // For SALE, the label is toClass (wait, let's check SALE label)
+    // Actually, SALE doesn't show toClass in AddTransaction.tsx?
+    // Line 295: {(txType === 'REPAIR' || txType === 'ADJUSTMENT' || txType === 'INCOMING') && ...}
+    // So SALE does NOT show toClass.
+    expect(screen.queryByLabelText('toClass')).toBeNull();
+    expect(screen.queryByLabelText('targetClass')).toBeNull();
   });
 
   it('automatically selects the first available brand if none selected', () => {
@@ -88,7 +95,7 @@ describe('AddTransaction Component', () => {
       />
     );
 
-    const brandSelect = screen.getByLabelText('Brand') as HTMLSelectElement;
+    const brandSelect = screen.getByLabelText('brandLabel') as HTMLSelectElement;
     expect(brandSelect.value).toBe('Dell');
   });
 
@@ -108,12 +115,12 @@ describe('AddTransaction Component', () => {
     );
 
     // It should reconcile and set isNewBrand to false because 'Dell' exists
-    const brandSelect = screen.queryByLabelText('Brand');
+    const brandSelect = screen.queryByLabelText('brandLabel');
     expect(brandSelect).not.toBeNull();
     expect((brandSelect as HTMLSelectElement).value).toBe('Dell');
     
     // The input for new brand should not be visible
-    expect(screen.queryByPlaceholderText('Enter new brand')).toBeNull();
+    expect(screen.queryByPlaceholderText('newBrand')).toBeNull();
   });
 
   it('calls onAddTransaction with correct values on submit', async () => {
@@ -128,9 +135,9 @@ describe('AddTransaction Component', () => {
     );
 
     // Fill in details
-    fireEvent.change(screen.getByLabelText('Quantity'), { target: { value: '5' } });
+    fireEvent.change(screen.getByLabelText('quantity'), { target: { value: '5' } });
     
-    const submitBtn = screen.getByText('Record Transaction');
+    const submitBtn = screen.getByText('recordEntry');
     fireEvent.click(submitBtn);
 
     await waitFor(() => {

@@ -66,8 +66,12 @@ describe('Dashboard Component', () => {
       />
     );
 
-    expect(screen.getByText('Dell Latitude 5400')).toBeDefined();
-    expect(screen.getByText('HP EliteBook 840')).toBeDefined();
+    expect(screen.getByText('Dell')).toBeInTheDocument();
+    expect(screen.getByText('Latitude')).toBeInTheDocument();
+    expect(screen.getByText('5400')).toBeInTheDocument();
+    expect(screen.getByText('HP')).toBeInTheDocument();
+    expect(screen.getByText('EliteBook')).toBeInTheDocument();
+    expect(screen.getByText('840')).toBeInTheDocument();
   });
 
   it('calculates totals correctly', () => {
@@ -86,10 +90,12 @@ describe('Dashboard Component', () => {
     // HP total: 2+2+2+2+2+2 = 12
     // Grand total: 21 + 12 = 33
     
-    // We can check for the grand total text if it's rendered in a specific way
-    // or just check if the numbers are present in the table
-    expect(screen.getAllByText('21')).toBeDefined();
-    expect(screen.getAllByText('12')).toBeDefined();
+    const cells = screen.getAllByRole('cell');
+    const cellTexts = Array.from(cells).map(cell => cell.textContent);
+    
+    expect(cellTexts).toContain('21');
+    expect(cellTexts).toContain('12');
+    expect(cellTexts).toContain('33');
   });
 
   it('shows skeleton when loading', () => {
@@ -108,5 +114,20 @@ describe('Dashboard Component', () => {
     // Skeleton should be visible
     const skeletons = document.querySelectorAll('.animate-pulse');
     expect(skeletons.length).toBeGreaterThan(0);
+  });
+
+  it('does not render when not active', () => {
+    const { container } = render(
+      <Dashboard
+        stock={mockStock}
+        batches={mockBatches}
+        transactions={mockTransactions}
+        t={t}
+        setActiveTab={mockSetActiveTab}
+        activeTab="history"
+      />
+    );
+
+    expect(container.firstChild).toHaveClass('hidden');
   });
 });

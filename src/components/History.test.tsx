@@ -77,7 +77,7 @@ describe('History Component', () => {
       />
     );
 
-    const undoBtn = screen.getByRole('button', { name: /undo/i });
+    const undoBtn = screen.getByTitle('Undo');
     fireEvent.click(undoBtn);
 
     expect(mockOnUndo).toHaveBeenCalledWith('tx1', mockCurrentUser);

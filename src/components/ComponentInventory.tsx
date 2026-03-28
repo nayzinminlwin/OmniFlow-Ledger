@@ -1,9 +1,9 @@
 import React, { memo } from 'react';
-import { format } from 'date-fns';
 import { ComponentStock, ComponentTransaction, UserProfile } from '../types';
 import { COMPONENTS } from '../constants';
 import { cn } from '../lib/utils';
 import { Package, History } from 'lucide-react';
+import { useComponentInventoryLogic } from '../hooks/useComponentInventoryLogic';
 
 interface ComponentInventoryProps {
   componentStock: ComponentStock | null;
@@ -15,17 +15,14 @@ interface ComponentInventoryProps {
 }
 
 export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ componentStock, spoiledComponentStock, componentTransactions, users, t, activeTab }) => {
+  const logic = useComponentInventoryLogic({ t });
+  
   if (activeTab !== 'componentInventory') return null;
+
+  const { safeFormatDate, getUsername } = logic;
 
   const items = componentStock?.items || [];
   const spoiledItems = spoiledComponentStock?.items || [];
-
-  const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
-    if (!dateStr) return t.na;
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return t.invalidDate;
-    return format(d, formatStr);
-  };
 
   const renderTable = (stockItems: any[], title: string, subtitle: string) => (
     <div className="glass-panel rounded-[32px] overflow-hidden">
@@ -169,7 +166,7 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
                     </td>
                     <td className="px-8 py-4 text-[14px] text-gray-700">
                       {(() => {
-                        const username = users[tx.userId]?.username || tx.userId || t.unknown;
+                        const username = getUsername(tx.userId, users);
                         const wordCount = username.split(/\s+/).filter(Boolean).length;
                         return (
                           <span className={cn(

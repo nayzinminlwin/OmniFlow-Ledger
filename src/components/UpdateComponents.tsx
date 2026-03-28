@@ -1,13 +1,12 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Package, Plus, Minus, X } from 'lucide-react';
+import React, { memo, useMemo } from 'react';
+import { RefreshCw, CheckCircle2, X, Plus, Minus } from 'lucide-react';
 import { Stock, ComponentStock, ComponentType, LaptopClass, Batch } from '../types';
 import { COMPONENTS } from '../constants';
-import { useAuth } from '../hooks/useAuth';
-import { useTransactionActions } from '../hooks/useTransactionActions';
 import { cn } from '../lib/utils';
 import { Language } from '../translations';
 import { Toast } from './Toast';
-import { formatBatchId, padBatchId } from '../lib/dateUtils';
+import { useUpdateComponentsForm } from '../hooks/useUpdateComponentsForm';
+import { formatBatchId } from '../lib/dateUtils';
 
 interface UpdateComponentsProps {
   stock: Stock | null;
@@ -18,7 +17,7 @@ interface UpdateComponentsProps {
   activeTab: string;
 }
 
-export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
+export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
   stock,
   componentStock,
   batches,
@@ -26,461 +25,98 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
   lang,
   activeTab
 }) => {
-  const { user } = useAuth(lang);
-  const { recordComponentBreakdown, recordComponentPurchase, recordComponentInstallation, isSubmitting, error, setError, success, setSuccess } = useTransactionActions(user, lang);
-  const [mode, setMode] = useState<'extract' | 'buy' | 'install'>(() => (localStorage.getItem('comp_last_mode') as 'extract' | 'buy' | 'install') || 'extract');
-  const [batchId, setBatchId] = useState(() => localStorage.getItem('comp_last_batchId') || '');
-  const [brand, setBrand] = useState(() => localStorage.getItem('comp_last_brand') || '');
-  const [series, setSeries] = useState(() => localStorage.getItem('comp_last_series') || '');
-  const [model, setModel] = useState(() => localStorage.getItem('comp_last_model') || '');
-  const [fromClass, setFromClass] = useState<LaptopClass | ''>('');
-  const [laptopQuantity, setLaptopQuantity] = useState<number | ''>(1);
-  const [componentChanges, setComponentChanges] = useState<Partial<Record<ComponentType, number | ''>>>({});
-  const [selectedComponent, setSelectedComponent] = useState<ComponentType | ''>('');
-  const [purchaseQuantity, setPurchaseQuantity] = useState<number | ''>(1);
-  const [notes, setNotes] = useState('');
-  const [isNewBrand, setIsNewBrand] = useState(() => localStorage.getItem('comp_last_isNewBrand') === 'true');
-  const [isNewSeries, setIsNewSeries] = useState(() => localStorage.getItem('comp_last_isNewSeries') === 'true');
-  const [isNewModel, setIsNewModel] = useState(() => localStorage.getItem('comp_last_isNewModel') === 'true');
-  const [isNewBatch, setIsNewBatch] = useState(false);
-
-  const batchInputRef = useRef<HTMLInputElement>(null);
-  const brandInputRef = useRef<HTMLInputElement>(null);
-  const seriesInputRef = useRef<HTMLInputElement>(null);
-  const modelInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isNewBatch) batchInputRef.current?.focus();
-  }, [isNewBatch]);
-
-  useEffect(() => {
-    if (isNewBrand) brandInputRef.current?.focus();
-  }, [isNewBrand]);
-
-  useEffect(() => {
-    if (isNewSeries && !isNewBrand) seriesInputRef.current?.focus();
-  }, [isNewSeries, isNewBrand]);
-
-  useEffect(() => {
-    if (isNewModel && !isNewBrand && !isNewSeries) modelInputRef.current?.focus();
-  }, [isNewModel, isNewBrand, isNewSeries]);
-
-  // Persist values to localStorage
-  React.useEffect(() => {
-    localStorage.setItem('comp_last_mode', mode);
-    localStorage.setItem('comp_last_batchId', batchId);
-    localStorage.setItem('comp_last_brand', brand);
-    localStorage.setItem('comp_last_series', series);
-    localStorage.setItem('comp_last_model', model);
-    localStorage.setItem('comp_last_isNewBrand', String(isNewBrand));
-    localStorage.setItem('comp_last_isNewSeries', String(isNewSeries));
-    localStorage.setItem('comp_last_isNewModel', String(isNewModel));
-  }, [mode, batchId, brand, series, model, isNewBrand, isNewSeries, isNewModel]);
-
-  const activeBatches = useMemo(() => {
-    if (!batches) return [];
-    return batches.filter(b => b.active);
-  }, [batches]);
-
-  const selectedBatch = useMemo(() => {
-    if (!batchId || !batches) return null;
-    return batches.find(b => b.batchId === batchId);
-  }, [batchId, batches]);
-
-  const availableModels = useMemo(() => {
-    if (!selectedBatch || !selectedBatch.items) return [];
-    return selectedBatch.items.filter(item => {
-      // Include models that have stock in any class
-      return Object.values(item.counts || {}).some(count => (count as number) > 0);
-    });
-  }, [selectedBatch]);
-
-  const allExistingModels = useMemo(() => {
-    const modelsMap = new Map<string, any>();
-    
-    // Add models from batches
-    if (batches) {
-      batches.forEach(b => {
-        b.items?.forEach(item => {
-          const key = `${item.brand}|${item.series}|${item.model}`;
-          if (!modelsMap.has(key)) {
-            modelsMap.set(key, item);
-          }
-        });
-      });
-    }
-
-    // Add models from main stock
-    if (stock?.items) {
-      stock.items.forEach(item => {
-        const key = `${item.brand}|${item.series}|${item.model}`;
-        if (!modelsMap.has(key)) {
-          modelsMap.set(key, item);
-        }
-      });
-    }
-
-    // Add models from component stock
-    if (componentStock?.items) {
-      componentStock.items.forEach(item => {
-        const key = `${item.brand}|${item.series}|${item.model}`;
-        if (!modelsMap.has(key)) {
-          modelsMap.set(key, item);
-        }
-      });
-    }
-
-    return Array.from(modelsMap.values());
-  }, [batches, stock, componentStock]);
-
-  const brands = useMemo(() => {
-    let source;
-    if (mode === 'extract') {
-      source = availableModels;
-    } else if (mode === 'install') {
-      source = (componentStock?.items || []).filter(m => 
-        m.counts && Object.values(m.counts).some(count => (count as number) > 0)
-      );
-    } else {
-      source = allExistingModels;
-    }
-    return Array.from(new Set(source.map(m => m.brand).filter(Boolean))).sort() as string[];
-  }, [mode, availableModels, allExistingModels, componentStock]);
-
-  const seriesList = useMemo(() => {
-    if (!brand || isNewBrand) return [];
-    let source;
-    if (mode === 'extract') {
-      source = availableModels;
-    } else if (mode === 'install') {
-      source = (componentStock?.items || []).filter(m => 
-        m.counts && Object.values(m.counts).some(count => (count as number) > 0)
-      );
-    } else {
-      source = allExistingModels;
-    }
-    return Array.from(new Set(source.filter(m => m.brand === brand).map(m => m.series).filter(Boolean))).sort() as string[];
-  }, [mode, brand, isNewBrand, availableModels, allExistingModels, componentStock]);
-
-  const modelList = useMemo(() => {
-    if (!brand || isNewBrand || !series || isNewSeries) return [];
-    let source;
-    if (mode === 'extract') {
-      source = availableModels;
-    } else if (mode === 'install') {
-      source = (componentStock?.items || []).filter(m => 
-        m.counts && Object.values(m.counts).some(count => (count as number) > 0)
-      );
-    } else {
-      source = allExistingModels;
-    }
-    return Array.from(new Set(source.filter(m => m.brand === brand && m.series === series).map(m => m.model).filter(Boolean))).sort() as string[];
-  }, [mode, brand, series, isNewBrand, isNewSeries, availableModels, allExistingModels, componentStock]);
-
-  const handleBrandChange = (val: string) => {
-    if (val === '__NEW__') {
-      setIsNewBrand(true);
-      setBrand('');
-      setIsNewSeries(true);
-      setSeries('');
-      setIsNewModel(true);
-      setModel('');
-    } else {
-      setIsNewBrand(false);
-      setBrand(val);
-      setSeries('');
-      setIsNewSeries(false);
-      setModel('');
-      setIsNewModel(false);
-    }
-    setFromClass('');
-  };
-
-  const handleSeriesChange = (val: string) => {
-    if (val === '__NEW__') {
-      setIsNewSeries(true);
-      setSeries('');
-      setIsNewModel(true);
-      setModel('');
-    } else {
-      setIsNewSeries(false);
-      setSeries(val);
-      setModel('');
-      setIsNewModel(false);
-    }
-    setFromClass('');
-  };
-
-  const handleModelChange = (val: string) => {
-    if (val === '__NEW__') {
-      setIsNewModel(true);
-      setModel('');
-    } else {
-      setIsNewModel(false);
-      setModel(val);
-    }
-    setFromClass('');
-  };
+  const {
+    mode,
+    batchId,
+    setBatchId,
+    brand,
+    setBrand,
+    series,
+    setSeries,
+    model,
+    setModel,
+    fromClass,
+    setFromClass,
+    laptopQuantity,
+    setLaptopQuantity,
+    componentChanges,
+    setComponentChanges,
+    selectedComponent,
+    setSelectedComponent,
+    purchaseQuantity,
+    setPurchaseQuantity,
+    notes,
+    setNotes,
+    isNewBrand,
+    isNewSeries,
+    isNewModel,
+    isNewBatch,
+    batchInputRef,
+    brandInputRef,
+    seriesInputRef,
+    modelInputRef,
+    activeBatches,
+    selectedBatch,
+    availableModels,
+    brands,
+    seriesList,
+    modelList,
+    selectedModelStock,
+    availableComponentCount,
+    isSubmitting,
+    error,
+    setError,
+    success,
+    setSuccess,
+    handleBrandChange,
+    handleSeriesChange,
+    handleModelChange,
+    handleModeChange,
+    handleSubmit,
+    handleBatchIdChange,
+    handleBatchIdBlur
+  } = useUpdateComponentsForm({
+    stock,
+    componentStock,
+    batches,
+    lang,
+    t
+  });
 
   const eligibleClasses: LaptopClass[] = ['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', 'C5', 'D', 'Spoiled', 'UNCLASSIFIED'];
 
-  const selectedModelStock = useMemo(() => {
-    if (!brand || !series || !model || !selectedBatch) return null;
-    return selectedBatch.items.find(m => m.brand === brand && m.series === series && m.model === model);
-  }, [brand, series, model, selectedBatch]);
-
-  const selectedComponentModelStock = useMemo(() => {
-    if (!brand || !series || !model || !componentStock) return null;
-    return componentStock.items.find(m => m.brand === brand && m.series === series && m.model === model);
-  }, [brand, series, model, componentStock]);
-
-  const availableComponentCount = useMemo(() => {
-    if (!selectedComponentModelStock || !selectedComponent) return 0;
-    return selectedComponentModelStock?.counts?.[selectedComponent as ComponentType] || 0;
-  }, [selectedComponentModelStock, selectedComponent]);
-
-  // Set default batchId if empty
-  useEffect(() => {
-    if (!batchId && activeBatches.length > 0 && !isNewBatch) {
-      setBatchId(activeBatches[0].batchId);
-    }
-  }, [activeBatches, batchId, isNewBatch]);
-
-  // Set default brand if empty
-  useEffect(() => {
-    if (brands.length > 0) {
-      if (!brand) {
-        setBrand(brands[0]);
-        setIsNewBrand(false);
-      }
-    } else if (mode === 'buy' && brands.length === 0 && !isNewBrand) {
-      // Auto-switch to new brand if no existing brands for 'buy' mode
-      setIsNewBrand(true);
-      setBrand('');
-      setIsNewSeries(true);
-      setSeries('');
-      setIsNewModel(true);
-      setModel('');
-    }
-  }, [brands, brand, isNewBrand, mode]);
-
-  // Set default series if empty
-  useEffect(() => {
-    if (seriesList.length > 0 && !series) {
-      setSeries(seriesList[0]);
-      setIsNewSeries(false);
-    }
-  }, [seriesList, series]);
-
-  // Set default model if empty
-  useEffect(() => {
-    if (modelList.length > 0 && !model) {
-      setModel(modelList[0]);
-      setIsNewModel(false);
-    }
-  }, [modelList, model]);
-
-  // Reconcile "New" state with existing data on load or list update to fix sticky localStorage
-  useEffect(() => {
-    if (brands.length > 0 && isNewBrand && brand && brands.includes(brand)) {
-      setIsNewBrand(false);
-    }
-  }, [brands]);
-
-  useEffect(() => {
-    if (seriesList.length > 0 && isNewSeries && series && seriesList.includes(series)) {
-      setIsNewSeries(false);
-    }
-  }, [seriesList]);
-
-  useEffect(() => {
-    if (modelList.length > 0 && isNewModel && model && modelList.includes(model)) {
-      setIsNewModel(false);
-    }
-  }, [modelList]);
-
-  // Set default fromClass if empty and eligible classes exist
-  useEffect(() => {
-    const availableClasses = eligibleClasses.filter(cls => (selectedModelStock?.counts?.[cls as LaptopClass] || 0) > 0);
-    if (!fromClass && availableClasses.length > 0) {
-      setFromClass(availableClasses[0] as LaptopClass);
-    }
-  }, [selectedModelStock, fromClass, eligibleClasses]);
-
-  const maxLaptopQuantity = useMemo(() => {
-    if (!selectedModelStock || !fromClass) return 0;
-    return selectedModelStock.counts?.[fromClass as LaptopClass] || 0;
-  }, [selectedModelStock, fromClass]);
-
-  // Cap laptop quantity to max available stock when max stock changes
-  useEffect(() => {
-    if (typeof laptopQuantity === 'number' && laptopQuantity > maxLaptopQuantity) {
-      setLaptopQuantity(maxLaptopQuantity);
-      
-      // Also cap component quantities
-      setComponentChanges(prev => {
-        const next = { ...prev };
-        Object.keys(next).forEach(key => {
-          const comp = key as ComponentType;
-          if (Number(next[comp]) > maxLaptopQuantity) {
-            next[comp] = maxLaptopQuantity;
-          }
-        });
-        return next;
-      });
-    }
-  }, [maxLaptopQuantity, laptopQuantity]);
-
-  // Set default selectedComponent if empty
-  useEffect(() => {
-    const availableComponents = COMPONENTS.filter(comp => {
-      if (mode === 'install' && selectedComponentModelStock) {
-        const count = selectedComponentModelStock?.counts?.[comp as ComponentType] || 0;
-        return count > 0;
-      }
-      return true;
-    });
-    if (!selectedComponent && availableComponents.length > 0) {
-      setSelectedComponent(availableComponents[0] as ComponentType);
-    }
-  }, [mode, selectedComponentModelStock, selectedComponent]);
-
-  const handleComponentChange = (component: ComponentType, val: number | '') => {
-    const finalVal = val === '' ? '' : Math.max(0, Math.min(val, Number(laptopQuantity)));
+  const handleComponentChange = (comp: ComponentType) => {
     setComponentChanges(prev => ({
       ...prev,
-      [component]: finalVal
+      [comp]: prev[comp] ? 0 : 1
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const maxLaptopQuantity = useMemo(() => {
+    if (!selectedModelStock) return 0;
     if (mode === 'extract') {
-      const hasValidComponents = Object.values(componentChanges).some(v => Number(v) > 0);
-      if (!batchId || !brand || !series || !model || !fromClass || Number(laptopQuantity) <= 0 || !hasValidComponents) {
-        setError('Please fill all required fields and add at least one component with quantity > 0.');
-        return;
-      }
-
-      if (Number(laptopQuantity) > maxLaptopQuantity) {
-        setError(`Cannot break down more than ${maxLaptopQuantity} laptops from ${fromClass}.`);
-        return;
-      }
-
-      // Double check component quantities before submit
-      const invalidComponents = Object.entries(componentChanges).filter(([_, qty]) => Number(qty) > Number(laptopQuantity));
-      if (invalidComponents.length > 0) {
-        setError(`Component quantity cannot exceed laptop quantity (${laptopQuantity}).`);
-        return;
-      }
-
-      try {
-        const cleanComponentChanges: Partial<Record<ComponentType, number>> = {};
-        Object.entries(componentChanges).forEach(([k, v]) => {
-          if (Number(v) > 0) cleanComponentChanges[k as ComponentType] = Number(v);
-        });
-
-        await recordComponentBreakdown({
-          batchId,
-          brand,
-          series,
-          model,
-          fromClass: fromClass as LaptopClass,
-          laptopQuantity: Number(laptopQuantity),
-          componentChanges: cleanComponentChanges,
-          notes
-        });
-        
-        // Reset form
-        setBatchId('');
-        setBrand('');
-        setSeries('');
-        setModel('');
-        setFromClass('');
-        setLaptopQuantity(1);
-        setComponentChanges({});
-        setNotes('');
-        setIsNewBrand(false);
-        setIsNewSeries(false);
-        setIsNewModel(false);
-      } catch (error) {
-        console.error('Error recording breakdown:', error);
-      }
-    } else {
-      // Buy or Install mode
-      if (!brand || !series || !model || !selectedComponent || Number(purchaseQuantity) <= 0) {
-        setError('Please fill all required fields.');
-        return;
-      }
-
-      try {
-        if (mode === 'buy') {
-          await recordComponentPurchase({
-            brand,
-            series,
-            model,
-            componentChanges: { [selectedComponent as ComponentType]: Number(purchaseQuantity) },
-            notes
-          });
-        } else {
-          await recordComponentInstallation({
-            brand,
-            series,
-            model,
-            componentChanges: { [selectedComponent as ComponentType]: Number(purchaseQuantity) },
-            notes
-          });
-        }
-        
-        // Reset form
-        setBrand('');
-        setSeries('');
-        setModel('');
-        setSelectedComponent('');
-        setPurchaseQuantity(1);
-        setNotes('');
-        setIsNewBrand(false);
-        setIsNewSeries(false);
-        setIsNewModel(false);
-      } catch (error) {
-        console.error(`Error recording ${mode}:`, error);
-      }
+      return Object.values(selectedModelStock.counts || {}).reduce((a, b) => (a as number) + (b as number), 0) as number;
+    } else if (mode === 'install') {
+      return (fromClass && selectedModelStock.counts) ? (selectedModelStock.counts[fromClass as LaptopClass] || 0) : 0;
     }
-  };
-
-  const handleModeChange = (newMode: 'extract' | 'buy' | 'install') => {
-    setMode(newMode);
-    setBrand('');
-    setSeries('');
-    setModel('');
-    setNotes('');
-    if (newMode !== 'buy') {
-      setIsNewBrand(false);
-      setIsNewSeries(false);
-      setIsNewModel(false);
-    }
-  };
-
-  if (activeTab !== 'components') return null;
+    return 0;
+  }, [selectedModelStock, mode, fromClass]);
 
   return (
-    <div className="lg:col-span-12 space-y-8 animate-in fade-in duration-500">
-      <div className="max-w-3xl mx-auto w-full">
-        <div className="glass-panel rounded-[32px] overflow-hidden">
-          <div className="px-8 py-6 border-b border-black/5 bg-black/[0.02] flex items-center justify-between">
-            <div>
-              <h2 className="text-[22px] font-bold text-black tracking-tight">{t.updateComponents}</h2>
-              <p className="text-[15px] text-gray-500 mt-1">
-                {mode === 'extract' ? t.breakdown : mode === 'buy' ? t.buyComponents : t.installComponents}
-              </p>
-            </div>
-            <div className="flex bg-black/5 p-1 rounded-xl">
+    <div className={cn(
+      "lg:col-span-12 animate-in slide-in-from-bottom duration-500",
+      activeTab === 'components' ? "block" : "hidden"
+    )}>
+      <div className="max-w-4xl mx-auto">
+        <div className="glass-panel rounded-[32px] p-10">
+          <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
+            <h2 className="text-[32px] font-bold text-black tracking-tight leading-none">{t.updateInventory}</h2>
+            <div className="flex bg-black/5 p-1 rounded-[16px] w-full md:w-auto">
               <button
                 onClick={() => handleModeChange('extract')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-[13px] font-bold transition-all",
-                  mode === 'extract' ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  "flex-1 md:flex-none py-3 px-6 rounded-xl text-[13px] font-bold transition-all",
+                  mode === 'extract' ? "bg-white text-black shadow-md" : "text-gray-500 hover:text-gray-700"
                 )}
               >
                 {t.extractFromLaptop}
@@ -488,74 +124,61 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
               <button
                 onClick={() => handleModeChange('buy')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-[13px] font-bold transition-all",
-                  mode === 'buy' ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  "flex-1 md:flex-none py-3 px-6 rounded-xl text-[13px] font-bold transition-all",
+                  mode === 'buy' ? "bg-white text-black shadow-md" : "text-gray-500 hover:text-gray-700"
                 )}
               >
-                {t.buy}
+                {t.buyComponents}
               </button>
               <button
                 onClick={() => handleModeChange('install')}
                 className={cn(
-                  "px-4 py-2 rounded-lg text-[13px] font-bold transition-all",
-                  mode === 'install' ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-700"
+                  "flex-1 md:flex-none py-3 px-6 rounded-xl text-[13px] font-bold transition-all",
+                  mode === 'install' ? "bg-white text-black shadow-md" : "text-gray-500 hover:text-gray-700"
                 )}
               >
-                {t.install}
+                {t.installComponents}
               </button>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-8 space-y-8">
-            {mode === 'extract' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">{t.batch}</label>
+          <form onSubmit={handleSubmit} className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {mode !== 'buy' && (
+                <div className="space-y-3">
+                  <label htmlFor="update-batch-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.batchId}</label>
                   {!isNewBatch ? (
                     <div className="relative">
                       <select
+                        id="update-batch-select"
                         value={batchId}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          if (val === '__NEW__') {
-                            setIsNewBatch(true);
-                            setBatchId('');
-                          } else {
-                            setIsNewBatch(false);
-                            setBatchId(val);
-                          }
-                          setBrand('');
-                          setSeries('');
-                          setModel('');
-                          setFromClass('');
-                        }}
-                        className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+                        onChange={(e) => handleBatchIdChange(e.target.value)}
+                        className="ios-input w-full pr-10"
                         required
                       >
+                        <option value="" disabled>{t.selectBatch}</option>
                         {activeBatches.map((b, i) => (
-                          <option key={b.id || b.batchId || `batch-${i}`} value={b.batchId}>{b.batchId}</option>
+                          <option key={`update-batch-${b.batchId}-${i}`} value={b.batchId}>{b.batchId}</option>
                         ))}
-                        <option key="new-batch" value="__NEW__" className="font-bold text-blue-600">+ {t.newBatch || 'New Batch'}</option>
+                        {mode === 'buy' && <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBatch || 'New Batch'}</option>}
                       </select>
                     </div>
                   ) : (
                     <div className="relative flex items-center">
-                    <input
-                      ref={batchInputRef}
-                      type="text"
-                      placeholder={t.dateExample}
-                      value={batchId}
-                      onChange={(e) => setBatchId(formatBatchId(e.target.value, batchId))}
-                      onBlur={() => setBatchId(prev => padBatchId(prev))}
-                      className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none pr-10"
-                      required
-                    />
+                      <input
+                        id="update-batch-input"
+                        ref={batchInputRef}
+                        type="text"
+                        placeholder={t.dateExample}
+                        value={batchId}
+                        onChange={(e) => setBatchId(formatBatchId(e.target.value, batchId))}
+                        onBlur={handleBatchIdBlur}
+                        className="ios-input w-full pr-10"
+                        required
+                      />
                       <button 
                         type="button" 
-                        onClick={() => {
-                          setIsNewBatch(false);
-                          setBatchId('');
-                        }}
+                        onClick={() => handleBatchIdChange('')}
                         className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                       >
                         <X className="w-4 h-4" />
@@ -563,35 +186,32 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="space-y-2">
-                <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">{t.brandLabel}</label>
+              <div className={cn("space-y-3", mode === 'buy' && "col-span-2")}>
+                <label htmlFor="update-brand-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.brandLabel}</label>
                 {!isNewBrand ? (
                   <select
+                    id="update-brand-select"
                     value={brand}
                     onChange={(e) => handleBrandChange(e.target.value)}
-                    disabled={mode === 'extract' && !batchId}
-                    className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
+                    className="ios-input w-full"
                     required
                   >
                     <option value="" disabled>{t.selectBrand}</option>
-                    {brands.map((b, i) => <option key={`brand-${b}-${i}`} value={b}>{b}</option>)}
-                    {mode === 'buy' ? (
-                      <option key="new-brand" value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
-                    ) : null}
+                    {brands.map((b, i) => <option key={`update-brand-${b}-${i}`} value={b}>{b}</option>)}
+                    {mode === 'buy' && <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>}
                   </select>
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      id="update-brand-input"
                       ref={brandInputRef}
                       type="text"
                       placeholder={t.newBrand}
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
-                      className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none pr-10"
+                      className="ios-input w-full pr-10"
                       required
                     />
                     <button 
@@ -605,31 +225,31 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">{t.seriesLabel}</label>
+              <div className="space-y-3">
+                <label htmlFor="update-series-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.seriesLabel}</label>
                 {!isNewSeries ? (
                   <select
+                    id="update-series-select"
                     value={series}
                     onChange={(e) => handleSeriesChange(e.target.value)}
+                    className="ios-input w-full"
                     disabled={!brand && !isNewBrand}
-                    className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
                     required
                   >
                     <option value="" disabled>{t.selectSeries}</option>
-                    {seriesList.map((s, i) => <option key={`series-${s}-${i}`} value={s}>{s}</option>)}
-                    {mode === 'buy' ? (
-                      <option key="new-series" value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
-                    ) : null}
+                    {seriesList.map((s, i) => <option key={`update-series-${s}-${i}`} value={s}>{s}</option>)}
+                    {mode === 'buy' && <option value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>}
                   </select>
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      id="update-series-input"
                       ref={seriesInputRef}
                       type="text"
                       placeholder={t.newSeries}
                       value={series}
                       onChange={(e) => setSeries(e.target.value)}
-                      className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none pr-10"
+                      className="ios-input w-full pr-10"
                       required
                     />
                     <button 
@@ -643,31 +263,31 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">{t.modelLabel}</label>
+              <div className="space-y-3">
+                <label htmlFor="update-model-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.modelLabel}</label>
                 {!isNewModel ? (
                   <select
+                    id="update-model-select"
                     value={model}
                     onChange={(e) => handleModelChange(e.target.value)}
+                    className="ios-input w-full"
                     disabled={(!series && !isNewSeries) || (!brand && !isNewBrand)}
-                    className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
                     required
                   >
                     <option value="" disabled>{t.selectModel}</option>
-                    {modelList.map((m, i) => <option key={`model-${m}-${i}`} value={m}>{m}</option>)}
-                    {mode === 'buy' ? (
-                      <option key="new-model" value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
-                    ) : null}
+                    {modelList.map((m, i) => <option key={`update-model-${m}-${i}`} value={m}>{m}</option>)}
+                    {mode === 'buy' && <option value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>}
                   </select>
                 ) : (
                   <div className="relative flex items-center">
                     <input
+                      id="update-model-input"
                       ref={modelInputRef}
                       type="text"
                       placeholder={t.newModel}
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
-                      className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none pr-10"
+                      className="ios-input w-full pr-10"
                       required
                     />
                     <button 
@@ -682,206 +302,186 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
               </div>
             </div>
 
-            {mode === 'extract' ? (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">{t.fromClass}</label>
-                      {fromClass && (
-                        <span className={cn(
-                          "text-[11px] font-bold px-2 py-0.5 rounded-full",
-                          (selectedModelStock?.counts?.[fromClass as LaptopClass] || 0) <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
-                        )}>
-                          {t.currentStock}: {selectedModelStock?.counts?.[fromClass as LaptopClass] || 0}
-                        </span>
-                      )}
-                    </div>
-                    <select
-                      value={fromClass}
-                      onChange={(e) => setFromClass(e.target.value as LaptopClass)}
-                      disabled={!model}
-                      className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
-                      required
-                    >
-                      {eligibleClasses.filter(cls => (selectedModelStock?.counts?.[cls as LaptopClass] || 0) > 0).map((cls, i) => (
-                        <option key={`class-${cls}-${i}`} value={cls}>
-                          {cls === 'Spoiled' ? t.spoiled : cls}
-                        </option>
-                      ))}
-                    </select>
+            {mode === 'extract' && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-top duration-300">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.laptopQuantityToExtract}</label>
+                    {selectedModelStock && (
+                      <span className="text-[11px] font-bold text-ios-blue bg-ios-blue/10 px-2 py-0.5 rounded-full">
+                        {t.availableLaptops}: {maxLaptopQuantity}
+                      </span>
+                    )}
                   </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">{t.laptopQuantity}</label>
+                  <div className="flex items-center gap-6">
+                    <button
+                      type="button"
+                      onClick={() => setLaptopQuantity(prev => Math.max(1, (Number(prev) || 1) - 1))}
+                      className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-colors"
+                    >
+                      <Minus className="w-6 h-6" />
+                    </button>
                     <input
                       type="number"
                       value={laptopQuantity}
-                      onKeyDown={(e) => {
-                        if (['-', 'e', 'E', '.', ','].includes(e.key)) e.preventDefault();
-                      }}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        let numVal = val === '' ? '' : Math.max(0, parseInt(val));
-                        if (typeof numVal === 'number' && numVal > maxLaptopQuantity) {
-                          numVal = maxLaptopQuantity;
-                        }
-                        setLaptopQuantity(numVal);
-                        
-                        if (numVal !== '') {
-                          // Cap all component quantities to the new laptop quantity
-                          setComponentChanges(prev => {
-                            const next = { ...prev };
-                            Object.keys(next).forEach(key => {
-                              const comp = key as ComponentType;
-                              if (Number(next[comp]) > Number(numVal)) {
-                                next[comp] = Number(numVal);
-                              }
-                            });
-                            return next;
-                          });
-                        }
-                      }}
-                      disabled={!fromClass}
-                      className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none disabled:opacity-50"
-                      placeholder="0"
-                      required
+                      onChange={(e) => setLaptopQuantity(Math.min(maxLaptopQuantity, Math.max(1, parseInt(e.target.value) || 1)))}
+                      className="ios-input w-24 text-center text-[24px] font-bold"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setLaptopQuantity(prev => Math.min(maxLaptopQuantity, (Number(prev) || 0) + 1))}
+                      className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-colors"
+                    >
+                      <Plus className="w-6 h-6" />
+                    </button>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">{t.componentChanges}</label>
-                  <div className="bg-black/[0.02] rounded-2xl p-6 space-y-4 border border-black/5">
-                    {COMPONENTS.map(comp => (
-                      <div key={comp} className="flex items-center justify-between gap-4">
-                        <span className="text-[15px] font-medium text-gray-700 w-1/3">{t[comp] || comp}</span>
-                        <div className="flex items-center gap-3 w-2/3">
-                          <button
-                            type="button"
-                            onClick={() => handleComponentChange(comp, (componentChanges[comp] || 0) - 1)}
-                            disabled={!componentChanges[comp]}
-                            className="p-2 rounded-lg bg-white border border-black/10 hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                          >
-                            <Minus className="w-4 h-4" />
-                          </button>
-                          <input
-                            type="number"
-                            value={componentChanges[comp] ?? ''}
-                            onKeyDown={(e) => {
-                              if (['-', 'e', 'E', '.', ','].includes(e.key)) e.preventDefault();
-                            }}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              handleComponentChange(comp, val === '' ? '' : Math.max(0, parseInt(val)));
-                            }}
-                            className="w-20 px-3 py-2 text-center bg-white border border-black/10 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none"
-                            placeholder="0"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleComponentChange(comp, (componentChanges[comp] || 0) + 1)}
-                            disabled={(componentChanges[comp] || 0) >= laptopQuantity}
-                            className="p-2 rounded-lg bg-white border border-black/10 hover:bg-gray-50 disabled:opacity-50 transition-colors"
-                          >
-                            <Plus className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
+                  <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.selectComponentsToExtract}</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {COMPONENTS.map((comp) => (
+                      <button
+                        key={`comp-${comp}`}
+                        type="button"
+                        onClick={() => handleComponentChange(comp as ComponentType)}
+                        className={cn(
+                          "p-4 rounded-[20px] text-[13px] font-bold border-2 transition-all text-center",
+                          componentChanges[comp as ComponentType]
+                            ? "bg-ios-blue border-ios-blue text-white shadow-lg shadow-ios-blue/20"
+                            : "bg-white border-gray-100 text-gray-600 hover:border-gray-200"
+                        )}
+                      >
+                        {t[comp.toLowerCase() as keyof typeof t] || comp}
+                      </button>
                     ))}
                   </div>
-                </div>
-              </>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">{t.components}</label>
-                    {mode === 'install' && selectedComponent && (
-                      <span className={cn(
-                        "text-[11px] font-bold px-2 py-0.5 rounded-full",
-                        availableComponentCount <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
-                      )}>
-                        {t.currentStock}: {availableComponentCount}
-                      </span>
-                    )}
-                  </div>
-                  <select
-                    value={selectedComponent}
-                    onChange={(e) => setSelectedComponent(e.target.value as ComponentType)}
-                    className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                    required
-                  >
-                    {COMPONENTS.filter(comp => {
-                      if (mode === 'install' && selectedComponentModelStock) {
-                        const count = selectedComponentModelStock?.counts?.[comp as ComponentType] || 0;
-                        return count > 0;
-                      }
-                      return true;
-                    }).map((comp, i) => (
-                      <option key={`comp-${comp}-${i}`} value={comp}>{t[comp] || comp}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">{t.quantity}</label>
-                  <input
-                    type="number"
-                    value={purchaseQuantity}
-                    onKeyDown={(e) => {
-                      if (['-', 'e', 'E', '.', ','].includes(e.key)) e.preventDefault();
-                    }}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      let numVal = val === '' ? '' : Math.max(0, parseInt(val));
-                      if (mode === 'install' && typeof numVal === 'number' && numVal > availableComponentCount) {
-                        numVal = availableComponentCount;
-                      }
-                      setPurchaseQuantity(numVal);
-                    }}
-                    min="1"
-                    max={mode === 'install' ? availableComponentCount : undefined}
-                    className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
-                    placeholder="0"
-                    required
-                  />
                 </div>
               </div>
             )}
 
-            <div className="space-y-2">
-              <label className="text-[13px] font-semibold text-gray-700 uppercase tracking-wider">{t.notes}</label>
+            {mode === 'buy' && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-top duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <label htmlFor="buy-component-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.componentLabel}</label>
+                    <select
+                      id="buy-component-select"
+                      value={selectedComponent}
+                      onChange={(e) => setSelectedComponent(e.target.value as ComponentType)}
+                      className="ios-input w-full"
+                      required
+                    >
+                      <option value="" disabled>{t.selectComponent}</option>
+                      {COMPONENTS.map((comp) => (
+                        <option key={`buy-comp-${comp}`} value={comp}>{t[comp.toLowerCase() as keyof typeof t] || comp}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label htmlFor="buy-quantity-input" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.quantity}</label>
+                    <input
+                      id="buy-quantity-input"
+                      type="number"
+                      value={purchaseQuantity}
+                      onChange={(e) => setPurchaseQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                      className="ios-input w-full"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {mode === 'install' && (
+              <div className="space-y-8 animate-in fade-in slide-in-from-top duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="install-from-class-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.fromClass}</label>
+                      {selectedModelStock && (
+                        <span className={cn(
+                          "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                          maxLaptopQuantity <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
+                        )}>
+                          {t.availableLaptops}: {maxLaptopQuantity}
+                        </span>
+                      )}
+                    </div>
+                    <select
+                      id="install-from-class-select"
+                      value={fromClass}
+                      onChange={(e) => setFromClass(e.target.value as LaptopClass)}
+                      className="ios-input w-full"
+                      required
+                    >
+                      <option value="" disabled>{t.selectClass}</option>
+                      {eligibleClasses.map((c, i) => <option key={`install-class-${c}-${i}`} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="install-component-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.componentLabel}</label>
+                      <span className={cn(
+                        "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                        availableComponentCount <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
+                      )}>
+                        {t.availableStock}: {availableComponentCount}
+                      </span>
+                    </div>
+                    <select
+                      id="install-component-select"
+                      value={selectedComponent}
+                      onChange={(e) => setSelectedComponent(e.target.value as ComponentType)}
+                      className="ios-input w-full"
+                      required
+                    >
+                      <option value="" disabled>{t.selectComponent}</option>
+                      {COMPONENTS.map((comp) => (
+                        <option key={`install-comp-${comp}`} value={comp}>{t[comp.toLowerCase() as keyof typeof t] || comp}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-3 col-span-2">
+                    <label htmlFor="install-quantity-input" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.quantity}</label>
+                    <input
+                      id="install-quantity-input"
+                      type="number"
+                      value={purchaseQuantity}
+                      onChange={(e) => setPurchaseQuantity(Math.min(availableComponentCount, Math.max(1, parseInt(e.target.value) || 1)))}
+                      className="ios-input w-full"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <label htmlFor="update-notes-input" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.notes}</label>
               <textarea
+                id="update-notes-input"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-4 py-3 bg-black/[0.03] border-transparent rounded-xl focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none resize-none h-24"
-                placeholder={
-                  mode === 'extract' 
-                    ? t.breakdownNotes(laptopQuantity, fromClass) 
-                    : mode === 'buy' 
-                      ? t.purchase 
-                      : t.install
-                }
+                className="ios-input w-full min-h-[100px] py-4 resize-none"
+                placeholder={t.optionalNotes}
               />
             </div>
 
-            <div className="pt-4 border-t border-black/5 flex justify-end">
-              <button
-                type="submit"
-                disabled={
-                  isSubmitting || 
-                  (mode === 'extract' 
-                    ? (!brand || !series || !model || !fromClass || Number(laptopQuantity) <= 0 || !Object.values(componentChanges).some(v => Number(v) > 0)) 
-                    : (!brand || !series || !model || !selectedComponent || Number(purchaseQuantity) <= 0 || (mode === 'install' && Number(purchaseQuantity) > availableComponentCount))
-                  )
-                }
-                className="flex items-center gap-2 px-8 py-4 bg-blue-600 text-white rounded-xl font-bold text-[15px] hover:bg-blue-700 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-sm"
-              >
-                <Package className="w-5 h-5" />
-                {isSubmitting ? t.processing : t.recordEntry}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={isSubmitting || (mode === 'extract' && Object.values(componentChanges).filter(v => (v as number) > 0).length === 0) || (mode === 'install' && (availableComponentCount <= 0 || maxLaptopQuantity <= 0))}
+              className={cn(
+                "ios-button w-full py-5 text-[19px] mt-4",
+                ((mode === 'extract' && Object.values(componentChanges).filter(v => (v as number) > 0).length === 0) || (mode === 'install' && (availableComponentCount <= 0 || maxLaptopQuantity <= 0))) && "opacity-50 cursor-not-allowed bg-gray-400"
+              )}
+            >
+              {isSubmitting ? <RefreshCw className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}
+              {isSubmitting ? t.processing : t.recordEntry}
+            </button>
           </form>
         </div>
       </div>
@@ -890,12 +490,14 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = ({
         message={error} 
         type="error" 
         onClose={() => setError(null)} 
+        t={t}
       />
       <Toast 
         message={success} 
         type="success" 
         onClose={() => setSuccess(null)} 
+        t={t}
       />
     </div>
   );
-};
+});

@@ -1,8 +1,9 @@
 import React from 'react';
 import { User } from 'firebase/auth';
-import { LayoutDashboard, LogOut, AlertCircle } from 'lucide-react';
+import { LayoutDashboard, LogOut } from 'lucide-react';
 import { LanguageToggle } from './LanguageToggle';
 import { Language } from '../translations';
+import { useLayoutLogic } from '../hooks/useLayoutLogic';
 
 interface LayoutProps {
   user: User | null;
@@ -23,7 +24,7 @@ export const Layout: React.FC<LayoutProps> = ({
   setActiveTab,
   children,
 }) => {
-  const displayName = user?.displayName || user?.email?.split('@')[0] || t.defaultUser;
+  const { displayName } = useLayoutLogic({ user, t });
 
   return (
     <div className="min-h-screen selection:bg-blue-200 selection:text-blue-900">

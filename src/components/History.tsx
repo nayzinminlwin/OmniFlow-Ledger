@@ -1,12 +1,12 @@
-import React, { memo, useState, useEffect, useRef } from 'react';
+import React, { memo } from 'react';
 import { createPortal } from 'react-dom';
-import { format } from 'date-fns';
 import { ArrowRightLeft, Info, Hammer, Undo2, ArrowDownLeft, ArrowUpRight, ShoppingCart, Wrench, Sliders, PackagePlus, PlusCircle } from 'lucide-react';
 import { Transaction, UserProfile } from '../types';
 import { COMPONENTS } from '../constants';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
 import { motion, AnimatePresence } from 'motion/react';
+import { useHistoryLogic } from '../hooks/useHistoryLogic';
 
 interface HistoryProps {
   transactions: Transaction[];
@@ -19,66 +19,48 @@ interface HistoryProps {
 }
 
 export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, activeTab, loading = false, onUndo, currentUserProfile }) => {
-  const [hoveredTxId, setHoveredTxId] = useState<string | null>(null);
-  const [popupConfig, setPopupConfig] = useState<{ top: number, left: number, index: number, tx: Transaction } | null>(null);
-  const [undoingTxId, setUndoingTxId] = useState<string | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (hoveredTxId) {
-        setHoveredTxId(null);
-        setPopupConfig(null);
-      }
-    };
-
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', handleScroll, { passive: true });
-    }
-    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
-    
-    return () => {
-      if (container) {
-        container.removeEventListener('scroll', handleScroll);
-      }
-      window.removeEventListener('scroll', handleScroll, { capture: true });
-    };
-  }, [hoveredTxId]);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      if (hoveredTxId && !target.closest('.breakdown-trigger') && !target.closest('.breakdown-popup')) {
-        setHoveredTxId(null);
-        setPopupConfig(null);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [hoveredTxId]);
+  const {
+    hoveredTxId,
+    popupConfig,
+    undoingTxId,
+    scrollContainerRef,
+    safeFormatDate,
+    getClassName,
+    handleUndo,
+    togglePopup,
+    searchTerm,
+    setSearchTerm,
+    filteredTransactions,
+    setHoveredTxId,
+    setPopupConfig
+  } = useHistoryLogic({
+    transactions,
+    t,
+    onUndo,
+    currentUserProfile
+  });
 
   if (activeTab !== 'history') return null;
-
-  const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
-    if (!dateStr) return t.na;
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return t.invalidDate;
-    return format(d, formatStr);
-  };
-
-  const getClassName = (cls?: string) => cls === 'Spoiled' ? t.spoiled : cls;
 
   return (
     <div className="lg:col-span-12 animate-in fade-in duration-500">
       <div className="glass-panel rounded-[32px] overflow-hidden">
-        <div className="px-8 py-6 border-b border-black/5 flex items-center justify-between bg-black/[0.02]">
+        <div className="px-8 py-6 border-b border-black/5 flex flex-col sm:flex-row items-center justify-between bg-black/[0.02] gap-4">
           <h2 className="text-[22px] font-bold text-black tracking-tight">{t.fullLedger}</h2>
-          <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest">
-            {t.showingLast50}
+          <div className="flex items-center gap-4 w-full sm:w-auto">
+            <div className="relative flex-1 sm:w-64">
+              <input
+                type="text"
+                placeholder={t.searchTransactions}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="ios-input w-full pl-10 py-2 text-[13px]"
+              />
+              <ArrowRightLeft className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            </div>
+            <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">
+              {t.showingLast50}
+            </div>
           </div>
         </div>
         <div ref={scrollContainerRef} className="overflow-x-auto overflow-y-auto custom-scrollbar max-h-[calc(100vh-320px)] relative">
@@ -113,7 +95,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                   </tr>
                 ))
               ) : (
-                transactions.map((tx, index) => {
+                filteredTransactions.map((tx, index) => {
                   const username = users[tx.userId]?.username || tx.userId || t.unknown;
                   const wordCount = username.split(/\s+/).filter(Boolean).length;
                   const txUniqueId = tx.id || `tx-${index}`;
@@ -146,31 +128,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                             "inline-flex items-center gap-1.5",
                             (tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges)) && "cursor-pointer breakdown-trigger"
                           )}
-                          onClick={(e) => {
-                            if (tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges)) {
-                              if (hoveredTxId === txUniqueId) {
-                                setHoveredTxId(null);
-                                setPopupConfig(null);
-                              } else {
-                                const rect = e.currentTarget.getBoundingClientRect();
-                                // Center the popup horizontally (w-64 is 256px)
-                                let left = rect.left + (rect.width / 2) - 128;
-                                
-                                // Keep within viewport bounds
-                                const padding = 20;
-                                if (left < padding) left = padding;
-                                if (left + 256 > window.innerWidth - padding) left = window.innerWidth - 256 - padding;
-
-                                setHoveredTxId(txUniqueId);
-                                setPopupConfig({
-                                  top: rect.top,
-                                  left: left,
-                                  index: index,
-                                  tx: tx
-                                });
-                              }
-                            }
-                          }}
+                          onClick={(e) => togglePopup(tx, txUniqueId, index, e)}
                         >
                           <span className={cn(
                             "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5",
@@ -277,13 +235,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                           <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest opacity-50">{t.undo}</span>
                         ) : (
                           <button
-                            onClick={async () => {
-                              if (tx.id) {
-                                setUndoingTxId(tx.id);
-                                await onUndo(tx.id, currentUserProfile);
-                                setUndoingTxId(null);
-                              }
-                            }}
+                            onClick={() => tx.id && handleUndo(tx.id)}
                             disabled={undoingTxId === tx.id || !currentUserProfile || (
                               !currentUserProfile.isOriginalAdmin && 
                               !(currentUserProfile.isUltimateAdmin && (!users[tx.userId]?.isUltimateAdmin && !users[tx.userId]?.isOriginalAdmin || tx.userId === currentUserProfile.uid)) &&

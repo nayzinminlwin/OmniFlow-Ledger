@@ -1,7 +1,8 @@
-import React, { memo, useRef, useState, useEffect } from 'react';
+import React, { memo } from 'react';
 import { LayoutDashboard, Edit2, History, Settings, Users, Cpu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { useNavigationLogic } from '../hooks/useNavigationLogic';
 
 interface NavigationProps {
   activeTab: 'dashboard' | 'history' | 'add' | 'components' | 'componentInventory' | 'batches' | 'users';
@@ -11,60 +12,7 @@ interface NavigationProps {
 }
 
 export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiveTab, t, isUltimateAdmin }) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [showLeftArrow, setShowLeftArrow] = useState(false);
-  const [showRightArrow, setShowRightArrow] = useState(false);
-
-  const checkScroll = () => {
-    if (scrollRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
-      setShowLeftArrow(scrollLeft > 5);
-      setShowRightArrow(scrollLeft < scrollWidth - clientWidth - 5);
-    }
-  };
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    checkScroll();
-    el.addEventListener('scroll', checkScroll);
-    window.addEventListener('resize', checkScroll);
-
-    // Initial scroll hint
-    const hintTimer = setTimeout(() => {
-      el.scrollTo({ left: 60, behavior: 'smooth' });
-      setTimeout(() => {
-        el.scrollTo({ left: 0, behavior: 'smooth' });
-      }, 600);
-    }, 1200);
-
-    return () => {
-      el.removeEventListener('scroll', checkScroll);
-      window.removeEventListener('resize', checkScroll);
-      clearTimeout(hintTimer);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      const activeElement = scrollRef.current.querySelector('[data-active="true"]');
-      if (activeElement) {
-        activeElement.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'center'
-        });
-      }
-    }
-  }, [activeTab]);
-
-  const scroll = (direction: 'left' | 'right') => {
-    if (scrollRef.current) {
-      const scrollAmount = direction === 'left' ? -200 : 200;
-      scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  };
+  const { scrollRef, showLeftArrow, showRightArrow, scroll } = useNavigationLogic(activeTab);
 
   return (
     <div className="flex justify-center mb-8 px-4">
