@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, act, waitFor } from '@testing-library/react';
+import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { UpdateComponents } from '../../src/components/UpdateComponents';
 import { AddTransaction } from '../../src/components/AddTransaction';
@@ -14,8 +14,12 @@ vi.mock('firebase/firestore', async () => {
   const actual = await vi.importActual('firebase/firestore');
   return {
     ...actual,
-    doc: vi.fn(),
-    collection: vi.fn(),
+    doc: vi.fn((...args) => {
+      if (args.length === 3) return { _path: `${args[1]}/${args[2]}` };
+      if (args.length === 2 && typeof args[1] === 'string') return { _path: args[1] };
+      return { _path: 'unknown' };
+    }),
+    collection: vi.fn((db, path) => ({ _path: path })),
     runTransaction: vi.fn(),
     writeBatch: vi.fn(),
     query: vi.fn(),
@@ -151,24 +155,24 @@ describe('Integration: Inventory Flows', () => {
 
       await user.click(screen.getByRole('button', { name: translations.en.buyComponents }));
 
-      const brandSelect = screen.getAllByRole('combobox')[0];
-      await user.selectOptions(brandSelect, 'Apple');
-
-      const seriesSelect = screen.getAllByRole('combobox')[1];
-      await user.selectOptions(seriesSelect, 'MacBook Pro');
-
-      const modelSelect = screen.getAllByRole('combobox')[2];
-      await user.selectOptions(modelSelect, 'M1 2020');
-
-      const componentSelect = screen.getAllByRole('combobox')[3];
-      await user.selectOptions(componentSelect, 'Screen');
-
-      const quantityInput = screen.getByLabelText(translations.en.quantity);
-      await user.clear(quantityInput);
-      await user.type(quantityInput, '5');
-
-      const submitButton = screen.getByText(translations.en.recordEntry);
       await act(async () => {
+        const brandSelect = screen.getAllByRole('combobox')[0];
+        await user.selectOptions(brandSelect, 'Apple');
+
+        const seriesSelect = screen.getAllByRole('combobox')[1];
+        await user.selectOptions(seriesSelect, 'MacBook Pro');
+
+        const modelSelect = screen.getAllByRole('combobox')[2];
+        await user.selectOptions(modelSelect, 'M1 2020');
+
+        const componentSelect = screen.getAllByRole('combobox')[3];
+        await user.selectOptions(componentSelect, 'Screen');
+
+        const quantityInput = screen.getByLabelText(translations.en.quantity);
+        await user.clear(quantityInput);
+        await user.type(quantityInput, '5');
+
+        const submitButton = screen.getByText(translations.en.recordEntry);
         await user.click(submitButton);
       });
 
@@ -202,27 +206,30 @@ describe('Integration: Inventory Flows', () => {
 
       await user.click(screen.getByRole('button', { name: translations.en.installComponents }));
 
-      const batchSelect = screen.getByLabelText(translations.en.batchId);
-      await user.selectOptions(batchSelect, '16-03-2026');
-
-      const brandSelect = screen.getByLabelText(translations.en.brandLabel);
-      await user.selectOptions(brandSelect, 'Apple');
-
-      const seriesSelect = screen.getByLabelText(translations.en.seriesLabel);
-      await user.selectOptions(seriesSelect, 'MacBook Pro');
-
-      const modelSelect = screen.getByLabelText(translations.en.modelLabel);
-      await user.selectOptions(modelSelect, 'M1 2020');
-
-      const componentSelect = screen.getByLabelText(translations.en.componentLabel);
-      await user.selectOptions(componentSelect, 'Screen');
-
-      const quantityInput = screen.getByLabelText(translations.en.quantity);
-      await user.clear(quantityInput);
-      await user.type(quantityInput, '2');
-
-      const submitButton = screen.getByText(translations.en.recordEntry);
       await act(async () => {
+        const batchSelect = screen.getByLabelText(translations.en.batchId);
+        await user.selectOptions(batchSelect, '16-03-2026');
+
+        const brandSelect = screen.getByLabelText(translations.en.brandLabel);
+        await user.selectOptions(brandSelect, 'Apple');
+
+        const seriesSelect = screen.getByLabelText(translations.en.seriesLabel);
+        await user.selectOptions(seriesSelect, 'MacBook Pro');
+
+        const modelSelect = screen.getByLabelText(translations.en.modelLabel);
+        await user.selectOptions(modelSelect, 'M1 2020');
+
+        const fromClassSelect = screen.getByLabelText(translations.en.fromClass);
+        await user.selectOptions(fromClassSelect, 'A');
+
+        const componentSelect = screen.getByLabelText(translations.en.componentLabel);
+        await user.selectOptions(componentSelect, 'Screen');
+
+        const quantityInput = screen.getByLabelText(translations.en.quantity);
+        await user.clear(quantityInput);
+        await user.type(quantityInput, '2');
+
+        const submitButton = screen.getByText(translations.en.recordEntry);
         await user.click(submitButton);
       });
 
@@ -234,10 +241,12 @@ describe('Integration: Inventory Flows', () => {
       const user = userEvent.setup();
       
       const mockTransaction = {
-        get: vi.fn()
-          .mockResolvedValueOnce({ exists: () => true, data: () => mockComponentStock }) // compStock
-          .mockResolvedValueOnce({ exists: () => true, data: () => mockComponentStock }) // spoiledCompStock
-          .mockResolvedValueOnce({ exists: () => true, data: () => mockBatches[0] }), // batch
+        get: vi.fn((ref) => {
+          if (ref._path === 'components/current') return Promise.resolve({ exists: () => true, data: () => mockComponentStock });
+          if (ref._path === 'components/spoiled') return Promise.resolve({ exists: () => true, data: () => mockComponentStock });
+          if (ref._path.startsWith('batches/')) return Promise.resolve({ exists: () => true, data: () => mockBatches[0] });
+          return Promise.resolve({ exists: () => false });
+        }),
         update: vi.fn(),
         set: vi.fn(),
       };
@@ -254,30 +263,30 @@ describe('Integration: Inventory Flows', () => {
         />
       );
 
-      const batchSelect = screen.getByLabelText(translations.en.batchId);
-      await user.selectOptions(batchSelect, '16-03-2026');
-
-      const brandSelect = screen.getByLabelText(translations.en.brandLabel);
-      await user.selectOptions(brandSelect, 'Apple');
-
-      const seriesSelect = screen.getByLabelText(translations.en.seriesLabel);
-      await user.selectOptions(seriesSelect, 'MacBook Pro');
-
-      const modelSelect = screen.getByLabelText(translations.en.modelLabel);
-      await user.selectOptions(modelSelect, 'M1 2020');
-
-      const classSelect = await screen.findByLabelText(translations.en.fromClass);
-      await user.selectOptions(classSelect, 'A');
-
-      const laptopQtyInput = screen.getByLabelText(translations.en.laptopQuantityToExtract);
-      await user.clear(laptopQtyInput);
-      await user.type(laptopQtyInput, '1');
-
-      const screenButton = screen.getByRole('button', { name: 'Screen' });
-      await user.click(screenButton);
-
-      const submitButton = screen.getByText(translations.en.recordEntry);
       await act(async () => {
+        const batchSelect = screen.getByLabelText(translations.en.batchId);
+        await user.selectOptions(batchSelect, '16-03-2026');
+
+        const brandSelect = screen.getByLabelText(translations.en.brandLabel);
+        await user.selectOptions(brandSelect, 'Apple');
+
+        const seriesSelect = screen.getByLabelText(translations.en.seriesLabel);
+        await user.selectOptions(seriesSelect, 'MacBook Pro');
+
+        const modelSelect = screen.getByLabelText(translations.en.modelLabel);
+        await user.selectOptions(modelSelect, 'M1 2020');
+
+        const classSelect = await screen.findByLabelText(translations.en.fromClass);
+        await user.selectOptions(classSelect, 'A');
+
+        const laptopQtyInput = screen.getByLabelText(translations.en.laptopQuantityToExtract);
+        // Use fireEvent for more reliable value setting in this case
+        fireEvent.change(laptopQtyInput, { target: { value: '1' } });
+
+        const screenButton = screen.getByRole('button', { name: 'Screen' });
+        await user.click(screenButton);
+
+        const submitButton = screen.getByText(translations.en.recordEntry);
         await user.click(submitButton);
       });
 
@@ -479,7 +488,9 @@ describe('Integration: Inventory Flows', () => {
 
       // Try to submit without filling fields
       const submitButton = screen.getByRole('button', { name: translations.en.recordEntry });
-      await user.click(submitButton);
+      await act(async () => {
+        await user.click(submitButton);
+      });
 
       // Should not call onAddTransaction because brand/series/model are empty
       expect(onAddTransaction).not.toHaveBeenCalled();
