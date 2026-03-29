@@ -19,6 +19,7 @@ describe('Navigation Component', () => {
         setActiveTab={mockSetActiveTab} 
         t={t} 
         isUltimateAdmin={false} 
+        isAdmin={true}
       />
     );
 
@@ -33,6 +34,28 @@ describe('Navigation Component', () => {
     expect(screen.queryByText(t.userManagement)).not.toBeInTheDocument();
   });
 
+  it('hides transactional tabs for non-admin users', () => {
+    render(
+      <Navigation 
+        activeTab="dashboard" 
+        setActiveTab={mockSetActiveTab} 
+        t={t} 
+        isUltimateAdmin={false} 
+        isAdmin={false}
+      />
+    );
+
+    expect(screen.getByText(t.dashboard)).toBeInTheDocument();
+    expect(screen.getByText(t.batches)).toBeInTheDocument();
+    expect(screen.getByText(t.componentInventory)).toBeInTheDocument();
+    expect(screen.getByText(t.ledger)).toBeInTheDocument();
+    
+    // Restricted tabs
+    expect(screen.queryByText(t.updateStock)).not.toBeInTheDocument();
+    expect(screen.queryByText(t.updateComponents)).not.toBeInTheDocument();
+    expect(screen.queryByText(t.userManagement)).not.toBeInTheDocument();
+  });
+
   it('renders user management button for ultimate admins', () => {
     render(
       <Navigation 
@@ -40,6 +63,7 @@ describe('Navigation Component', () => {
         setActiveTab={mockSetActiveTab} 
         t={t} 
         isUltimateAdmin={true} 
+        isAdmin={true}
       />
     );
 
@@ -53,6 +77,7 @@ describe('Navigation Component', () => {
         setActiveTab={mockSetActiveTab} 
         t={t} 
         isUltimateAdmin={false} 
+        isAdmin={true}
       />
     );
 

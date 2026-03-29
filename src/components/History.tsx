@@ -1,6 +1,6 @@
 import React, { memo } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRightLeft, Info, Hammer, Undo2, ArrowDownLeft, ArrowUpRight, ShoppingCart, Wrench, Sliders, PackagePlus, PlusCircle } from 'lucide-react';
+import { Search, ArrowRightLeft, Info, Hammer, Undo2, ArrowDownLeft, ArrowUpRight, ShoppingCart, Wrench, Sliders, PackagePlus, PlusCircle } from 'lucide-react';
 import { Transaction, UserProfile } from '../types';
 import { COMPONENTS } from '../constants';
 import { cn } from '../lib/utils';
@@ -55,9 +55,9 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                 placeholder={t.searchTransactions}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="ios-input w-full pl-10 py-2 text-[13px]"
+                className="ios-input w-full !pl-10 py-2 text-[13px]"
               />
-              <ArrowRightLeft className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             </div>
             <div className="text-[11px] font-semibold text-gray-500 uppercase tracking-widest whitespace-nowrap">
               {t.showingLast50}

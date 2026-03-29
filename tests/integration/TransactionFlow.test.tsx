@@ -52,6 +52,7 @@ const ComponentIntegrationWrapper = ({
       t={t} 
       lang="en" 
       activeTab="components" 
+      isAdmin={true}
     />
   );
 };
@@ -71,6 +72,7 @@ const LaptopIntegrationWrapper = ({
       onAddTransaction={onAddTransaction}
       batches={batches}
       isSubmitting={false}
+      isAdmin={true}
     />
   );
 };

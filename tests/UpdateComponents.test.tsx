@@ -88,12 +88,13 @@ describe('UpdateComponents', () => {
         t={t} 
         lang="en" 
         activeTab="dashboard" 
+        isAdmin={true}
       />
     );
     expect(container.firstChild).toHaveClass('hidden');
   });
 
-  it('renders correctly when activeTab is components', () => {
+  it('renders correctly when activeTab is components and user is admin', () => {
     render(
       <UpdateComponents 
         stock={mockStock} 
@@ -102,11 +103,28 @@ describe('UpdateComponents', () => {
         t={t} 
         lang="en" 
         activeTab="components" 
+        isAdmin={true}
       />
     );
     expect(screen.getByText(translations.en.extractFromLaptop)).toBeInTheDocument();
     expect(screen.getByText(translations.en.buyComponents)).toBeInTheDocument();
     expect(screen.getByText(translations.en.installComponents)).toBeInTheDocument();
+  });
+
+  it('renders access restricted message for non-admin users', () => {
+    render(
+      <UpdateComponents 
+        stock={mockStock} 
+        componentStock={mockComponentStock} 
+        batches={mockBatches} 
+        t={t} 
+        lang="en" 
+        activeTab="components" 
+        isAdmin={false}
+      />
+    );
+    expect(screen.getByText(t.accessRestricted)).toBeInTheDocument();
+    expect(screen.queryByText(t.extractFromLaptop)).not.toBeInTheDocument();
   });
 
   it('switches modes correctly', async () => {
@@ -119,6 +137,7 @@ describe('UpdateComponents', () => {
         t={t} 
         lang="en" 
         activeTab="components" 
+        isAdmin={true}
       />
     );
 
@@ -144,6 +163,7 @@ describe('UpdateComponents', () => {
         t={t} 
         lang="en" 
         activeTab="components" 
+        isAdmin={true}
       />
     );
 
@@ -192,6 +212,7 @@ describe('UpdateComponents', () => {
         t={t} 
         lang="en" 
         activeTab="components" 
+        isAdmin={true}
       />
     );
 

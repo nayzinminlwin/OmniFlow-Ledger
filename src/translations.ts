@@ -190,7 +190,12 @@ export const translations = {
     transactionTimeout: 'Transaction timed out. Please check your connection and try again.',
     retry: 'Retry',
     undone: 'Undone',
-    searchTransactions: 'Search transactions...'
+    searchTransactions: 'Search transactions...',
+    accessRestricted: 'Access Restricted: You do not have permission to perform this action.',
+    totalInventory: 'Total Inventory',
+    exportReport: 'Export Report',
+    series: 'Series',
+    model: 'Model',
   },
   ms: {
     brand: 'OmniFlow Ledger',
