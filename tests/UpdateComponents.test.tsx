@@ -258,4 +258,62 @@ describe('UpdateComponents', () => {
       notes: ''
     });
   });
+
+  it('handles component breakdown (extract mode) submission', async () => {
+    const user = userEvent.setup();
+    render(
+      <UpdateComponents 
+        stock={mockStock} 
+        componentStock={mockComponentStock} 
+        batches={mockBatches} 
+        t={t} 
+        lang="en" 
+        activeTab="components" 
+        isAdmin={true}
+      />
+    );
+
+    // Default is extract mode
+
+    // Select batch
+    const batchSelect = screen.getByLabelText(t.batchId);
+    await user.selectOptions(batchSelect, '16-03-2026');
+
+    // Select brand, series, model
+    const brandSelect = screen.getByLabelText(t.brandLabel);
+    await user.selectOptions(brandSelect, 'Apple');
+
+    const seriesSelect = screen.getByLabelText(t.seriesLabel);
+    await user.selectOptions(seriesSelect, 'MacBook Pro');
+
+    const modelSelect = screen.getByLabelText(t.modelLabel);
+    await user.selectOptions(modelSelect, 'M1 2020');
+
+    // Select class
+    const classSelect = screen.getByLabelText(t.fromClass);
+    await user.selectOptions(classSelect, 'A');
+
+    // Select component to extract
+    const screenButton = screen.getByRole('button', { name: 'Screen' });
+    await user.click(screenButton);
+
+    // Enter laptop quantity
+    const laptopQtyInput = screen.getByLabelText(t.laptopQuantityToExtract);
+    fireEvent.change(laptopQtyInput, { target: { value: '1' } });
+
+    // Submit
+    const submitButton = screen.getByRole('button', { name: t.recordEntry });
+    await user.click(submitButton);
+
+    expect(mockRecordComponentBreakdown).toHaveBeenCalledWith({
+      batchId: '16-03-2026',
+      brand: 'Apple',
+      series: 'MacBook Pro',
+      model: 'M1 2020',
+      fromClass: 'A',
+      laptopQuantity: 1,
+      componentChanges: { Screen: 1 },
+      notes: ''
+    });
+  });
 });

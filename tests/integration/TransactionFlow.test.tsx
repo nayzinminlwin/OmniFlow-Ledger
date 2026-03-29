@@ -214,7 +214,7 @@ describe('Integration: Inventory Flows', () => {
       const modelSelect = screen.getByLabelText(translations.en.modelLabel);
       await user.selectOptions(modelSelect, 'M1 2020');
 
-      const componentSelect = screen.getByLabelText(translations.en.selectComponent);
+      const componentSelect = screen.getByLabelText(translations.en.componentLabel);
       await user.selectOptions(componentSelect, 'Screen');
 
       const quantityInput = screen.getByLabelText(translations.en.quantity);
@@ -266,16 +266,15 @@ describe('Integration: Inventory Flows', () => {
       const modelSelect = screen.getByLabelText(translations.en.modelLabel);
       await user.selectOptions(modelSelect, 'M1 2020');
 
-      const classSelect = screen.getByLabelText(translations.en.fromClass);
+      const classSelect = await screen.findByLabelText(translations.en.fromClass);
       await user.selectOptions(classSelect, 'A');
 
-      const laptopQtyInput = screen.getByLabelText(translations.en.laptopQuantity);
+      const laptopQtyInput = screen.getByLabelText(translations.en.laptopQuantityToExtract);
       await user.clear(laptopQtyInput);
       await user.type(laptopQtyInput, '1');
 
-      const screenInput = screen.getByLabelText('Screen');
-      await user.clear(screenInput);
-      await user.type(screenInput, '1');
+      const screenButton = screen.getByRole('button', { name: 'Screen' });
+      await user.click(screenButton);
 
       const submitButton = screen.getByText(translations.en.recordEntry);
       await act(async () => {

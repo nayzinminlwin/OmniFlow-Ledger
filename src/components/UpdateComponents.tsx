@@ -416,12 +416,12 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
               </div>
             )}
 
-            {mode === 'install' && (
+            {(mode === 'extract' || mode === 'install') && (
               <div className="space-y-8 animate-in fade-in slide-in-from-top duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <label htmlFor="install-from-class-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.fromClass}</label>
+                      <label htmlFor="from-class-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.fromClass}</label>
                       {selectedModelStock && (
                         <span className={cn(
                           "text-[11px] font-bold px-2 py-0.5 rounded-full",
@@ -432,52 +432,56 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
                       )}
                     </div>
                     <select
-                      id="install-from-class-select"
+                      id="from-class-select"
                       value={fromClass}
                       onChange={(e) => setFromClass(e.target.value as LaptopClass)}
                       className="ios-input w-full"
                       required
                     >
                       <option value="" disabled>{t.selectClass}</option>
-                      {eligibleClasses.map((c, i) => <option key={`install-class-${c}-${i}`} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
+                      {eligibleClasses.map((c, i) => <option key={`class-opt-${c}-${i}`} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
                     </select>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <label htmlFor="install-component-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.componentLabel}</label>
-                      <span className={cn(
-                        "text-[11px] font-bold px-2 py-0.5 rounded-full",
-                        availableComponentCount <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
-                      )}>
-                        {t.availableStock}: {availableComponentCount}
-                      </span>
+                  {mode === 'install' && (
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <label htmlFor="install-component-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.componentLabel}</label>
+                        <span className={cn(
+                          "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                          availableComponentCount <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
+                        )}>
+                          {t.availableStock}: {availableComponentCount}
+                        </span>
+                      </div>
+                      <select
+                        id="install-component-select"
+                        value={selectedComponent}
+                        onChange={(e) => setSelectedComponent(e.target.value as ComponentType)}
+                        className="ios-input w-full"
+                        required
+                      >
+                        <option value="" disabled>{t.selectComponent}</option>
+                        {COMPONENTS.map((comp) => (
+                          <option key={`install-comp-${comp}`} value={comp}>{t[comp.toLowerCase() as keyof typeof t] || comp}</option>
+                        ))}
+                      </select>
                     </div>
-                    <select
-                      id="install-component-select"
-                      value={selectedComponent}
-                      onChange={(e) => setSelectedComponent(e.target.value as ComponentType)}
-                      className="ios-input w-full"
-                      required
-                    >
-                      <option value="" disabled>{t.selectComponent}</option>
-                      {COMPONENTS.map((comp) => (
-                        <option key={`install-comp-${comp}`} value={comp}>{t[comp.toLowerCase() as keyof typeof t] || comp}</option>
-                      ))}
-                    </select>
-                  </div>
+                  )}
 
-                  <div className="space-y-3 col-span-2">
-                    <label htmlFor="install-quantity-input" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.quantity}</label>
-                    <input
-                      id="install-quantity-input"
-                      type="number"
-                      value={purchaseQuantity}
-                      onChange={(e) => setPurchaseQuantity(Math.min(availableComponentCount, Math.max(1, parseInt(e.target.value) || 1)))}
-                      className="ios-input w-full"
-                      required
-                    />
-                  </div>
+                  {mode === 'install' && (
+                    <div className="space-y-3 col-span-2">
+                      <label htmlFor="install-quantity-input" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.quantity}</label>
+                      <input
+                        id="install-quantity-input"
+                        type="number"
+                        value={purchaseQuantity}
+                        onChange={(e) => setPurchaseQuantity(Math.min(availableComponentCount, Math.max(1, parseInt(e.target.value) || 1)))}
+                        className="ios-input w-full"
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
