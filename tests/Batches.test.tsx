@@ -57,9 +57,7 @@ describe('Batches Component', () => {
       />
     );
 
-    expect(screen.getByText('Batch 1')).toBeInTheDocument();
-    expect(screen.getByText(/Apple/)).toBeInTheDocument();
-    expect(screen.getByText(/MacBook/)).toBeInTheDocument();
+    expect(screen.getAllByText('Batch 1').length).toBe(2);
   });
 
   it('calls setSelectedBatchId when a batch is selected from dropdown', async () => {
@@ -101,7 +99,7 @@ describe('Batches Component', () => {
     expect(screen.getByText('Apple')).toBeInTheDocument();
     expect(screen.getByText('MacBook')).toBeInTheDocument();
     expect(screen.getByText('Pro')).toBeInTheDocument();
-    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getAllByText('5').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows edit and delete buttons for admin', () => {
@@ -116,8 +114,10 @@ describe('Batches Component', () => {
 
     // Edit and Delete buttons use icons, let's check for their presence
     const buttons = screen.getAllByRole('button');
-    // One for expand/collapse, one for edit, one for delete
-    expect(buttons.length).toBeGreaterThanOrEqual(3);
+    // For each batch row, there should be 2 buttons (Edit and Delete)
+    expect(buttons.length).toBe(2);
+    expect(screen.getByTitle(t.editBatchName)).toBeInTheDocument();
+    expect(screen.getByTitle(t.deleteBatch)).toBeInTheDocument();
   });
 
   it('hides edit and delete buttons for non-admin', () => {
@@ -130,9 +130,9 @@ describe('Batches Component', () => {
       />
     );
 
-    const buttons = screen.getAllByRole('button');
-    // Only expand/collapse button should be there
-    expect(buttons.length).toBe(1);
+    const buttons = screen.queryAllByRole('button');
+    // No buttons should be visible for non-admins in this view
+    expect(buttons.length).toBe(0);
   });
 
   it('renders nothing when hidden', () => {
