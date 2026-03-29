@@ -92,11 +92,8 @@ describe('History Component', () => {
   it('should hide undo button for non-admin users', () => {
     render(<History {...mockProps} isAdmin={false} />);
 
-    const undoButtons = screen.getAllByRole('button');
-    // For tx1, there should be an undo button. tx2 is already an Undo type.
-    // Let's check if the button with Undo2 icon exists.
-    const undoButton = undoButtons.find(btn => btn.querySelector('svg'));
-    expect(undoButton).toBeUndefined();
+    const undoButtons = screen.queryAllByRole('button');
+    expect(undoButtons.length).toBe(0);
   });
 
   it('should call onUndo when undo button is clicked', async () => {
