@@ -172,7 +172,11 @@ describe('History Component', () => {
       trigger?.click();
     });
 
-    expect(screen.queryByText(translations.en.goodComponents)).not.toBeInTheDocument();
+    // Use waitFor to handle potential exit animations from AnimatePresence
+    const { waitFor } = await import('@testing-library/react');
+    await waitFor(() => {
+      expect(screen.queryByText(translations.en.goodComponents)).not.toBeInTheDocument();
+    });
   });
 
   it('disables undo button based on permissions', () => {
