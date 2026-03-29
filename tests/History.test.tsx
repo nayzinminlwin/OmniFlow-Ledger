@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { History } from '../src/components/History';
 import { Transaction, UserProfile } from '../src/types';
 import { translations } from '../src/translations';
@@ -169,14 +169,13 @@ describe('History Component', () => {
 
     // Click again to hide
     await act(async () => {
-      trigger?.click();
+      fireEvent.click(trigger);
     });
 
-    // Use waitFor to handle potential exit animations from AnimatePresence
-    const { waitFor } = await import('@testing-library/react');
+    // Use waitFor with a longer timeout to handle exit animations from AnimatePresence
     await waitFor(() => {
       expect(screen.queryByText(translations.en.goodComponents)).not.toBeInTheDocument();
-    });
+    }, { timeout: 2000 });
   });
 
   it('disables undo button based on permissions', () => {
