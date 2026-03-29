@@ -1,3 +1,6 @@
+// Configure act environment for React 18
+(global as any).IS_REACT_ACT_ENVIRONMENT = true;
+
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, act, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
