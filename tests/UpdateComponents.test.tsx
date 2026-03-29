@@ -316,4 +316,109 @@ describe('UpdateComponents', () => {
       notes: ''
     });
   });
+
+  it('disables cascading dropdowns correctly', () => {
+    // Use empty stock and empty batches to ensure no brand is auto-selected
+    render(
+      <UpdateComponents 
+        stock={{ items: [], lastUpdated: '' }} 
+        componentStock={{ items: [], lastUpdated: '' }} 
+        batches={[]} 
+        t={t} 
+        lang="en" 
+        activeTab="components" 
+        isAdmin={true}
+      />
+    );
+
+    const brandSelect = screen.getByLabelText(t.brandLabel) as HTMLSelectElement;
+    const seriesSelect = screen.getByLabelText(t.seriesLabel) as HTMLSelectElement;
+    const modelSelect = screen.getByLabelText(t.modelLabel) as HTMLSelectElement;
+
+    expect(brandSelect.value).toBe("");
+    expect(seriesSelect).toBeDisabled();
+    expect(modelSelect).toBeDisabled();
+  });
+
+  it('disables submit when laptop stock is empty for BREAKDOWN', async () => {
+    const user = userEvent.setup();
+    const emptyBatch: Batch = {
+      ...mockBatches[0],
+      items: [
+        {
+          brand: 'Apple',
+          series: 'MacBook Pro',
+          model: 'M1 2020',
+          counts: { ...INITIAL_CLASS_COUNTS, 'A': 0, 'B': 1 } // Keep one to allow selection
+        }
+      ]
+    };
+
+    render(
+      <UpdateComponents 
+        stock={mockStock} 
+        componentStock={mockComponentStock} 
+        batches={[emptyBatch]} 
+        t={t} 
+        lang="en" 
+        activeTab="components" 
+        isAdmin={true}
+      />
+    );
+
+    // Select batch, brand, series, model
+    await user.selectOptions(screen.getByLabelText(t.batchId), '16-03-2026');
+    await user.selectOptions(screen.getByLabelText(t.brandLabel), 'Apple');
+    await user.selectOptions(screen.getByLabelText(t.seriesLabel), 'MacBook Pro');
+    await user.selectOptions(screen.getByLabelText(t.modelLabel), 'M1 2020');
+    
+    // Select Class A (which has 0)
+    await user.selectOptions(screen.getByLabelText(t.fromClass), 'A');
+
+    const laptopStockDisplay = screen.getByLabelText(t.fromClass).closest('div')?.querySelector('span');
+    expect(laptopStockDisplay).toHaveTextContent(`${t.availableLaptops}: 0`);
+    expect(screen.getByRole('button', { name: t.recordEntry })).toBeDisabled();
+  });
+
+  it('disables submit when component stock is empty for INSTALL', async () => {
+    const user = userEvent.setup();
+    const emptyComponentStock: ComponentStock = {
+      items: [
+        {
+          brand: 'Apple',
+          series: 'MacBook Pro',
+          model: 'M1 2020',
+          counts: { ...INITIAL_COMPONENT_COUNTS, 'Screen': 0, 'Battery': 10 } // Keep one component to show the brand
+        }
+      ],
+      lastUpdated: new Date().toISOString()
+    };
+
+    render(
+      <UpdateComponents 
+        stock={mockStock} 
+        componentStock={emptyComponentStock} 
+        batches={mockBatches} 
+        t={t} 
+        lang="en" 
+        activeTab="components" 
+        isAdmin={true}
+      />
+    );
+
+    // Switch to install
+    await user.click(screen.getByText(t.installComponents));
+
+    // Select brand, series, model
+    await user.selectOptions(screen.getByLabelText(t.brandLabel), 'Apple');
+    await user.selectOptions(screen.getByLabelText(t.seriesLabel), 'MacBook Pro');
+    await user.selectOptions(screen.getByLabelText(t.modelLabel), 'M1 2020');
+    
+    // Select Screen
+    await user.selectOptions(screen.getByLabelText(t.componentLabel), 'Screen');
+
+    const componentStockDisplay = screen.getByLabelText(t.componentLabel).closest('div')?.querySelector('span');
+    expect(componentStockDisplay).toHaveTextContent(`${t.availableStock}: 0`);
+    expect(screen.getByRole('button', { name: t.recordEntry })).toBeDisabled();
+  });
 });

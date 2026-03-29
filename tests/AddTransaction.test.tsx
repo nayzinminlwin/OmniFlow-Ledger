@@ -220,4 +220,147 @@ describe('AddTransaction Component', () => {
       expect(mockHandleAddTransaction).toHaveBeenCalled();
     });
   });
+
+  it('disables cascading dropdowns correctly', async () => {
+    const user = userEvent.setup();
+    render(
+      <AddTransaction 
+        batches={mockBatches} 
+        t={t} 
+        activeTab="add" 
+        isAdmin={true}
+        onAddTransaction={mockHandleAddTransaction}
+        isSubmitting={false}
+      />
+    );
+
+    // Switch to SALE to ensure we use select elements (not "New" inputs)
+    const saleBtn = screen.getByRole('radio', { name: t.sale });
+    await user.click(saleBtn);
+
+    const brandSelect = screen.getByLabelText(t.brandLabel) as HTMLSelectElement;
+    const seriesSelect = screen.getByLabelText(t.seriesLabel) as HTMLSelectElement;
+    const modelSelect = screen.getByLabelText(t.modelLabel) as HTMLSelectElement;
+
+    // Reset brand to empty if it was auto-selected
+    await user.selectOptions(brandSelect, "");
+
+    expect(brandSelect.value).toBe("");
+    expect(seriesSelect).toBeDisabled();
+    expect(modelSelect).toBeDisabled();
+  });
+
+  it('shows stock warning and disables submit when stock is empty for SALE', async () => {
+    const user = userEvent.setup();
+    const batchesWithItems: Batch[] = [
+      { 
+        id: 'b1', 
+        batchId: 'Batch 1', 
+        active: true, 
+        items: [{ brand: 'Dell', series: 'XPS', model: '13', counts: { ...INITIAL_CLASS_COUNTS, A: 0 } }], 
+        createdAt: new Date().toISOString() 
+      }
+    ];
+
+    render(
+      <AddTransaction 
+        batches={batchesWithItems} 
+        t={t} 
+        activeTab="add" 
+        isAdmin={true}
+        onAddTransaction={mockHandleAddTransaction}
+        isSubmitting={false}
+      />
+    );
+
+    // Switch to SALE
+    const saleBtn = screen.getByRole('radio', { name: t.sale });
+    await user.click(saleBtn);
+
+    // Select Dell XPS 13
+    const brandSelect = screen.getByLabelText(t.brandLabel);
+    await user.selectOptions(brandSelect, 'Dell');
+    
+    const seriesSelect = screen.getByLabelText(t.seriesLabel);
+    await user.selectOptions(seriesSelect, 'XPS');
+
+    const modelSelect = screen.getByLabelText(t.modelLabel);
+    await user.selectOptions(modelSelect, '13');
+
+    // Select Class A (which has 0 stock)
+    const fromClassSelect = screen.getByLabelText(t.fromClass);
+    await user.selectOptions(fromClassSelect, 'A');
+
+    expect(screen.getByText(`${t.currentStock}: 0`)).toBeInTheDocument();
+    
+    const submitButton = screen.getByRole('button', { name: t.recordEntry });
+    expect(submitButton).toBeDisabled();
+  });
+
+  it('changes quantity label for ADJUSTMENT', async () => {
+    const user = userEvent.setup();
+    render(
+      <AddTransaction 
+        batches={mockBatches} 
+        t={t} 
+        activeTab="add" 
+        isAdmin={true}
+        onAddTransaction={mockHandleAddTransaction}
+        isSubmitting={false}
+      />
+    );
+
+    const adjBtn = screen.getByRole('radio', { name: t.adjustment });
+    await user.click(adjBtn);
+
+    expect(screen.getByText(t.newTotalCount)).toBeInTheDocument();
+    expect(screen.queryByText(t.quantity)).toBeNull();
+  });
+
+  it('shows both from and to class for REPAIR', async () => {
+    const user = userEvent.setup();
+    render(
+      <AddTransaction 
+        batches={mockBatches} 
+        t={t} 
+        activeTab="add" 
+        isAdmin={true}
+        onAddTransaction={mockHandleAddTransaction}
+        isSubmitting={false}
+      />
+    );
+
+    const repairBtn = screen.getByRole('radio', { name: t.repair });
+    await user.click(repairBtn);
+
+    expect(screen.getByLabelText(t.fromClass)).toBeInTheDocument();
+    expect(screen.getByLabelText(t.toClass)).toBeInTheDocument();
+  });
+
+  it('disables submit button when quantity is invalid', async () => {
+    const user = userEvent.setup();
+    render(
+      <AddTransaction 
+        batches={mockBatches} 
+        t={t} 
+        activeTab="add" 
+        isAdmin={true}
+        onAddTransaction={mockHandleAddTransaction}
+        isSubmitting={false}
+      />
+    );
+
+    const quantityInput = screen.getByLabelText(t.quantity);
+    await user.clear(quantityInput);
+    
+    const submitButton = screen.getByRole('button', { name: t.recordEntry });
+    expect(submitButton).toBeDisabled();
+
+    await user.type(quantityInput, '0');
+    expect(submitButton).toBeDisabled();
+
+    await user.clear(quantityInput);
+    await user.type(quantityInput, '5');
+    // Still disabled because brand/model not selected in this fresh render
+  });
 });

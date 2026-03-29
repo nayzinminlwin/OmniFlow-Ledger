@@ -121,4 +121,147 @@ describe('History Component', () => {
     const { container } = render(<History {...mockProps} activeTab="dashboard" />);
     expect(container.firstChild).toHaveClass('hidden');
   });
+
+  it('shows no transactions message when empty', () => {
+    render(<History {...mockProps} transactions={[]} />);
+    expect(screen.getByText(translations.en.noTransactions)).toBeInTheDocument();
+  });
+
+  it('shows skeleton when loading', () => {
+    render(<History {...mockProps} loading={true} />);
+    const skeletons = document.querySelectorAll('.animate-pulse');
+    expect(skeletons.length).toBeGreaterThan(0);
+  });
+
+  it('toggles breakdown popup on click', async () => {
+    const breakdownTx: Transaction = {
+      id: 'tx-breakdown',
+      type: 'BREAKDOWN',
+      brand: 'Apple',
+      series: 'MacBook',
+      model: 'Pro',
+      quantity: 1,
+      fromClass: 'A',
+      timestamp: new Date().toISOString(),
+      userId: 'user1',
+      batchId: 'batch1',
+      batchActive: true,
+      componentChanges: { Screen: 1, Battery: 1 }
+    };
+
+    render(<History {...mockProps} transactions={[breakdownTx]} />);
+
+    const trigger = document.querySelector('.breakdown-trigger') as HTMLElement;
+    expect(trigger).toBeInTheDocument();
+
+    // Initially popup is not in document
+    expect(screen.queryByText(translations.en.goodComponents)).not.toBeInTheDocument();
+
+    // Click to show popup
+    await act(async () => {
+      trigger.click();
+    });
+
+    // Popup is rendered via portal, so it should be in document.body
+    expect(screen.getByText(translations.en.goodComponents)).toBeInTheDocument();
+    expect(screen.getByText('Screen')).toBeInTheDocument();
+    expect(screen.getByText('Battery')).toBeInTheDocument();
+
+    // Click again to hide
+    await act(async () => {
+      trigger?.click();
+    });
+
+    expect(screen.queryByText(translations.en.goodComponents)).not.toBeInTheDocument();
+  });
+
+  it('disables undo button based on permissions', () => {
+    const txFromOtherUser: Transaction = {
+      ...mockTransactions[0],
+      userId: 'other-user'
+    };
+    
+    const otherUser: UserProfile = {
+      uid: 'other-user',
+      username: 'Other User',
+      email: 'other@test.com',
+      status: 'approved',
+      role: 'admin',
+      createdAt: new Date().toISOString()
+    };
+
+    const regularAdmin: UserProfile = {
+      uid: 'admin1',
+      username: 'Admin 1',
+      email: 'admin1@test.com',
+      status: 'approved',
+      role: 'admin',
+      createdAt: new Date().toISOString()
+    };
+
+    // Case 1: Regular admin cannot undo other user's transaction
+    const { rerender } = render(
+      <History 
+        {...mockProps} 
+        transactions={[txFromOtherUser]} 
+        users={{ ...mockUsers, 'other-user': otherUser }}
+        currentUserProfile={regularAdmin}
+      />
+    );
+
+    const undoBtn = screen.getByTitle('Undo');
+    expect(undoBtn).toBeDisabled();
+
+    // Case 2: Ultimate admin can undo other user's transaction (if other is not ultimate/original)
+    const ultimateAdmin: UserProfile = {
+      ...regularAdmin,
+      isUltimateAdmin: true
+    };
+
+    rerender(
+      <History 
+        {...mockProps} 
+        transactions={[txFromOtherUser]} 
+        users={{ ...mockUsers, 'other-user': otherUser }}
+        currentUserProfile={ultimateAdmin}
+      />
+    );
+    expect(undoBtn).not.toBeDisabled();
+
+    // Case 3: Original admin can undo anything
+    const originalAdmin: UserProfile = {
+      ...regularAdmin,
+      isOriginalAdmin: true
+    };
+
+    rerender(
+      <History 
+        {...mockProps} 
+        transactions={[txFromOtherUser]} 
+        users={{ ...mockUsers, 'other-user': otherUser }}
+        currentUserProfile={originalAdmin}
+      />
+    );
+    expect(undoBtn).not.toBeDisabled();
+  });
+
+  it('disables undo button if transaction is already undone or batch deleted', () => {
+    const undoneTx: Transaction = {
+      ...mockTransactions[0],
+      isUndone: true
+    };
+
+    const { rerender } = render(<History {...mockProps} transactions={[undoneTx]} />);
+    expect(screen.queryByTitle('Undo')).not.toBeInTheDocument();
+    expect(screen.getByText(translations.en.undone)).toBeInTheDocument();
+
+    const deletedBatchTx: Transaction = {
+      ...mockTransactions[0],
+      batchActive: false
+    };
+
+    rerender(<History {...mockProps} transactions={[deletedBatchTx]} />);
+    expect(screen.queryByTitle('Undo')).not.toBeInTheDocument();
+    expect(screen.getByText(translations.en.batchDeleted)).toBeInTheDocument();
+  });
 });

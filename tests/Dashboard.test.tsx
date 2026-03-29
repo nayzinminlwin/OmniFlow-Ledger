@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { Dashboard } from '../src/components/Dashboard';
 import { translations } from '../src/translations';
 import { Stock, Batch } from '../src/types';
@@ -121,5 +121,164 @@ describe('Dashboard Component', () => {
     );
 
     expect(container.firstChild).toHaveClass('hidden');
+  });
+
+  it('shows no inventory message when empty', () => {
+    render(
+      <Dashboard 
+        stock={{ items: [], lastUpdated: null }} 
+        batches={[]} 
+        transactions={[]}
+        t={t} 
+        activeTab="dashboard" 
+        setActiveTab={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(t.noInventoryData)).toBeInTheDocument();
+  });
+
+  it('renders recent activity correctly', () => {
+    const mockTransactions = [
+      {
+        id: 'tx1',
+        type: 'INCOMING',
+        brand: 'Apple',
+        series: 'MacBook',
+        model: 'Pro',
+        quantity: 10,
+        timestamp: new Date().toISOString(),
+        toClass: 'UNCLASSIFIED'
+      },
+      {
+        id: 'tx2',
+        type: 'BREAKDOWN',
+        brand: 'Apple',
+        series: 'MacBook',
+        model: 'Pro',
+        quantity: 1,
+        fromClass: 'A',
+        timestamp: new Date().toISOString(),
+        componentChanges: { Screen: 1, Battery: 1 }
+      }
+    ];
+
+    render(
+      <Dashboard 
+        stock={mockStock} 
+        batches={mockBatches} 
+        transactions={mockTransactions as any}
+        t={t} 
+        activeTab="dashboard" 
+        setActiveTab={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(t.recentActivity)).toBeInTheDocument();
+    expect(screen.getByText(t.incoming)).toBeInTheDocument();
+    expect(screen.getByText(/breakdown/i)).toBeInTheDocument();
+    expect(screen.getByText('+10')).toBeInTheDocument();
+    expect(screen.getByText('-1')).toBeInTheDocument();
+  });
+
+  it('toggles breakdown popup on click', async () => {
+    const mockTransactions = [
+      {
+        id: 'tx1',
+        type: 'BREAKDOWN',
+        brand: 'Apple',
+        series: 'MacBook',
+        model: 'Pro',
+        quantity: 1,
+        fromClass: 'A',
+        timestamp: new Date().toISOString(),
+        componentChanges: { Screen: 1, Battery: 1 }
+      }
+    ];
+
+    render(
+      <Dashboard 
+        stock={mockStock} 
+        batches={mockBatches} 
+        transactions={mockTransactions as any}
+        t={t} 
+        activeTab="dashboard" 
+        setActiveTab={vi.fn()}
+      />
+    );
+
+    const breakdownItem = screen.getByText(/breakdown/i).closest('div[class*="cursor-pointer"]');
+    expect(breakdownItem).toBeInTheDocument();
+
+    // Initially popup is hidden
+    expect(screen.queryByText(t.goodComponents)).not.toBeInTheDocument();
+
+    // Click to show
+    await act(async () => {
+      breakdownItem?.click();
+    });
+
+    expect(screen.getByText(t.goodComponents)).toBeInTheDocument();
+    expect(screen.getByText('Screen')).toBeInTheDocument();
+    expect(screen.getByText('Battery')).toBeInTheDocument();
+
+    // Click again to hide
+    await act(async () => {
+      breakdownItem?.click();
+    });
+
+    expect(screen.queryByText(t.goodComponents)).not.toBeInTheDocument();
+  });
+
+  it('navigates to history when clicking view full ledger', async () => {
+    const setActiveTab = vi.fn();
+    render(
+      <Dashboard 
+        stock={mockStock} 
+        batches={mockBatches} 
+        transactions={[]}
+        t={t} 
+        activeTab="dashboard" 
+        setActiveTab={setActiveTab}
+      />
+    );
+
+    const viewFullLedger = screen.getByText(t.viewFullLedger);
+    await act(async () => {
+      viewFullLedger.click();
+    });
+
+    expect(setActiveTab).toHaveBeenCalledWith('history');
+  });
+
+  it('disables export button when no batches or loading', () => {
+    const { rerender } = render(
+      <Dashboard 
+        stock={mockStock} 
+        batches={[]} 
+        transactions={[]}
+        t={t} 
+        activeTab="dashboard" 
+        setActiveTab={vi.fn()}
+        isAdmin={true}
+      />
+    );
+
+    const exportButton = screen.getByText(t.export).closest('button');
+    expect(exportButton).toBeDisabled();
+
+    rerender(
+      <Dashboard 
+        stock={mockStock} 
+        batches={[{ id: '1' } as any]} 
+        transactions={[]}
+        t={t} 
+        activeTab="dashboard" 
+        setActiveTab={vi.fn()}
+        isAdmin={true}
+        loading={true}
+      />
+    );
+    expect(exportButton).toBeDisabled();
   });
 });

@@ -142,9 +142,168 @@ describe('Batches Component', () => {
         t={t} 
         activeTab="dashboard" 
         isAdmin={true}
+        selectedBatchId=""
+        setSelectedBatchId={vi.fn()}
+        setEditingBatch={vi.fn()}
+        setNewBatchName={vi.fn()}
+        onDeleteBatch={vi.fn()}
       />
     );
 
     expect(container.firstChild).toHaveClass('hidden');
+  });
+
+  it('shows empty state messages', () => {
+    const { rerender } = render(
+      <Batches 
+        batches={[]} 
+        t={t} 
+        activeTab="batches" 
+        isAdmin={true}
+        selectedBatchId=""
+        setSelectedBatchId={vi.fn()}
+        setEditingBatch={vi.fn()}
+        setNewBatchName={vi.fn()}
+        onDeleteBatch={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(t.noBatches)).toBeInTheDocument();
+    expect(screen.getByText(t.selectBatchToView)).toBeInTheDocument();
+
+    rerender(
+      <Batches 
+        batches={[{ ...mockBatches[0], items: [] }]} 
+        t={t} 
+        activeTab="batches" 
+        isAdmin={true}
+        selectedBatchId="Batch 1"
+        setSelectedBatchId={vi.fn()}
+        setEditingBatch={vi.fn()}
+        setNewBatchName={vi.fn()}
+        onDeleteBatch={vi.fn()}
+      />
+    );
+    expect(screen.getByText(t.noModelsInBatch)).toBeInTheDocument();
+  });
+
+  it('handles batch deletion flow', async () => {
+    const onDeleteBatch = vi.fn().mockResolvedValue(true);
+    render(
+      <Batches 
+        batches={mockBatches} 
+        t={t} 
+        activeTab="batches" 
+        isAdmin={true}
+        selectedBatchId=""
+        setSelectedBatchId={vi.fn()}
+        setEditingBatch={vi.fn()}
+        setNewBatchName={vi.fn()}
+        onDeleteBatch={onDeleteBatch}
+      />
+    );
+
+    const deleteBtn = screen.getByTitle(t.deleteBatch);
+    await act(async () => {
+      deleteBtn.click();
+    });
+
+    // Modal should appear
+    expect(screen.getByText(t.confirmDeleteBatch)).toBeInTheDocument();
+
+    const confirmBtn = screen.getByText(t.deleteBatch, { selector: 'button' });
+    await act(async () => {
+      confirmBtn.click();
+    });
+
+    expect(onDeleteBatch).toHaveBeenCalledWith('Batch 1', expect.any(Function));
+  });
+
+  it('handles batch edit flow', async () => {
+    const setEditingBatch = vi.fn();
+    const setNewBatchName = vi.fn();
+    render(
+      <Batches 
+        batches={mockBatches} 
+        t={t} 
+        activeTab="batches" 
+        isAdmin={true}
+        selectedBatchId=""
+        setSelectedBatchId={vi.fn()}
+        setEditingBatch={setEditingBatch}
+        setNewBatchName={setNewBatchName}
+        onDeleteBatch={vi.fn()}
+      />
+    );
+
+    const editBtn = screen.getByTitle(t.editBatchName);
+    await act(async () => {
+      editBtn.click();
+    });
+
+    expect(setEditingBatch).toHaveBeenCalledWith(mockBatches[0]);
+    expect(setNewBatchName).toHaveBeenCalledWith('Batch 1');
+  });
+
+  it('sorts batches by ID', async () => {
+    const manyBatches = [
+      { ...mockBatches[0], batchId: 'Z Batch', id: 'z' },
+      { ...mockBatches[0], batchId: 'A Batch', id: 'a' }
+    ];
+    render(
+      <Batches 
+        batches={manyBatches} 
+        t={t} 
+        activeTab="batches" 
+        isAdmin={true}
+        selectedBatchId=""
+        setSelectedBatchId={vi.fn()}
+        setEditingBatch={vi.fn()}
+        setNewBatchName={vi.fn()}
+        onDeleteBatch={vi.fn()}
+      />
+    );
+
+    const batchIdHeader = screen.getByText(t.batchId);
+    
+    // Initial order might be as provided
+    const getBatchIds = () => {
+      const cells = screen.getAllByRole('cell').filter(c => c.querySelector('p.text-blue-600'));
+      return cells.map(c => c.textContent);
+    };
+
+    expect(getBatchIds()[0]).toBe('Z Batch');
+
+    // Click to sort asc
+    await act(async () => {
+      batchIdHeader.click();
+    });
+    expect(getBatchIds()[0]).toBe('A Batch');
+
+    // Click to sort desc
+    await act(async () => {
+      batchIdHeader.click();
+    });
+    expect(getBatchIds()[0]).toBe('Z Batch');
+  });
+
+  it('shows skeleton when loading', () => {
+    render(
+      <Batches 
+        batches={[]} 
+        t={t} 
+        activeTab="batches" 
+        isAdmin={true}
+        loading={true}
+        selectedBatchId=""
+        setSelectedBatchId={vi.fn()}
+        setEditingBatch={vi.fn()}
+        setNewBatchName={vi.fn()}
+        onDeleteBatch={vi.fn()}
+      />
+    );
+
+    const skeletons = document.querySelectorAll('.animate-pulse');
+    expect(skeletons.length).toBeGreaterThan(0);
   });
 });
