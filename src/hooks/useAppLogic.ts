@@ -80,6 +80,7 @@ export const useAppLogic = () => {
     setRequestSent,
     isUltimateAdmin,
     isOriginalAdmin,
+    isAdmin: isUltimateAdmin || isOriginalAdmin,
     isApproved,
     stock,
     componentStock,

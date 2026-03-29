@@ -17,6 +17,7 @@ interface BatchesProps {
   setNewBatchName: (name: string) => void;
   onDeleteBatch: (batchId: string, setSelectedBatchId: (id: string) => void) => Promise<boolean>;
   loading?: boolean;
+  isAdmin?: boolean;
 }
 
 export const Batches: React.FC<BatchesProps> = memo(({
@@ -29,6 +30,7 @@ export const Batches: React.FC<BatchesProps> = memo(({
   setNewBatchName,
   onDeleteBatch,
   loading = false,
+  isAdmin,
 }) => {
   const {
     sortField,
@@ -223,29 +225,31 @@ export const Batches: React.FC<BatchesProps> = memo(({
                       {CLASSES.reduce((sum, cls) => sum + getBatchTotal(b, cls), 0)}
                     </td>
                     <td className="px-8 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingBatch(b);
-                            setNewBatchName(b.batchId);
-                          }}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors active:scale-95"
-                          title={t.editBatchName}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            initiateDelete(b.batchId);
-                          }}
-                          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors active:scale-95"
-                          title={t.deleteBatch}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      {isAdmin && (
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingBatch(b);
+                              setNewBatchName(b.batchId);
+                            }}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors active:scale-95"
+                            title={t.editBatchName}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              initiateDelete(b.batchId);
+                            }}
+                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors active:scale-95"
+                            title={t.deleteBatch}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))

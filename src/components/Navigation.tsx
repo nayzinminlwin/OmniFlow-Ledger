@@ -9,9 +9,10 @@ interface NavigationProps {
   setActiveTab: (tab: 'dashboard' | 'history' | 'add' | 'components' | 'componentInventory' | 'batches' | 'users') => void;
   t: any;
   isUltimateAdmin?: boolean;
+  isAdmin?: boolean;
 }
 
-export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiveTab, t, isUltimateAdmin }) => {
+export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiveTab, t, isUltimateAdmin, isAdmin }) => {
   const { scrollRef, showLeftArrow, showRightArrow, scroll } = useNavigationLogic(activeTab);
 
   return (
@@ -70,28 +71,19 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
             <Settings className="w-4 h-4" />
             {t.batches}
           </button>
-          <button
-            onClick={() => setActiveTab('add')}
-            data-active={activeTab === 'add'}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
-              activeTab === 'add' ? "bg-white text-black shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-black/5"
-            )}
-          >
-            <Edit2 className="w-4 h-4" />
-            {t.updateStock}
-          </button>
-          <button
-            onClick={() => setActiveTab('components')}
-            data-active={activeTab === 'components'}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
-              activeTab === 'components' ? "bg-white text-black shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-black/5"
-            )}
-          >
-            <Cpu className="w-4 h-4" />
-            {t.updateComponents}
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setActiveTab('add')}
+              data-active={activeTab === 'add'}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
+                activeTab === 'add' ? "bg-white text-black shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-black/5"
+              )}
+            >
+              <Edit2 className="w-4 h-4" />
+              {t.updateStock}
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('componentInventory')}
             data-active={activeTab === 'componentInventory'}
@@ -103,6 +95,19 @@ export const Navigation: React.FC<NavigationProps> = memo(({ activeTab, setActiv
             <Cpu className="w-4 h-4" />
             {t.componentInventory}
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => setActiveTab('components')}
+              data-active={activeTab === 'components'}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-[13px] font-semibold transition-all whitespace-nowrap",
+                activeTab === 'components' ? "bg-white text-black shadow-sm scale-[1.02]" : "text-gray-500 hover:text-gray-700 hover:bg-black/5"
+              )}
+            >
+              <Cpu className="w-4 h-4" />
+              {t.updateComponents}
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('history')}
             data-active={activeTab === 'history'}

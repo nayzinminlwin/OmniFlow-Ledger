@@ -16,9 +16,10 @@ interface HistoryProps {
   loading?: boolean;
   onUndo: (transactionId: string, currentUserProfile: UserProfile | null) => Promise<boolean | undefined>;
   currentUserProfile: UserProfile | null;
+  isAdmin?: boolean;
 }
 
-export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, activeTab, loading = false, onUndo, currentUserProfile }) => {
+export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, activeTab, loading = false, onUndo, currentUserProfile, isAdmin }) => {
   const {
     hoveredTxId,
     popupConfig,
@@ -233,7 +234,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                           <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.batchDeleted}</span>
                         ) : tx.type === 'UNDO' ? (
                           <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest opacity-50">{t.undo}</span>
-                        ) : (
+                        ) : isAdmin ? (
                           <button
                             onClick={() => tx.id && handleUndo(tx.id)}
                             disabled={undoingTxId === tx.id || !currentUserProfile || (
@@ -258,6 +259,8 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                               <Undo2 className="w-4 h-4" />
                             )}
                           </button>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">-</span>
                         )}
                       </td>
                     </tr>

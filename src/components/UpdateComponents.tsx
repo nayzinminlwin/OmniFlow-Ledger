@@ -15,6 +15,7 @@ interface UpdateComponentsProps {
   t: any;
   lang: Language;
   activeTab: string;
+  isAdmin?: boolean;
 }
 
 export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
@@ -23,7 +24,8 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
   batches,
   t,
   lang,
-  activeTab
+  activeTab,
+  isAdmin,
 }) => {
   const {
     mode,
@@ -101,6 +103,22 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
     }
     return 0;
   }, [selectedModelStock, mode, fromClass]);
+
+  if (!isAdmin) {
+    return (
+      <div className={cn(
+        "lg:col-span-12 animate-in slide-in-from-bottom duration-500",
+        activeTab === 'components' ? "block" : "hidden"
+      )}>
+        <div className="max-w-4xl mx-auto">
+          <div className="glass-panel rounded-[32px] p-10 text-center">
+            <h2 className="text-[32px] font-bold text-black mb-6 tracking-tight leading-none">{t.updateComponents}</h2>
+            <p className="text-gray-500 text-[17px]">{t.accessRestricted}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn(

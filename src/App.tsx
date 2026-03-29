@@ -34,6 +34,7 @@ export default function App() {
     setRequestSent,
     isUltimateAdmin,
     isOriginalAdmin,
+    isAdmin,
     stock,
     componentStock,
     spoiledComponentStock,
@@ -115,7 +116,7 @@ export default function App() {
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-6 h-6" alt="Google" />
               {t.loginWithGoogle}
             </button>
-
+ 
             <p className="text-center text-[13px] font-medium text-gray-500 leading-relaxed">
               {t.pendingApprovalNotice}
             </p>
@@ -139,7 +140,7 @@ export default function App() {
         handleLogout={handleLogout}
         setActiveTab={setActiveTab}
       >
-        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} t={t} isUltimateAdmin={isUltimateAdmin} />
+        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} t={t} isUltimateAdmin={isUltimateAdmin} isAdmin={isAdmin} />
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <Dashboard 
@@ -150,6 +151,7 @@ export default function App() {
             setActiveTab={setActiveTab}
             activeTab={activeTab}
             loading={loading}
+            isAdmin={isAdmin}
           />
 
           <History 
@@ -160,6 +162,7 @@ export default function App() {
             loading={loading}
             onUndo={handleUndoTransaction}
             currentUserProfile={profile}
+            isAdmin={isAdmin}
           />
 
           <AddTransaction 
@@ -168,6 +171,7 @@ export default function App() {
             onAddTransaction={handleAddTransaction}
             batches={batches}
             isSubmitting={isSubmitting}
+            isAdmin={isAdmin}
           />
 
           <UpdateComponents
@@ -177,6 +181,7 @@ export default function App() {
             t={t}
             lang={lang}
             activeTab={activeTab}
+            isAdmin={isAdmin}
           />
 
           <ComponentInventory
@@ -198,6 +203,7 @@ export default function App() {
             t={t}
             activeTab={activeTab}
             loading={loading}
+            isAdmin={isAdmin}
           />
 
           <UserManagement 

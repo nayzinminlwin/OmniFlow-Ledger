@@ -23,6 +23,7 @@ interface AddTransactionProps {
   ) => Promise<boolean>;
   batches: Batch[];
   isSubmitting: boolean;
+  isAdmin?: boolean;
 }
 
 export const AddTransaction: React.FC<AddTransactionProps> = memo(({
@@ -31,6 +32,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
   onAddTransaction,
   batches,
   isSubmitting,
+  isAdmin,
 }) => {
   const {
     txType,
@@ -73,6 +75,22 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
     handleBatchIdBlur,
     handleSubmit
   } = useAddTransactionForm({ batches, onAddTransaction, t });
+
+  if (!isAdmin) {
+    return (
+      <div className={cn(
+        "lg:col-span-12 animate-in slide-in-from-bottom duration-500",
+        activeTab === 'add' ? "block" : "hidden"
+      )}>
+        <div className="max-w-3xl mx-auto">
+          <div className="glass-panel rounded-[32px] p-10 text-center">
+            <h2 className="text-[32px] font-bold text-black mb-6 tracking-tight leading-none">{t.recordTransaction}</h2>
+            <p className="text-gray-500 text-[17px]">{t.accessRestricted}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn(

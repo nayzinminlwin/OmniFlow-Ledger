@@ -29,6 +29,7 @@ interface DashboardProps {
   setActiveTab: (tab: 'dashboard' | 'history' | 'add' | 'batches') => void;
   activeTab: string;
   loading?: boolean;
+  isAdmin?: boolean;
 }
 
 export const Dashboard: React.FC<DashboardProps> = memo(({ 
@@ -38,7 +39,8 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
   t, 
   setActiveTab,
   activeTab,
-  loading = false
+  loading = false,
+  isAdmin,
 }) => {
   const {
     hoveredTxId,
@@ -63,14 +65,16 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 px-2 gap-4">
           <div className="flex items-center gap-4">
             <h2 className="text-[28px] font-bold text-black tracking-tight leading-none">{t.currentInventory}</h2>
-            <button 
-              onClick={handleExport}
-              disabled={!batches.length || loading}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-[14px] font-bold hover:bg-green-700 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-sm"
-            >
-              <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
-              {t.export}
-            </button>
+            {isAdmin && (
+              <button 
+                onClick={handleExport}
+                disabled={!batches.length || loading}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-[14px] font-bold hover:bg-green-700 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-sm"
+              >
+                <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+                {t.export}
+              </button>
+            )}
           </div>
           <span className="text-[13px] font-medium text-gray-500 uppercase tracking-wider">
             {t.lastUpdated} {stock && stock.lastUpdated ? (
