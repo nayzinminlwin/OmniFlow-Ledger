@@ -25,14 +25,16 @@ describe('Dashboard Component', () => {
       <Dashboard 
         stock={mockStock} 
         batches={mockBatches} 
+        transactions={[]}
         t={t} 
         activeTab="dashboard" 
+        setActiveTab={vi.fn()}
         isAdmin={true}
       />
     );
 
     expect(screen.getByText(t.currentInventory)).toBeInTheDocument();
-    expect(screen.getByText('18')).toBeInTheDocument(); // 10+5+2+1
+    expect(screen.getAllByText('18').length).toBeGreaterThanOrEqual(1);
   });
 
   it('calculates totals correctly', () => {
@@ -40,8 +42,10 @@ describe('Dashboard Component', () => {
       <Dashboard 
         stock={mockStock} 
         batches={mockBatches} 
+        transactions={[]}
         t={t} 
         activeTab="dashboard" 
+        setActiveTab={vi.fn()}
         isAdmin={true}
       />
     );
@@ -58,8 +62,10 @@ describe('Dashboard Component', () => {
       <Dashboard 
         stock={null} 
         batches={mockBatches} 
+        transactions={[]}
         t={t} 
         activeTab="dashboard" 
+        setActiveTab={vi.fn()}
         isAdmin={true}
         loading={true}
       />
@@ -74,8 +80,10 @@ describe('Dashboard Component', () => {
       <Dashboard 
         stock={mockStock} 
         batches={mockBatches} 
+        transactions={[]}
         t={t} 
         activeTab="dashboard" 
+        setActiveTab={vi.fn()}
         isAdmin={true}
       />
     );
@@ -88,8 +96,10 @@ describe('Dashboard Component', () => {
       <Dashboard 
         stock={mockStock} 
         batches={mockBatches} 
+        transactions={[]}
         t={t} 
         activeTab="dashboard" 
+        setActiveTab={vi.fn()}
         isAdmin={false}
       />
     );
@@ -102,8 +112,10 @@ describe('Dashboard Component', () => {
       <Dashboard 
         stock={mockStock} 
         batches={mockBatches} 
+        transactions={[]}
         t={t} 
         activeTab="history" 
+        setActiveTab={vi.fn()}
         isAdmin={true}
       />
     );
