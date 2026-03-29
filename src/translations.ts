@@ -402,7 +402,12 @@ export const translations = {
     transactionTimeout: 'Transaksi tamat masa. Sila periksa sambungan anda dan cuba lagi.',
     retry: 'Cuba Semula',
     undone: 'Dibuat Asal',
-    searchTransactions: 'Cari transaksi...'
+    searchTransactions: 'Cari transaksi...',
+    accessRestricted: 'Akses Terhad: Anda tidak mempunyai kebenaran untuk melakukan tindakan ini.',
+    totalInventory: 'Jumlah Inventori',
+    exportReport: 'Eksport Laporan',
+    series: 'Siri',
+    model: 'Model'
   },
   zh: {
     brand: 'OmniFlow Ledger',
@@ -601,6 +606,11 @@ export const translations = {
     transactionTimeout: '交易超时。请检查您的网络连接并重试。',
     retry: '重试',
     undone: '已撤销',
-    searchTransactions: '搜索交易...'
+    searchTransactions: '搜索交易...',
+    accessRestricted: '访问受限：您没有执行此操作的权限。',
+    totalInventory: '总库存',
+    exportReport: '导出报告',
+    series: '系列',
+    model: '型号'
   }
 };
