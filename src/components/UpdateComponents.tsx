@@ -324,7 +324,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
               <div className="space-y-8 animate-in fade-in slide-in-from-top duration-300">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.laptopQuantityToExtract}</label>
+                    <label htmlFor="extract-laptop-quantity" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.laptopQuantityToExtract}</label>
                     {selectedModelStock && (
                       <span className="text-[11px] font-bold text-ios-blue bg-ios-blue/10 px-2 py-0.5 rounded-full">
                         {t.availableLaptops}: {maxLaptopQuantity}
@@ -336,10 +336,12 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
                       type="button"
                       onClick={() => setLaptopQuantity(prev => Math.max(1, (Number(prev) || 1) - 1))}
                       className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-colors"
+                      aria-label={t.decreaseQuantity}
                     >
                       <Minus className="w-6 h-6" />
                     </button>
                     <input
+                      id="extract-laptop-quantity"
                       type="number"
                       value={laptopQuantity}
                       onChange={(e) => setLaptopQuantity(Math.min(maxLaptopQuantity, Math.max(1, parseInt(e.target.value) || 1)))}
@@ -349,15 +351,16 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
                       type="button"
                       onClick={() => setLaptopQuantity(prev => Math.min(maxLaptopQuantity, (Number(prev) || 0) + 1))}
                       className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-colors"
+                      aria-label={t.increaseQuantity}
                     >
                       <Plus className="w-6 h-6" />
                     </button>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.selectComponentsToExtract}</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                <fieldset className="space-y-4 border-none p-0 m-0">
+                  <legend className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest mb-4">{t.selectComponentsToExtract}</legend>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" role="group" aria-labelledby="extract-components-legend">
                     {COMPONENTS.map((comp) => (
                       <button
                         key={`comp-${comp}`}
@@ -369,12 +372,13 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
                             ? "bg-ios-blue border-ios-blue text-white shadow-lg shadow-ios-blue/20"
                             : "bg-white border-gray-100 text-gray-600 hover:border-gray-200"
                         )}
+                        aria-pressed={!!componentChanges[comp as ComponentType]}
                       >
                         {t[comp.toLowerCase() as keyof typeof t] || comp}
                       </button>
                     ))}
                   </div>
-                </div>
+                </fieldset>
               </div>
             )}
 

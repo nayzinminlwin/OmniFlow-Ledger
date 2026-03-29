@@ -171,26 +171,25 @@ describe('UpdateComponents', () => {
     await user.click(screen.getByText(t.buyComponents));
 
     // Select existing brand, series, model
-    const brandSelect = screen.getAllByRole('combobox')[0];
+    const brandSelect = screen.getByLabelText(t.brandLabel);
     await user.selectOptions(brandSelect, 'Apple');
 
-    const seriesSelect = screen.getAllByRole('combobox')[1];
+    const seriesSelect = screen.getByLabelText(t.seriesLabel);
     await user.selectOptions(seriesSelect, 'MacBook Pro');
 
-    const modelSelect = screen.getAllByRole('combobox')[2];
+    const modelSelect = screen.getByLabelText(t.modelLabel);
     await user.selectOptions(modelSelect, 'M1 2020');
 
     // Select component
-    const componentSelect = screen.getAllByRole('combobox')[3];
+    const componentSelect = screen.getByLabelText(t.componentLabel);
     await user.selectOptions(componentSelect, 'Screen');
 
     // Enter quantity
-    const quantityInput = screen.getByLabelText(translations.en.quantity);
-    await user.clear(quantityInput);
-    await user.type(quantityInput, '5');
+    const quantityInput = screen.getByLabelText(t.quantity);
+    fireEvent.change(quantityInput, { target: { value: '5' } });
 
     // Submit
-    const submitButton = screen.getByText(t.recordEntry);
+    const submitButton = screen.getByRole('button', { name: t.recordEntry });
     await user.click(submitButton);
 
     expect(mockRecordComponentPurchase).toHaveBeenCalledWith({
@@ -220,34 +219,33 @@ describe('UpdateComponents', () => {
     await user.click(screen.getByText(t.installComponents));
 
     // Select batch first
-    const batchSelectInstall = screen.getByLabelText(translations.en.selectBatch);
+    const batchSelectInstall = screen.getByLabelText(t.batchId);
     await user.selectOptions(batchSelectInstall, '16-03-2026');
 
     // Select brand, series, model
-    const brandSelect = screen.getAllByRole('combobox')[1];
+    const brandSelect = screen.getByLabelText(t.brandLabel);
     await user.selectOptions(brandSelect, 'Apple');
 
-    const seriesSelect = screen.getAllByRole('combobox')[2];
+    const seriesSelect = screen.getByLabelText(t.seriesLabel);
     await user.selectOptions(seriesSelect, 'MacBook Pro');
 
-    const modelSelect = screen.getAllByRole('combobox')[3];
+    const modelSelect = screen.getByLabelText(t.modelLabel);
     await user.selectOptions(modelSelect, 'M1 2020');
 
     // Select component
-    const componentSelect = screen.getAllByRole('combobox')[4];
+    const componentSelect = screen.getByLabelText(t.componentLabel);
     await user.selectOptions(componentSelect, 'Screen');
 
     // Enter quantity
-    const quantityInput = screen.getByLabelText(translations.en.quantity);
-    await user.clear(quantityInput);
-    await user.type(quantityInput, '2');
+    const quantityInput = screen.getByLabelText(t.quantity);
+    fireEvent.change(quantityInput, { target: { value: '2' } });
 
     // Select class
     const classSelect = screen.getByLabelText(t.fromClass);
     await user.selectOptions(classSelect, 'A');
 
     // Submit
-    const submitButton = screen.getByText(t.recordEntry);
+    const submitButton = screen.getByRole('button', { name: t.recordEntry });
     await user.click(submitButton);
 
     expect(mockRecordComponentInstallation).toHaveBeenCalledWith({

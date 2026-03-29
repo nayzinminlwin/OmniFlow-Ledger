@@ -119,4 +119,9 @@ describe('History Component', () => {
     expect(screen.getByText(/Dell/)).toBeInTheDocument();
     expect(screen.queryByText(/HP/)).not.toBeInTheDocument();
   });
+
+  it('renders nothing when hidden', () => {
+    const { container } = render(<History {...mockProps} activeTab="dashboard" />);
+    expect(container.firstChild).toHaveClass('hidden');
+  });
 });

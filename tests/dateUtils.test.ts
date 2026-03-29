@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isValidBatchDate, formatBatchId, padBatchId } from './dateUtils';
+import { isValidBatchDate, formatBatchId, padBatchId } from '../src/lib/dateUtils';
 
 describe('dateUtils', () => {
   describe('isValidBatchDate', () => {

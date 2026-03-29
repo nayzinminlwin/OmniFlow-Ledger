@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { Batches } from '../src/components/Batches';
 import { translations } from '../src/translations';
 import { Batch } from '../src/types';
@@ -35,6 +36,8 @@ describe('Batches Component', () => {
     }
   ];
 
+  const mockSetSelectedBatchId = vi.fn();
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -46,12 +49,59 @@ describe('Batches Component', () => {
         t={t} 
         activeTab="batches" 
         isAdmin={true}
+        selectedBatchId=""
+        setSelectedBatchId={mockSetSelectedBatchId}
+        setEditingBatch={vi.fn()}
+        setNewBatchName={vi.fn()}
+        onDeleteBatch={vi.fn()}
       />
     );
 
     expect(screen.getByText('Batch 1')).toBeInTheDocument();
     expect(screen.getByText(/Apple/)).toBeInTheDocument();
     expect(screen.getByText(/MacBook/)).toBeInTheDocument();
+  });
+
+  it('calls setSelectedBatchId when a batch is selected from dropdown', async () => {
+    const user = userEvent.setup();
+    render(
+      <Batches 
+        batches={mockBatches} 
+        t={t} 
+        activeTab="batches" 
+        isAdmin={true}
+        selectedBatchId="Batch 1"
+        setSelectedBatchId={mockSetSelectedBatchId}
+        setEditingBatch={vi.fn()}
+        setNewBatchName={vi.fn()}
+        onDeleteBatch={vi.fn()}
+      />
+    );
+
+    const select = screen.getByLabelText(`${t.selectBatch}:`);
+    await user.selectOptions(select, 'Batch 1');
+    expect(mockSetSelectedBatchId).toHaveBeenCalledWith('Batch 1');
+  });
+
+  it('shows batch details when selected', () => {
+    render(
+      <Batches 
+        batches={mockBatches} 
+        t={t} 
+        activeTab="batches" 
+        isAdmin={true}
+        selectedBatchId="Batch 1"
+        setSelectedBatchId={mockSetSelectedBatchId}
+        setEditingBatch={vi.fn()}
+        setNewBatchName={vi.fn()}
+        onDeleteBatch={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText('Apple')).toBeInTheDocument();
+    expect(screen.getByText('MacBook')).toBeInTheDocument();
+    expect(screen.getByText('Pro')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument();
   });
 
   it('shows edit and delete buttons for admin', () => {

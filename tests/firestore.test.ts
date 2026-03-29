@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { handleFirestoreError, OperationType } from './firestore';
-import { auth } from '../firebase';
+import { handleFirestoreError, OperationType } from '../src/services/firestore';
+import { auth } from '../src/firebase';
 
 // Mock firebase auth
-vi.mock('../firebase', () => ({
+vi.mock('../src/firebase', () => ({
   auth: {
     currentUser: {
       uid: 'test-uid',

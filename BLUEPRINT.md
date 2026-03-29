@@ -101,7 +101,15 @@ sequenceDiagram
 
 ---
 
-## 7. Future Updates
+## 7. UI Patterns & Tab Management
+
+- **Tab Switching**: The application uses a `hidden` class pattern for tab switching (Dashboard, Batches, History, etc.).
+- **Why `hidden`?**: Instead of conditional rendering (`{activeTab === 'tab' && <Component />}`), we use `<div className={cn(activeTab === 'tab' ? "block" : "hidden")}>`. This ensures components remain mounted in the DOM, preserving their internal state and allowing for smoother transitions and easier testing.
+- **Accessibility**: All interactive elements (buttons, inputs) must have proper labels or `aria-label` attributes to ensure they are accessible to screen readers and testable via `Testing Library`.
+
+---
+
+## 8. Future Updates
 
 - **Before every update**: Read this blueprint to ensure the new code respects the existing architecture.
 - **After every update**: Update this blueprint if new directories, core hooks, or major data flows are introduced.

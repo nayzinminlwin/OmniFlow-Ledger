@@ -41,10 +41,11 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
     currentUserProfile
   });
 
-  if (activeTab !== 'history') return null;
-
   return (
-    <div className="lg:col-span-12 animate-in fade-in duration-500">
+    <div className={cn(
+      "lg:col-span-12 animate-in fade-in duration-500",
+      activeTab === 'history' ? "block" : "hidden"
+    )}>
       <div className="glass-panel rounded-[32px] overflow-hidden">
         <div className="px-8 py-6 border-b border-black/5 flex flex-col sm:flex-row items-center justify-between bg-black/[0.02] gap-4">
           <h2 className="text-[22px] font-bold text-black tracking-tight">{t.fullLedger}</h2>

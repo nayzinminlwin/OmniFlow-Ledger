@@ -202,7 +202,7 @@ describe('Integration: Inventory Flows', () => {
 
       await user.click(screen.getByRole('button', { name: translations.en.installComponents }));
 
-      const batchSelect = screen.getByLabelText(translations.en.selectBatch);
+      const batchSelect = screen.getByLabelText(translations.en.batchId);
       await user.selectOptions(batchSelect, '16-03-2026');
 
       const brandSelect = screen.getByLabelText(translations.en.brandLabel);
@@ -254,7 +254,7 @@ describe('Integration: Inventory Flows', () => {
         />
       );
 
-      const batchSelect = screen.getByLabelText(translations.en.selectBatch);
+      const batchSelect = screen.getByLabelText(translations.en.batchId);
       await user.selectOptions(batchSelect, '16-03-2026');
 
       const brandSelect = screen.getByLabelText(translations.en.brandLabel);
@@ -345,7 +345,7 @@ describe('Integration: Inventory Flows', () => {
       });
 
       // Switch to repair
-      await user.click(screen.getByText(translations.en.repair));
+      await user.click(screen.getByRole('radio', { name: translations.en.repair }));
 
       // Select from/to classes
       await user.selectOptions(screen.getByLabelText(translations.en.fromClass), 'UNCLASSIFIED');
@@ -392,7 +392,7 @@ describe('Integration: Inventory Flows', () => {
       });
 
       // Switch to sale
-      await user.click(screen.getByRole('button', { name: translations.en.sale }));
+      await user.click(screen.getByRole('radio', { name: translations.en.sale }));
 
       // Select from class
       await user.selectOptions(screen.getByLabelText(translations.en.fromClass), 'A');
@@ -438,7 +438,7 @@ describe('Integration: Inventory Flows', () => {
       });
 
       // Switch to adjustment
-      await user.click(screen.getByText(translations.en.adjustment));
+      await user.click(screen.getByRole('radio', { name: translations.en.adjustment }));
 
       // Select class
       await user.selectOptions(screen.getByLabelText(translations.en.targetClass), 'B');
@@ -473,13 +473,13 @@ describe('Integration: Inventory Flows', () => {
 
       render(
         <LaptopIntegrationWrapper 
-          batches={mockBatches}
+          batches={[]} // Use empty batches to avoid auto-filling brand/series/model
           onAddTransaction={onAddTransaction}
         />
       );
 
       // Try to submit without filling fields
-      const submitButton = screen.getByText(translations.en.recordEntry);
+      const submitButton = screen.getByRole('button', { name: translations.en.recordEntry });
       await user.click(submitButton);
 
       // Should not call onAddTransaction because brand/series/model are empty

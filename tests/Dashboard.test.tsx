@@ -31,8 +31,42 @@ describe('Dashboard Component', () => {
       />
     );
 
-    expect(screen.getByText(t.totalInventory)).toBeInTheDocument();
+    expect(screen.getByText(t.currentInventory)).toBeInTheDocument();
     expect(screen.getByText('18')).toBeInTheDocument(); // 10+5+2+1
+  });
+
+  it('calculates totals correctly', () => {
+    render(
+      <Dashboard 
+        stock={mockStock} 
+        batches={mockBatches} 
+        t={t} 
+        activeTab="dashboard" 
+        isAdmin={true}
+      />
+    );
+
+    // Apple total: 10+5+2+1 = 18
+    const cells = screen.getAllByRole('cell');
+    const cellTexts = Array.from(cells).map(cell => cell.textContent);
+    
+    expect(cellTexts).toContain('18');
+  });
+
+  it('shows skeleton when loading', () => {
+    render(
+      <Dashboard 
+        stock={null} 
+        batches={mockBatches} 
+        t={t} 
+        activeTab="dashboard" 
+        isAdmin={true}
+        loading={true}
+      />
+    );
+
+    const skeletons = document.querySelectorAll('.animate-pulse');
+    expect(skeletons.length).toBeGreaterThan(0);
   });
 
   it('shows export report button for admin', () => {
@@ -46,7 +80,7 @@ describe('Dashboard Component', () => {
       />
     );
 
-    expect(screen.getByText(t.exportReport)).toBeInTheDocument();
+    expect(screen.getByText(t.export)).toBeInTheDocument();
   });
 
   it('hides export report button for non-admin', () => {
@@ -60,7 +94,7 @@ describe('Dashboard Component', () => {
       />
     );
 
-    expect(screen.queryByText(t.exportReport)).not.toBeInTheDocument();
+    expect(screen.queryByText(t.export)).not.toBeInTheDocument();
   });
 
   it('renders nothing when hidden', () => {

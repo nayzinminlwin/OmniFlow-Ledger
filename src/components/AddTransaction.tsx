@@ -123,7 +123,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
-                      id="batch-input"
+                      id="batch-select"
                       ref={batchInputRef}
                       type="text"
                       placeholder={t.dateExample}
@@ -145,12 +145,18 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
               </div>
 
               <div className="space-y-3">
-                <label className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.transactionType}</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-black/5 p-1 rounded-[16px]">
+                <span id="transaction-type-label" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.transactionType}</span>
+                <div 
+                  role="radiogroup" 
+                  aria-labelledby="transaction-type-label"
+                  className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-black/5 p-1 rounded-[16px]"
+                >
                   {(['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT'] as TransactionType[]).map((type) => (
                     <button
                       key={type}
                       type="button"
+                      role="radio"
+                      aria-checked={txType === type}
                       onClick={() => handleTxTypeChange(type)}
                       className={cn(
                         "py-3 px-2 rounded-xl text-[13px] font-bold transition-all",
@@ -186,7 +192,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
-                      id="brand-input"
+                      id="brand-select"
                       ref={brandInputRef}
                       type="text"
                       placeholder={t.newBrand}
@@ -226,7 +232,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
-                      id="series-input"
+                      id="series-select"
                       ref={seriesInputRef}
                       type="text"
                       placeholder={t.newSeries}
@@ -266,7 +272,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 ) : (
                   <div className="relative flex items-center">
                     <input
-                      id="model-input"
+                      id="model-select"
                       ref={modelInputRef}
                       type="text"
                       placeholder={t.newModel}

@@ -54,8 +54,6 @@ export const Batches: React.FC<BatchesProps> = memo(({
     setSelectedBatchId
   });
 
-  if (activeTab !== 'batches') return null;
-
   const selectedBatch = batches.find(x => x.batchId === selectedBatchId);
   const models = selectedBatch?.items || [];
 
@@ -68,17 +66,26 @@ export const Batches: React.FC<BatchesProps> = memo(({
   };
 
   return (
-    <div className="lg:col-span-12 space-y-8 animate-in fade-in duration-500">
+    <div className={cn(
+      "lg:col-span-12 space-y-8 animate-in fade-in duration-500",
+      activeTab === 'batches' ? "block" : "hidden"
+    )}>
       <section>
         <div className="flex items-center justify-between mb-6 px-2">
           <h2 className="text-[28px] font-bold text-black tracking-tight leading-none">{t.batchStockLevels}</h2>
+          <div className="flex items-center gap-3">
+            <label htmlFor="batch-view-select" className="text-[13px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap hidden sm:block">
+              {t.selectBatch}:
+            </label>
             <select
+              id="batch-view-select"
               value={selectedBatchId}
               onChange={(e) => setSelectedBatchId(e.target.value)}
               className="ios-input py-2 px-4 shadow-sm w-auto"
             >
               {batches.map((b, i) => <option key={b.id || b.batchId || `batch-${i}`} value={b.batchId}>{b.batchId}</option>)}
             </select>
+          </div>
         </div>
 
         {loading ? (
