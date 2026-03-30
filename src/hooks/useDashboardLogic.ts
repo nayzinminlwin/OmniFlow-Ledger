@@ -1,18 +1,32 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import * as XLSX from 'xlsx';
-import { Stock, Transaction, LaptopClass, Batch } from '../types';
+import { Stock, Transaction, LaptopClass, Batch, ComponentStock, UserProfile } from '../types';
 import { CLASSES } from '../constants';
+import { useExport } from './useExport';
 
 interface UseDashboardLogicProps {
   stock: Stock | null;
+  componentStock: ComponentStock | null;
   batches: Batch[];
   transactions: Transaction[];
   t: any;
+  onAddTransaction: (
+    txType: any,
+    batchId: string,
+    brand: string,
+    series: string,
+    model: string,
+    fromClass: any,
+    toClass: any,
+    quantity: number,
+    notes: string
+  ) => Promise<boolean>;
+  currentUserProfile: UserProfile | null;
 }
 
-export const useDashboardLogic = ({ stock, batches, transactions, t }: UseDashboardLogicProps) => {
+export const useDashboardLogic = ({ stock, componentStock, batches, transactions, t, onAddTransaction, currentUserProfile }: UseDashboardLogicProps) => {
   const [hoveredTxId, setHoveredTxId] = useState<string | null>(null);
+  const { handleExport } = useExport({ batches, componentStock, t, onAddTransaction, currentUserProfile });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -53,60 +67,6 @@ export const useDashboardLogic = ({ stock, batches, transactions, t }: UseDashbo
   [models]);
 
   const getClassName = (cls?: string) => cls === 'Spoiled' ? t.spoiled : cls;
-
-  const handleExport = () => {
-    if (!batches.length) return;
-
-    const exportData: any[] = [];
-
-    batches.forEach(batch => {
-      if (!batch.items || !Array.isArray(batch.items)) return;
-      
-      batch.items.forEach(m => {
-        const rowTotal = getRowTotal(m.counts);
-        if (rowTotal === 0) return;
-
-        const row: any = {
-          [t.batchId]: batch.batchId,
-          [t.brandLabel]: m.brand,
-          [t.seriesLabel]: m.series,
-          [t.modelLabel]: m.model,
-          [t.unclassified]: m.counts?.['UNCLASSIFIED'] || 0
-        };
-        
-        CLASSES.forEach(cls => {
-          row[cls === 'Spoiled' ? t.spoiled : `${t.class} ${cls}`] = m.counts?.[cls] || 0;
-        });
-        
-        row[t.classified] = getClassifiedRowTotal(m.counts);
-        row[t.total] = rowTotal;
-        exportData.push(row);
-      });
-    });
-
-    exportData.push({});
-    
-    const totalRow: any = {
-      [t.batchId]: t.grandTotal,
-      [t.brandLabel]: '',
-      [t.seriesLabel]: '',
-      [t.modelLabel]: '',
-      [t.unclassified]: getColumnTotal('UNCLASSIFIED')
-    };
-    CLASSES.forEach(cls => {
-      totalRow[cls === 'Spoiled' ? t.spoiled : `${t.class} ${cls}`] = getColumnTotal(cls);
-    });
-    totalRow[t.classified] = getClassifiedGrandTotal;
-    totalRow[t.total] = grandTotal;
-    exportData.push(totalRow);
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, t.inventoryByBatch);
-    
-    const fileName = `Inventory_By_Batch_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
-  };
 
   const safeFormatDate = (dateStr: string | undefined, formatStr: string) => {
     if (!dateStr) return t.na;

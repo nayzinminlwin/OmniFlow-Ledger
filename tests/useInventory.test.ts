@@ -132,4 +132,50 @@ describe('useInventory', () => {
     expect(result.current.stock?.items[0].model).toBe('Pro');
     expect(result.current.stock?.items[0].counts.A).toBe(5);
   });
+  
+  it('should handle batches with missing counts gracefully', async () => {
+    const mockBatchWithMissingCounts = { 
+      batchId: 'B-MISSING', 
+      items: [{ brand: 'Apple', series: 'MacBook', model: 'Pro' }], // Missing counts
+      createdAt: new Date().toISOString(),
+      active: true
+    };
+    
+    vi.mocked(firestore.onSnapshot).mockImplementation((ref, options, callback) => {
+      const cb = typeof options === 'function' ? options : callback;
+      const isQuery = (ref as any)?.type !== 'document';
+
+      if (isQuery && (ref as any)?.path === 'batches') {
+        cb({ 
+          forEach: (fn: any) => {
+            fn({ id: 'batch-missing', data: () => mockBatchWithMissingCounts });
+          },
+          docs: [{ id: 'batch-missing', data: () => mockBatchWithMissingCounts }],
+          size: 1,
+          empty: false,
+          metadata: { fromCache: false, hasPendingWrites: false },
+          query: {},
+          docChanges: () => []
+        } as any);
+      } else {
+        cb({ 
+          exists: () => true, 
+          data: () => ({ items: [], lastUpdated: new Date().toISOString() }),
+          metadata: { fromCache: false, hasPendingWrites: false }
+        } as any);
+      }
+      return vi.fn();
+    });
+
+    const { result } = renderHook(() => useInventory(mockUser, true, mockLang, true));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    expect(result.current.batches.length).toBe(1);
+    expect(result.current.stock?.items.length).toBe(1);
+    // Should still have default counts from INITIAL_CLASS_COUNTS
+    expect(result.current.stock?.items[0].counts.A).toBe(0);
+  });
 });

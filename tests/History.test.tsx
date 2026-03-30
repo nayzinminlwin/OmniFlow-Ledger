@@ -48,6 +48,19 @@ describe('History Component', () => {
       batchActive: true,
       notes: 'Undid Repair for HP Pavilion',
     },
+    {
+      id: 'tx3',
+      type: 'EXPORT',
+      brand: 'ALL',
+      series: 'ALL',
+      model: 'ALL',
+      quantity: 1,
+      timestamp: new Date().toISOString(),
+      userId: 'user1',
+      batchId: 'SYSTEM',
+      batchActive: true,
+      notes: 'Inventory exported by John Doe',
+    },
   ];
 
   const mockUsers: Record<string, UserProfile> = {
@@ -76,6 +89,12 @@ describe('History Component', () => {
     expect(screen.getAllByText(/HP/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Pavilion/).length).toBeGreaterThan(0);
     expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0);
+  });
+
+  it('should display Export type correctly', () => {
+    render(<History {...mockProps} />);
+    expect(screen.getByText(translations.en.export)).toBeInTheDocument();
+    expect(screen.getByText('Inventory exported by John Doe')).toBeInTheDocument();
   });
 
   it('should display Undo type with correct label', () => {

@@ -200,13 +200,16 @@ describe('AddTransaction Component', () => {
     const batchInput = await screen.findByPlaceholderText('e.g., 16-03-2026');
     await user.type(batchInput, '29032026'); // formatBatchId will turn this into 29-03-2026
 
-    const brandInput = screen.getByLabelText(t.brandLabel);
+    const brandSelect = screen.getByLabelText(t.brandLabel);
+    await user.selectOptions(brandSelect, '__NEW__');
+    const brandInput = screen.getByPlaceholderText(t.brandLabel);
     await user.type(brandInput, 'Dell');
 
-    const seriesInput = screen.getByLabelText(t.seriesLabel);
+    // Since isNewBrand is true, series and model should already be input fields
+    const seriesInput = screen.getByPlaceholderText(t.seriesLabel);
     await user.type(seriesInput, 'XPS');
 
-    const modelInput = screen.getByLabelText(t.modelLabel);
+    const modelInput = screen.getByPlaceholderText(t.modelLabel);
     await user.type(modelInput, '13');
 
     const quantityInput = screen.getByLabelText(t.quantity);

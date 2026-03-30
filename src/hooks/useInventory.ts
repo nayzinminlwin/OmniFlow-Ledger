@@ -85,6 +85,8 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
           aggregatedItems.push(globalItem);
         }
         
+        if (!batchItem.counts) return;
+        
         Object.entries(batchItem.counts).forEach(([cls, count]) => {
           globalItem!.counts[cls as any] += (count || 0);
         });

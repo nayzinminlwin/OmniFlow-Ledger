@@ -193,6 +193,39 @@ describe('useTransactionActions', () => {
       expect(result.current.success).toBe('Transaction recorded successfully!');
     });
 
+    it('should successfully record an export transaction', async () => {
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
+      
+      const mockTransaction = {
+        get: vi.fn().mockResolvedValue({ exists: () => true, data: () => mockStock }),
+        set: vi.fn(),
+        update: vi.fn(),
+      };
+      
+      vi.mocked(firestore.runTransaction).mockImplementation(async (db, updateFunction) => {
+        await updateFunction(mockTransaction as any);
+      });
+
+      await act(async () => {
+        const res = await result.current.handleAddTransaction(
+          'EXPORT',
+          'SYSTEM',
+          'ALL',
+          'ALL',
+          'ALL',
+          'D',
+          'D',
+          1,
+          'Inventory exported by Admin'
+        );
+        expect(res).toBe(true);
+      });
+
+      expect(firestore.runTransaction).toHaveBeenCalled();
+      expect(mockTransaction.set).toHaveBeenCalledTimes(1); // Only Transaction, no batch update for EXPORT
+      expect(result.current.success).toBe('Transaction recorded successfully!');
+    });
+
     it('should handle errors in transaction', async () => {
       const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       

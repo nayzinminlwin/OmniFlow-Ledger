@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, ArrowRightLeft, Info, Hammer, Undo2, ArrowDownLeft, ArrowUpRight, ShoppingCart, Wrench, Sliders, PackagePlus, PlusCircle } from 'lucide-react';
-import { Transaction, UserProfile } from '../types';
+import { Search, ArrowRightLeft, Info, Hammer, Undo2, ArrowDownLeft, ArrowUpRight, ShoppingCart, Wrench, Sliders, PackagePlus, PlusCircle, FileSpreadsheet } from 'lucide-react';
+import { Transaction, UserProfile, Batch, ComponentStock } from '../types';
 import { COMPONENTS } from '../constants';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
@@ -10,6 +10,8 @@ import { useHistoryLogic } from '../hooks/useHistoryLogic';
 
 interface HistoryProps {
   transactions: Transaction[];
+  batches: Batch[];
+  componentStock: ComponentStock | null;
   users: Record<string, UserProfile>;
   t: any;
   activeTab: string;
@@ -153,6 +155,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                             {tx.type === 'UNDO' && <Undo2 className="w-3 h-3" />}
                             {tx.type === 'BREAKDOWN' && <Hammer className="w-3 h-3" />}
                             {tx.type === 'INSTALL' && <PackagePlus className="w-3 h-3" />}
+                            {tx.type === 'EXPORT' && <FileSpreadsheet className="w-3 h-3" />}
                             {tx.type === 'REPAIR' && tx.fromClass === 'UNCLASSIFIED' 
                               ? t.initClass 
                               : tx.type === 'UNDO' 
@@ -196,6 +199,8 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                             </span>
                           ) : tx.type === 'DELETION' ? (
                             <span className="text-red-600 font-semibold">{t.batchDeletion}</span>
+                          ) : tx.type === 'EXPORT' ? (
+                            <span className="text-green-600 font-semibold">{t.export}</span>
                           ) : (
                             <>{getClassName(tx.toClass) === t.spoiled ? t.spoiled : `${t.class} ${getClassName(tx.toClass)}`}</>
                           )}
@@ -204,12 +209,14 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                       <td className="px-8 py-4 text-right">
                         <p className={cn(
                           "text-[17px] font-semibold tabular-nums tracking-tight",
-                          (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' || ((tx.type === 'ADJUSTMENT' || tx.type === 'UNDO') && tx.quantity > 0)) ? "text-green-600" : (tx.type === 'INSTALL' || tx.type === 'DELETION' || (tx.type === 'ADJUSTMENT' && tx.quantity < 0)) ? "text-red-600" : "text-orange-600"
+                          (tx.type === 'INCOMING' || tx.type === 'REPAIR' || tx.type === 'PURCHASE' || tx.type === 'EXPORT' || ((tx.type === 'ADJUSTMENT' || tx.type === 'UNDO') && tx.quantity > 0)) ? "text-green-600" : (tx.type === 'INSTALL' || tx.type === 'DELETION' || (tx.type === 'ADJUSTMENT' && tx.quantity < 0)) ? "text-red-600" : "text-orange-600"
                         )}>
                           {tx.type === 'PURCHASE' ? (
                             `+${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
                           ) : tx.type === 'INSTALL' ? (
                             `-${(Object.values(tx.componentChanges || {}) as number[]).reduce((a, b) => a + (b || 0), 0)}`
+                          ) : tx.type === 'EXPORT' ? (
+                            `1`
                           ) : (tx.type === 'ADJUSTMENT' || tx.type === 'UNDO' || tx.type === 'DELETION') ? (
                             tx.quantity >= 0 ? `+${tx.quantity}` : tx.quantity
                           ) : (

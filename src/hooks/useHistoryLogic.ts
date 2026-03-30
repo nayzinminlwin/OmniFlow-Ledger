@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
-import { Transaction, UserProfile } from '../types';
+import { Transaction, UserProfile, Batch, ComponentStock } from '../types';
 
 interface UseHistoryLogicProps {
   transactions: Transaction[];

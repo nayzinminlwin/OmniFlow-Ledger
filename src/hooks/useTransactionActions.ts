@@ -61,6 +61,24 @@ export function useTransactionActions(user: User | null, lang: Language) {
     try {
       await withTimeout(
         runTransaction(db, async (transaction) => {
+          if (txType === 'EXPORT') {
+            const txRef = doc(collection(db, 'transactions'));
+            const txData: any = {
+              type: 'EXPORT',
+              batchId: 'ALL',
+              batchActive: true,
+              brand: 'ALL',
+              series: 'ALL',
+              model: 'ALL',
+              quantity: 1,
+              timestamp: new Date().toISOString(),
+              userId: user.uid,
+              notes: notes.trim()
+            };
+            transaction.set(txRef, txData);
+            return;
+          }
+
           const batchRef = doc(db, 'batches', batchId);
         
         const batchDoc = await transaction.get(batchRef);

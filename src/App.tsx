@@ -145,6 +145,7 @@ export default function App() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <Dashboard 
             stock={stock} 
+            componentStock={componentStock}
             batches={batches}
             transactions={transactions} 
             t={t} 
@@ -152,10 +153,14 @@ export default function App() {
             activeTab={activeTab}
             loading={loading}
             isAdmin={isAdmin}
+            onAddTransaction={handleAddTransaction}
+            currentUserProfile={profile}
           />
 
           <History 
             transactions={transactions} 
+            batches={batches}
+            componentStock={componentStock}
             users={users}
             t={t} 
             activeTab={activeTab} 

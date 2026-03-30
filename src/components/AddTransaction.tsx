@@ -44,9 +44,6 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
     setSeries,
     model,
     setModel,
-    isNewBrand,
-    isNewSeries,
-    isNewModel,
     error,
     setError,
     fromClass,
@@ -58,6 +55,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
     notes,
     setNotes,
     isNewBatch,
+    isNewBrand,
+    isNewSeries,
+    isNewModel,
     batchInputRef,
     brandInputRef,
     seriesInputRef,
@@ -176,26 +176,29 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
               <div className="space-y-2">
                 <label htmlFor="brand-select" className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t.brandLabel}</label>
                 {!isNewBrand ? (
-                  <select
-                    id="brand-select"
-                    value={brand}
-                    onChange={(e) => handleBrandChange(e.target.value)}
-                    className="ios-input w-full text-[15px] py-3"
-                    required
-                  >
-                    <option value="" disabled>{t.selectBrand}</option>
-                    {existingBrands.map((b, i) => <option key={`brand-${b}-${i}`} value={b}>{b}</option>)}
-                    {txType === 'INCOMING' ? (
-                      <option key="new-brand" value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
-                    ) : null}
-                  </select>
+                  <div className="relative">
+                    <select
+                      id="brand-select"
+                      value={brand}
+                      onChange={(e) => handleBrandChange(e.target.value)}
+                      className="ios-input w-full text-[15px] py-3 pr-10"
+                      required
+                    >
+                      <option value="" disabled>{t.selectBrand}</option>
+                      {existingBrands.map((b, i) => <option key={`brand-${b}-${i}`} value={b}>{b}</option>)}
+                      {brand && !existingBrands.includes(brand) && <option value={brand}>{brand}</option>}
+                      {txType === 'INCOMING' ? (
+                        <option key="new-brand" value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>
+                      ) : null}
+                    </select>
+                  </div>
                 ) : (
                   <div className="relative flex items-center">
                     <input
                       id="brand-select"
                       ref={brandInputRef}
                       type="text"
-                      placeholder={t.newBrand}
+                      placeholder={t.brandLabel}
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
                       className="ios-input w-full text-[15px] py-3 pr-10"
@@ -215,27 +218,30 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
               <div className="space-y-2">
                 <label htmlFor="series-select" className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t.seriesLabel}</label>
                 {!isNewSeries ? (
-                  <select
-                    id="series-select"
-                    value={series}
-                    onChange={(e) => handleSeriesChange(e.target.value)}
-                    className="ios-input w-full text-[15px] py-3"
-                    disabled={!brand && !isNewBrand}
-                    required
-                  >
-                    <option value="" disabled>{t.selectSeries}</option>
-                    {filteredSeries.map((s, i) => <option key={`series-${s}-${i}`} value={s}>{s}</option>)}
-                    {txType === 'INCOMING' ? (
-                      <option key="new-series" value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
-                    ) : null}
-                  </select>
+                  <div className="relative">
+                    <select
+                      id="series-select"
+                      value={series}
+                      onChange={(e) => handleSeriesChange(e.target.value)}
+                      className="ios-input w-full text-[15px] py-3 pr-10"
+                      disabled={!brand || isNewBrand}
+                      required
+                    >
+                      <option value="" disabled>{t.selectSeries}</option>
+                      {filteredSeries.map((s, i) => <option key={`series-${s}-${i}`} value={s}>{s}</option>)}
+                      {series && !filteredSeries.includes(series) && <option value={series}>{series}</option>}
+                      {txType === 'INCOMING' ? (
+                        <option key="new-series" value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>
+                      ) : null}
+                    </select>
+                  </div>
                 ) : (
                   <div className="relative flex items-center">
                     <input
                       id="series-select"
                       ref={seriesInputRef}
                       type="text"
-                      placeholder={t.newSeries}
+                      placeholder={t.seriesLabel}
                       value={series}
                       onChange={(e) => setSeries(e.target.value)}
                       className="ios-input w-full text-[15px] py-3 pr-10"
@@ -255,27 +261,30 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
               <div className="space-y-2">
                 <label htmlFor="model-select" className="block text-[11px] font-bold text-gray-400 uppercase tracking-widest">{t.modelLabel}</label>
                 {!isNewModel ? (
-                  <select
-                    id="model-select"
-                    value={model}
-                    onChange={(e) => handleModelChange(e.target.value)}
-                    className="ios-input w-full text-[15px] py-3"
-                    disabled={(!series && !isNewSeries) || (!brand && !isNewBrand)}
-                    required
-                  >
-                    <option value="" disabled>{t.selectModel}</option>
-                    {filteredModels.map((m, i) => <option key={`model-${m}-${i}`} value={m}>{m}</option>)}
-                    {txType === 'INCOMING' ? (
-                      <option key="new-model" value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
-                    ) : null}
-                  </select>
+                  <div className="relative">
+                    <select
+                      id="model-select"
+                      value={model}
+                      onChange={(e) => handleModelChange(e.target.value)}
+                      className="ios-input w-full text-[15px] py-3 pr-10"
+                      disabled={!series || !brand || isNewSeries}
+                      required
+                    >
+                      <option value="" disabled>{t.selectModel}</option>
+                      {filteredModels.map((m, i) => <option key={`model-${m}-${i}`} value={m}>{m}</option>)}
+                      {model && !filteredModels.includes(model) && <option value={model}>{model}</option>}
+                      {txType === 'INCOMING' ? (
+                        <option key="new-model" value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>
+                      ) : null}
+                    </select>
+                  </div>
                 ) : (
                   <div className="relative flex items-center">
                     <input
                       id="model-select"
                       ref={modelInputRef}
                       type="text"
-                      placeholder={t.newModel}
+                      placeholder={t.modelLabel}
                       value={model}
                       onChange={(e) => setModel(e.target.value)}
                       className="ios-input w-full text-[15px] py-3 pr-10"

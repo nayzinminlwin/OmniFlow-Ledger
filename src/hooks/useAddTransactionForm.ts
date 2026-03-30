@@ -24,15 +24,16 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
   const [brand, setBrand] = useState(() => localStorage.getItem('last_brand') || '');
   const [series, setSeries] = useState(() => localStorage.getItem('last_series') || '');
   const [model, setModel] = useState(() => localStorage.getItem('last_model') || '');
-  const [isNewBrand, setIsNewBrand] = useState(() => localStorage.getItem('last_isNewBrand') === 'true');
-  const [isNewSeries, setIsNewSeries] = useState(() => localStorage.getItem('last_isNewSeries') === 'true');
-  const [isNewModel, setIsNewModel] = useState(() => localStorage.getItem('last_isNewModel') === 'true');
   const [error, setError] = useState<string | null>(null);
   const [fromClass, setFromClass] = useState<LaptopClass>('D');
   const [toClass, setToClass] = useState<LaptopClass>(txType === 'INCOMING' ? 'UNCLASSIFIED' : 'A');
   const [quantity, setQuantity] = useState<number | ''>(1);
   const [notes, setNotes] = useState('');
   const [isNewBatch, setIsNewBatch] = useState(false);
+  const [isNewBrand, setIsNewBrand] = useState(false);
+  const [isNewSeries, setIsNewSeries] = useState(false);
+  const [isNewModel, setIsNewModel] = useState(false);
+  const [fieldToFocus, setFieldToFocus] = useState<'batch' | 'brand' | 'series' | 'model' | null>(null);
 
   const batchInputRef = useRef<HTMLInputElement>(null);
   const brandInputRef = useRef<HTMLInputElement>(null);
@@ -40,20 +41,32 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
   const modelInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isNewBatch) batchInputRef.current?.focus();
-  }, [isNewBatch]);
+    if (isNewBatch && fieldToFocus === 'batch') {
+      batchInputRef.current?.focus();
+      setFieldToFocus(null);
+    }
+  }, [isNewBatch, fieldToFocus]);
 
   useEffect(() => {
-    if (isNewBrand) brandInputRef.current?.focus();
-  }, [isNewBrand]);
+    if (isNewBrand && fieldToFocus === 'brand') {
+      brandInputRef.current?.focus();
+      setFieldToFocus(null);
+    }
+  }, [isNewBrand, fieldToFocus]);
 
   useEffect(() => {
-    if (isNewSeries && !isNewBrand) seriesInputRef.current?.focus();
-  }, [isNewSeries, isNewBrand]);
+    if (isNewSeries && fieldToFocus === 'series') {
+      seriesInputRef.current?.focus();
+      setFieldToFocus(null);
+    }
+  }, [isNewSeries, fieldToFocus]);
 
   useEffect(() => {
-    if (isNewModel && !isNewBrand && !isNewSeries) modelInputRef.current?.focus();
-  }, [isNewModel, isNewBrand, isNewSeries]);
+    if (isNewModel && fieldToFocus === 'model') {
+      modelInputRef.current?.focus();
+      setFieldToFocus(null);
+    }
+  }, [isNewModel, fieldToFocus]);
 
   // Persist values to localStorage
   useEffect(() => {
@@ -62,10 +75,7 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
     localStorage.setItem('last_brand', brand);
     localStorage.setItem('last_series', series);
     localStorage.setItem('last_model', model);
-    localStorage.setItem('last_isNewBrand', String(isNewBrand));
-    localStorage.setItem('last_isNewSeries', String(isNewSeries));
-    localStorage.setItem('last_isNewModel', String(isNewModel));
-  }, [txType, batchId, brand, series, model, isNewBrand, isNewSeries, isNewModel]);
+  }, [txType, batchId, brand, series, model]);
 
   const handleTxTypeChange = (type: TransactionType) => {
     setTxType(type);
@@ -76,17 +86,6 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
       if (toClass === 'UNCLASSIFIED') setToClass('A');
     } else if (type !== 'ADJUSTMENT' && toClass === 'UNCLASSIFIED') {
       setToClass('A');
-    }
-    // Reset "New" states if not INCOMING
-    if (type !== 'INCOMING') {
-      setIsNewBrand(false);
-      setIsNewSeries(false);
-      setIsNewModel(false);
-      if (isNewBrand || isNewSeries || isNewModel) {
-        setBrand('');
-        setSeries('');
-        setModel('');
-      }
     }
   };
 
@@ -101,22 +100,22 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
   }, [batches]);
 
   const filteredSeries = useMemo(() => {
-    if (!brand || isNewBrand) return [];
+    if (!brand) return [];
     const seriesSet = new Set<string>();
     batches.forEach(b => b.items?.forEach(i => {
       if (i.brand === brand && i.series) seriesSet.add(i.series);
     }));
     return Array.from(seriesSet).sort();
-  }, [batches, brand, isNewBrand]);
+  }, [batches, brand]);
 
   const filteredModels = useMemo(() => {
-    if (!brand || isNewBrand || !series || isNewSeries) return [];
+    if (!brand || !series) return [];
     const modelsSet = new Set<string>();
     batches.forEach(b => b.items?.forEach(i => {
       if (i.brand === brand && i.series === series && i.model) modelsSet.add(i.model);
     }));
     return Array.from(modelsSet).sort();
-  }, [batches, brand, series, isNewBrand, isNewSeries]);
+  }, [batches, brand, series]);
 
   // Ensure toClass is 'UNCLASSIFIED' for INCOMING transactions
   useEffect(() => {
@@ -134,36 +133,24 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
 
   // Set default brand if empty
   useEffect(() => {
-    if (existingBrands.length > 0) {
-      if (!brand) {
-        setBrand(existingBrands[0]);
-        setIsNewBrand(false);
-      }
-    } else if (txType === 'INCOMING' && !isNewBrand) {
-      setIsNewBrand(true);
-      setBrand('');
-      setIsNewSeries(true);
-      setSeries('');
-      setIsNewModel(true);
-      setModel('');
+    if (existingBrands.length > 0 && !brand && !isNewBrand) {
+      setBrand(existingBrands[0]);
     }
-  }, [existingBrands, brand, isNewBrand, txType]);
+  }, [existingBrands, brand, isNewBrand]);
 
   // Set default series if empty
   useEffect(() => {
-    if (filteredSeries.length > 0 && !series) {
+    if (filteredSeries.length > 0 && !series && !isNewSeries) {
       setSeries(filteredSeries[0]);
-      setIsNewSeries(false);
     }
-  }, [filteredSeries, series]);
+  }, [filteredSeries, series, isNewSeries]);
 
   // Set default model if empty
   useEffect(() => {
-    if (filteredModels.length > 0 && !model) {
+    if (filteredModels.length > 0 && !model && !isNewModel) {
       setModel(filteredModels[0]);
-      setIsNewModel(false);
     }
-  }, [filteredModels, model]);
+  }, [filteredModels, model, isNewModel]);
 
   // Reconcile "New" state with existing data
   useEffect(() => {
@@ -188,16 +175,17 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
     if (val === '__NEW__') {
       setIsNewBrand(true);
       setBrand('');
-      setIsNewSeries(true);
       setSeries('');
-      setIsNewModel(true);
       setModel('');
+      setIsNewSeries(true);
+      setIsNewModel(true);
+      setFieldToFocus('brand');
     } else {
       setIsNewBrand(false);
       setBrand(val);
       setSeries('');
-      setIsNewSeries(false);
       setModel('');
+      setIsNewSeries(false);
       setIsNewModel(false);
     }
   };
@@ -206,8 +194,9 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
     if (val === '__NEW__') {
       setIsNewSeries(true);
       setSeries('');
-      setIsNewModel(true);
       setModel('');
+      setIsNewModel(true);
+      setFieldToFocus('series');
     } else {
       setIsNewSeries(false);
       setSeries(val);
@@ -220,6 +209,7 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
     if (val === '__NEW__') {
       setIsNewModel(true);
       setModel('');
+      setFieldToFocus('model');
     } else {
       setIsNewModel(false);
       setModel(val);
@@ -238,6 +228,7 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
     if (val === '__NEW__') {
       setIsNewBatch(true);
       setBatchId('');
+      setFieldToFocus('batch');
     } else {
       setIsNewBatch(false);
       setBatchId(val);
@@ -279,9 +270,6 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
     setSeries,
     model,
     setModel,
-    isNewBrand,
-    isNewSeries,
-    isNewModel,
     error,
     setError,
     fromClass,
@@ -293,6 +281,9 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
     notes,
     setNotes,
     isNewBatch,
+    isNewBrand,
+    isNewSeries,
+    isNewModel,
     batchInputRef,
     brandInputRef,
     seriesInputRef,

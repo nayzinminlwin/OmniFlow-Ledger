@@ -30,6 +30,8 @@ describe('Dashboard Component', () => {
         activeTab="dashboard" 
         setActiveTab={vi.fn()}
         isAdmin={true}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
 
@@ -47,6 +49,8 @@ describe('Dashboard Component', () => {
         activeTab="dashboard" 
         setActiveTab={vi.fn()}
         isAdmin={true}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
 
@@ -68,6 +72,8 @@ describe('Dashboard Component', () => {
         setActiveTab={vi.fn()}
         isAdmin={true}
         loading={true}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
 
@@ -85,6 +91,8 @@ describe('Dashboard Component', () => {
         activeTab="dashboard" 
         setActiveTab={vi.fn()}
         isAdmin={true}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
 
@@ -101,6 +109,8 @@ describe('Dashboard Component', () => {
         activeTab="dashboard" 
         setActiveTab={vi.fn()}
         isAdmin={false}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
 
@@ -117,6 +127,8 @@ describe('Dashboard Component', () => {
         activeTab="history" 
         setActiveTab={vi.fn()}
         isAdmin={true}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
 
@@ -132,6 +144,8 @@ describe('Dashboard Component', () => {
         t={t} 
         activeTab="dashboard" 
         setActiveTab={vi.fn()}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
 
@@ -171,6 +185,8 @@ describe('Dashboard Component', () => {
         t={t} 
         activeTab="dashboard" 
         setActiveTab={vi.fn()}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
 
@@ -204,6 +220,8 @@ describe('Dashboard Component', () => {
         t={t} 
         activeTab="dashboard" 
         setActiveTab={vi.fn()}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
 
@@ -240,6 +258,8 @@ describe('Dashboard Component', () => {
         t={t} 
         activeTab="dashboard" 
         setActiveTab={setActiveTab}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
 
@@ -261,6 +281,8 @@ describe('Dashboard Component', () => {
         activeTab="dashboard" 
         setActiveTab={vi.fn()}
         isAdmin={true}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
 
@@ -277,6 +299,8 @@ describe('Dashboard Component', () => {
         setActiveTab={vi.fn()}
         isAdmin={true}
         loading={true}
+        onAddTransaction={vi.fn()}
+        currentUserProfile={null}
       />
     );
     expect(exportButton).toBeDisabled();

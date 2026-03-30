@@ -1,6 +1,5 @@
 import React, { memo } from 'react';
 import { 
-  RefreshCw, 
   ChevronRight, 
   ArrowRightLeft, 
   Hammer,
@@ -12,9 +11,10 @@ import {
   Wrench,
   Sliders,
   PackagePlus,
-  PlusCircle
+  PlusCircle,
+  FileSpreadsheet
 } from 'lucide-react';
-import { Stock, Transaction, Batch } from '../types';
+import { Stock, Transaction, Batch, ComponentStock, UserProfile } from '../types';
 import { CLASSES, COMPONENTS } from '../constants';
 import { cn } from '../lib/utils';
 import { Skeleton } from './Skeleton';
@@ -23,6 +23,7 @@ import { useDashboardLogic } from '../hooks/useDashboardLogic';
 
 interface DashboardProps {
   stock: Stock | null;
+  componentStock: ComponentStock | null;
   batches: Batch[];
   transactions: Transaction[];
   t: any;
@@ -30,10 +31,23 @@ interface DashboardProps {
   activeTab: string;
   loading?: boolean;
   isAdmin?: boolean;
+  onAddTransaction: (
+    txType: any,
+    batchId: string,
+    brand: string,
+    series: string,
+    model: string,
+    fromClass: any,
+    toClass: any,
+    quantity: number,
+    notes: string
+  ) => Promise<boolean>;
+  currentUserProfile: UserProfile | null;
 }
 
 export const Dashboard: React.FC<DashboardProps> = memo(({ 
   stock, 
+  componentStock,
   batches,
   transactions, 
   t, 
@@ -41,6 +55,8 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
   activeTab,
   loading = false,
   isAdmin,
+  onAddTransaction,
+  currentUserProfile
 }) => {
   const {
     hoveredTxId,
@@ -54,7 +70,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
     getClassName,
     handleExport,
     safeFormatDate
-  } = useDashboardLogic({ stock, batches, transactions, t });
+  } = useDashboardLogic({ stock, componentStock, batches, transactions, t, onAddTransaction, currentUserProfile });
 
   return (
     <div className={cn(
@@ -71,7 +87,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(({
                 disabled={!batches.length || loading}
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl text-[14px] font-bold hover:bg-green-700 transition-all active:scale-95 disabled:opacity-50 disabled:active:scale-100 shadow-sm"
               >
-                <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+                <FileSpreadsheet className={cn("w-4 h-4", loading && "animate-spin")} />
                 {t.export}
               </button>
             )}

@@ -24,7 +24,7 @@ export interface Batch {
   active?: boolean;
 }
 
-export type TransactionType = 'INCOMING' | 'REPAIR' | 'SALE' | 'ADJUSTMENT' | 'BREAKDOWN' | 'PURCHASE' | 'INSTALL' | 'UNDO' | 'DELETION';
+export type TransactionType = 'INCOMING' | 'REPAIR' | 'SALE' | 'ADJUSTMENT' | 'BREAKDOWN' | 'PURCHASE' | 'INSTALL' | 'UNDO' | 'DELETION' | 'EXPORT';
 
 export type ComponentType = 'A Cover' | 'B Cover' | 'C Cover' | 'D Cover' | 'Screen' | 'Motherboard' | 'Battery' | 'Keyboard' | 'RAM' | 'SSD' | 'Speaker' | 'Charging Adapter';
 
