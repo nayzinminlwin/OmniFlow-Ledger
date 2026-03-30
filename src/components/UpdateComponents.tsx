@@ -489,10 +489,10 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
 
             <button
               type="submit"
-              disabled={isSubmitting || (mode === 'extract' && maxLaptopQuantity <= 0) || (mode === 'extract' && Object.values(componentChanges).filter(v => (v as number) > 0).length === 0) || (mode === 'install' && availableComponentCount <= 0)}
+              disabled={isSubmitting || (mode === 'extract' && maxLaptopQuantity <= 0) || (mode === 'extract' && COMPONENTS.every(comp => (componentChanges[comp] ?? laptopQuantity) === 0)) || (mode === 'install' && availableComponentCount <= 0)}
               className={cn(
                 "ios-button w-full py-5 text-[19px] mt-4",
-                (isSubmitting || (mode === 'extract' && maxLaptopQuantity <= 0) || (mode === 'extract' && Object.values(componentChanges).filter(v => (v as number) > 0).length === 0) || (mode === 'install' && availableComponentCount <= 0)) && "opacity-50 cursor-not-allowed bg-gray-400"
+                (isSubmitting || (mode === 'extract' && maxLaptopQuantity <= 0) || (mode === 'extract' && COMPONENTS.every(comp => (componentChanges[comp] ?? laptopQuantity) === 0)) || (mode === 'install' && availableComponentCount <= 0)) && "opacity-50 cursor-not-allowed bg-gray-400"
               )}
             >
               {isSubmitting ? <RefreshCw className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}

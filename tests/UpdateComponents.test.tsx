@@ -286,16 +286,16 @@ describe('UpdateComponents', () => {
     const classSelect = screen.getByLabelText(t.fromClass);
     await user.selectOptions(classSelect, 'A');
 
+    // Enter laptop quantity
+    const laptopQtyInput = screen.getByLabelText(t.laptopQuantity);
+    fireEvent.change(laptopQtyInput, { target: { value: '2' } });
+
     // Select component to extract
     const screenQtyInput = screen.getByLabelText('Screen quantity');
     fireEvent.change(screenQtyInput, { target: { value: '1' } });
 
-    // Enter laptop quantity
-    const laptopQtyInput = screen.getByLabelText(t.laptopQuantity);
-    fireEvent.change(laptopQtyInput, { target: { value: '1' } });
-
     // Submit
-    const submitButton = screen.getByRole('button', { name: t.recordEntry });
+    const submitButton = screen.getByRole('button', { name: t.recordEntry }) as HTMLButtonElement;
     await user.click(submitButton);
 
     expect(mockRecordComponentBreakdown).toHaveBeenCalledWith({
@@ -304,7 +304,7 @@ describe('UpdateComponents', () => {
       series: 'MacBook Pro',
       model: 'M1 2020',
       fromClass: 'A',
-      laptopQuantity: 1,
+      laptopQuantity: 2,
       componentChanges: { Screen: 1 },
       notes: ''
     });

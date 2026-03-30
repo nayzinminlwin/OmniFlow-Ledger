@@ -271,12 +271,12 @@ describe('Integration: Inventory Flows', () => {
       const classSelect = await screen.findByLabelText(translations.en.fromClass);
       await user.selectOptions(classSelect, 'A');
 
-      const laptopQtyInput = screen.getByLabelText(translations.en.laptopQuantityToExtract);
+      const laptopQtyInput = screen.getByLabelText(translations.en.laptopQuantity);
       // Use fireEvent for more reliable value setting in this case
       fireEvent.change(laptopQtyInput, { target: { value: '1' } });
 
-      const screenButton = screen.getByRole('button', { name: 'Screen' });
-      await user.click(screenButton);
+      const screenQtyInput = screen.getByLabelText('Screen quantity');
+      fireEvent.change(screenQtyInput, { target: { value: '0' } });
 
       const submitButton = screen.getByText(translations.en.recordEntry);
       await user.click(submitButton);
