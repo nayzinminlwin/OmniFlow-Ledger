@@ -1,5 +1,5 @@
 // Configure act environment for React 18
-(global as any).IS_REACT_ACT_ENVIRONMENT = true;
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 import { beforeEach } from 'vitest';
 import '@testing-library/jest-dom';

@@ -1,136 +1,136 @@
-# OmniFlow Ledger 💻🔧
+# Laptop Repair Shop Inventory Management System
 
-OmniFlow Ledger is a comprehensive, real-time inventory and lifecycle management system designed specifically for tracking laptop batches, component extractions, and hardware repairs. 
+A comprehensive, real-time inventory management web application tailored specifically for laptop repair shops, refurbishers, and IT asset disposition (ITAD) businesses. This system provides an elegant, iOS-inspired interface to track laptop stock, component inventory, and repair workflows.
 
-Built with modern web technologies, it provides a secure, multi-user environment to maintain an immutable ledger of all hardware movements within your organization.
-
-## 🎯 Who is this for?
+## 🎯 Target Audience
 
 This application is perfectly suited for:
-- **Laptop Repair Shops**: Track customer devices, spare parts, and repair histories.
-- **IT Asset Disposition (ITAD) Companies**: Manage large batches of incoming corporate laptops, grade them, and track their refurbishment process.
-- **Electronics Refurbishers & Recyclers**: Record the breakdown of spoiled laptops into harvestable components (screens, RAM, batteries, etc.).
-- **Hardware Inventory Managers**: Maintain strict oversight over high-value electronic components and prevent inventory shrinkage.
+- **Laptop Repair Shops:** Track incoming broken laptops, manage repair components, and record sales of refurbished units.
+- **IT Refurbishers:** Manage batches of incoming laptops, classify them by condition (Class A, B, C, D, Spoiled), and track the extraction of good components from spoiled units.
+- **Electronics Recyclers:** Keep a detailed ledger of parts harvested from recycled electronics.
+- **Small to Medium IT Departments:** Maintain an internal inventory of spare parts and employee devices.
 
-## ✨ Core Features
+## ✨ Key Features
 
-- 📦 **Batch Management**: Log incoming shipments of laptops. Categorize them by Brand, Series, and Model.
-- 📊 **Granular Grading System**: Classify laptops into specific conditions (Class A, B, B-, C1-C5, D, Spoiled, and Unclassified).
-- 🛠️ **Component Lifecycle Tracking**: 
-  - **Extract**: Break down spoiled or lower-grade laptops into individual harvestable components.
-  - **Buy**: Record new component purchases from suppliers.
-  - **Install**: Track the installation of components into specific laptop models, automatically updating both component and laptop stock levels.
-- 📖 **Immutable Transaction Ledger**: Every action (Incoming, Sale, Repair, Breakdown, Install, Purchase) is recorded with a timestamp, user ID, and exact quantity changes. Includes a secure, permission-based "Undo" functionality.
-- 📈 **Real-time Dashboard**: Get a bird's-eye view of your total laptop stock, component inventory, and recent activities.
+### Core Inventory Management
+- **Laptop Stock Tracking:** Track laptops by Brand, Series, Model, and Condition Class (A, B, C, D, Spoiled).
+- **Component Inventory:** Manage individual components (Screens, Batteries, Motherboards, RAM, SSDs, etc.) extracted from spoiled laptops or purchased new.
+- **Batch Management:** Group incoming laptops into batches (e.g., by date or supplier) for easier tracking and reporting.
+- **Transaction Ledger:** A complete, immutable history of all inventory movements (Incoming, Repair, Sale, Adjustment, Component Extraction, Component Installation).
 
-## 🚀 Additional Features
+### Advanced Capabilities
+- **Component Extraction Workflow:** A dedicated UI to record the breakdown of spoiled laptops into reusable components, automatically updating both laptop and component inventories.
+- **Component Installation Workflow:** Track the consumption of components when repairing or upgrading laptops.
+- **Real-time Synchronization:** Powered by Firebase Firestore, ensuring all users see the most up-to-date inventory instantly.
 
-- 🔐 **Secure User Management**: 
-  - Seamless **Google OAuth** login.
-  - **Role-Based Access Control (RBAC)**: Users start in a "Pending" state. Admins can approve, reject, or revoke access. "Ultimate Admins" have overriding control.
-- 🌍 **Multi-language Support**: Fully localized interface supporting **English**, **Malay**, and **Simplified Chinese**.
-- 📱 **Responsive Design**: A sleek, iOS-inspired, glassmorphism UI built with Tailwind CSS that works beautifully on desktops, tablets, and mobile devices.
-- 🧪 **Robust Test Coverage**: Comprehensive unit and integration testing using Vitest and React Testing Library.
+### System Features
+- **User Management & Authentication:** Secure Google Login integration. Administrators can approve new users and assign roles (Admin/User).
+- **Multi-language Support:** Built-in internationalization (i18n) supporting English, Malay, and Chinese, making it accessible to diverse teams.
+- **Responsive Design:** A mobile-first, iOS-inspired UI that works flawlessly on desktops, tablets, and smartphones.
+- **Undo Functionality:** Administrators can undo recent transactions, automatically reverting the associated inventory changes.
 
 ---
 
-## 💻 Getting Started (Local Development)
+## 🚀 Getting Started
 
 ### Prerequisites
-1. **Node.js** (v18 or higher)
-2. **Git**
-3. A **Firebase Project** with the following enabled:
-   - **Firestore Database**
-   - **Authentication** (Google Sign-In provider enabled)
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
+- A [Firebase](https://firebase.google.com/) account
 
-### 1. Clone the Repository
-```bash
-git clone <your-repository-url>
-cd omniflow-ledger
-```
+### 1. Firebase Setup
+This application relies on Firebase Authentication and Firestore.
 
-### 2. Install Dependencies
+1. Create a new project in the [Firebase Console](https://console.firebase.google.com/).
+2. Enable **Firestore Database** (start in production mode, we will set up rules later).
+3. Enable **Authentication** and add the **Google** sign-in provider.
+4. Register a Web App in your Firebase project to get your configuration object.
+
+### 2. Local Installation
+
 ```bash
+# Clone the repository
+git clone <your-repo-url>
+cd laptop-repair-shop
+
+# Install dependencies
 npm install
 ```
 
-### 3. Firebase Configuration
-This project uses a specific JSON file for Firebase configuration. Create a file named `firebase-applet-config.json` in the root directory of the project:
+### 3. Environment Configuration
+
+Create a `firebase-applet-config.json` file in the root directory (or `src/` depending on your setup) with your Firebase credentials:
 
 ```json
 {
   "apiKey": "YOUR_API_KEY",
-  "authDomain": "YOUR_PROJECT_ID.firebaseapp.com",
+  "authDomain": "YOUR_AUTH_DOMAIN",
   "projectId": "YOUR_PROJECT_ID",
-  "storageBucket": "YOUR_PROJECT_ID.firebasestorage.app",
-  "messagingSenderId": "YOUR_SENDER_ID",
+  "storageBucket": "YOUR_STORAGE_BUCKET",
+  "messagingSenderId": "YOUR_MESSAGING_SENDER_ID",
   "appId": "YOUR_APP_ID",
   "measurementId": "YOUR_MEASUREMENT_ID",
   "firestoreDatabaseId": "(default)"
 }
 ```
-*Note: Ensure this file is added to your `.gitignore` to prevent leaking your Firebase credentials.*
 
-### 4. Start the Development Server
+*Note: If you are running this within the Google AI Studio Applet environment, this file is automatically managed for you.*
+
+### 4. Running the Development Server
+
 ```bash
 npm run dev
 ```
-The app will be available at `http://localhost:3000`.
+
+The application will be available at `http://localhost:3000`.
 
 ---
 
-## 🌐 Deployment & Hosting
+## 🌐 Hosting & Deployment
 
-OmniFlow Ledger is a standard Vite Single Page Application (SPA), making it incredibly easy to host on almost any modern platform.
+### Option A: Firebase Hosting (Recommended)
 
-### Option A: Hosting on Vercel or Netlify (Recommended)
-1. Push your code to a GitHub/GitLab repository.
-2. Import the project into Vercel or Netlify.
-3. **Build Settings**:
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-4. **Environment Variables**: If you prefer not to commit `firebase-applet-config.json`, you can modify `src/firebase.ts` to read from standard `VITE_` environment variables and set those in your Vercel/Netlify dashboard.
-5. Deploy!
+Since the app already uses Firebase for its backend, Firebase Hosting is the most seamless option.
 
-### Option B: Firebase Hosting
-Since you are already using Firebase for Auth and Firestore, Firebase Hosting is a natural fit.
 1. Install the Firebase CLI: `npm install -g firebase-tools`
 2. Login to Firebase: `firebase login`
 3. Initialize hosting: `firebase init hosting`
    - Select your project.
-   - Public directory: `dist`
-   - Configure as a single-page app: `Yes`
-   - Set up automatic builds: `No` (or Yes if using GitHub Actions)
-4. Build the app: `npm run build`
+   - Set the public directory to `dist`.
+   - Configure as a single-page app (rewrite all urls to `/index.html`).
+4. Build the project: `npm run build`
 5. Deploy: `firebase deploy --only hosting`
 
-### Important Note on Firebase Security Rules
-Before going to production, ensure your Firestore Security Rules (`firestore.rules`) are properly deployed to protect your data. The app relies on these rules to enforce admin-only actions and secure user data.
+### Option B: Vercel / Netlify
+
+This is a standard Vite React application, which makes it incredibly easy to deploy on modern platforms like Vercel or Netlify.
+
+1. Push your code to a GitHub repository.
+2. Import the repository into Vercel or Netlify.
+3. The platform should automatically detect it as a Vite project.
+   - **Build Command:** `npm run build`
+   - **Output Directory:** `dist`
+4. Add your Firebase configuration as Environment Variables in the hosting platform's dashboard if you prefer not to commit the `firebase-applet-config.json` file (you will need to update `src/firebase.ts` to read from `import.meta.env` in this case).
+
+---
+
+## 🛡️ Security Rules
+
+To ensure your data is secure, you must deploy Firestore Security Rules. A prototype `firestore.rules` file is included in the repository. 
+
+**Important:** The first user to log in with the email specified in the rules will be granted Ultimate Admin privileges. From there, they can approve other users via the User Management dashboard.
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Framework**: React 18 with Vite
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **Animations**: Framer Motion (`motion/react`)
-- **Backend/BaaS**: Firebase (Firestore, Auth)
-- **Testing**: Vitest, React Testing Library
-- **Routing**: Custom lightweight tab routing (SPA)
+- **Frontend Framework:** React 18 with TypeScript
+- **Build Tool:** Vite
+- **Styling:** Tailwind CSS with `lucide-react` for icons
+- **Backend & Database:** Firebase (Authentication, Firestore)
+- **State Management:** React Hooks
+- **Testing:** Vitest & React Testing Library
 
-## 🧪 Running Tests
+## 📝 License
 
-To run the comprehensive test suite:
-
-```bash
-# Run tests once
-npm run test
-
-# Run tests in watch mode
-npx vitest
-```
-
----
-
-*Built with precision for the modern hardware lifecycle.*
+This project is licensed under the MIT License - see the LICENSE file for details.

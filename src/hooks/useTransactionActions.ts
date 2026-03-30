@@ -343,11 +343,15 @@ export function useTransactionActions(user: User | null, lang: Language) {
         const compModel = getComponentModelStock(compData.items, brand, series, model);
         const spoiledCompModel = getComponentModelStock(spoiledCompData.items, brand, series, model);
 
+        const actualComponentChanges: Record<ComponentType, number> = {} as Record<ComponentType, number>;
+
         // All components from the breakdown are accounted for:
-        // Either they are "good" (in componentChanges) or they are "spoiled" (laptopQuantity - goodQuantity)
+        // Either they are "good" (in componentChanges) or they are "spoiled" (laptopQuantity - goodQty)
         COMPONENTS.forEach(comp => {
-          const goodQty = componentChanges[comp] || 0;
+          const goodQty = componentChanges[comp] ?? laptopQuantity;
           const spoiledQty = laptopQuantity - goodQty;
+          
+          actualComponentChanges[comp] = goodQty;
           
           compModel.counts[comp] = (compModel.counts[comp] || 0) + goodQty;
           spoiledCompModel.counts[comp] = (spoiledCompModel.counts[comp] || 0) + spoiledQty;
@@ -365,7 +369,7 @@ export function useTransactionActions(user: User | null, lang: Language) {
           model,
           fromClass,
           laptopQuantity,
-          componentChanges,
+          componentChanges: actualComponentChanges,
           timestamp: new Date().toISOString(),
           userId: user.uid,
           notes
@@ -386,7 +390,7 @@ export function useTransactionActions(user: User | null, lang: Language) {
           timestamp: new Date().toISOString(),
           userId: user.uid,
           notes: `Broken down into components: ${notes}`,
-          componentChanges
+          componentChanges: actualComponentChanges
         };
 
         transaction.set(batchRef, batchData);
@@ -486,23 +490,19 @@ export function useTransactionActions(user: User | null, lang: Language) {
   };
 
   const recordComponentInstallation = async ({
-    batchId,
     brand,
     series,
     model,
-    fromClass,
     componentChanges,
     notes
   }: {
-    batchId: string;
     brand: string;
     series: string;
     model: string;
-    fromClass: LaptopClass;
     componentChanges: Partial<Record<ComponentType, number>>;
     notes: string;
   }) => {
-    if (!user || !brand.trim() || !series.trim() || !model.trim() || !batchId) return false;
+    if (!user || !brand.trim() || !series.trim() || !model.trim()) return false;
 
     setIsSubmitting(true);
     setError(null);
@@ -513,14 +513,6 @@ export function useTransactionActions(user: User | null, lang: Language) {
         runTransaction(db, async (transaction) => {
           const compStockRef = doc(db, 'components', 'current');
           const compStockDoc = await transaction.get(compStockRef);
-          const batchRef = doc(db, 'batches', batchId);
-          const batchDoc = await transaction.get(batchRef);
-
-          if (!batchDoc.exists()) {
-            throw new Error(t.batchNotFound);
-          }
-
-          const batchData = batchDoc.data() as Batch;
 
           let compData = compStockDoc.exists() ? compStockDoc.data() as ComponentStock : { ...INITIAL_COMPONENT_STOCK };
           const compModel = getComponentModelStock(compData.items, brand, series, model);
@@ -551,13 +543,11 @@ export function useTransactionActions(user: User | null, lang: Language) {
         const laptopTxRef = doc(collection(db, 'transactions'));
         const laptopTxData = {
           type: 'INSTALL',
-          batchId,
-          batchActive: batchData.active ?? true,
+          batchId: 'COMPONENTS',
+          batchActive: true,
           brand,
           series,
           model,
-          fromClass,
-          toClass: fromClass, // No class change for simple installation
           quantity: 0,
           timestamp: new Date().toISOString(),
           userId: user.uid,

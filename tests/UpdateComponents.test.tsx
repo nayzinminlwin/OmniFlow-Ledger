@@ -218,10 +218,6 @@ describe('UpdateComponents', () => {
     // Switch to install mode
     await user.click(screen.getByText(t.installComponents));
 
-    // Select batch first
-    const batchSelectInstall = screen.getByLabelText(t.batchId);
-    await user.selectOptions(batchSelectInstall, '16-03-2026');
-
     // Select brand, series, model
     const brandSelect = screen.getByLabelText(t.brandLabel);
     await user.selectOptions(brandSelect, 'Apple');
@@ -240,20 +236,17 @@ describe('UpdateComponents', () => {
     const quantityInput = screen.getByLabelText(t.quantity);
     fireEvent.change(quantityInput, { target: { value: '2' } });
 
-    // Select class
-    const classSelect = screen.getByLabelText(t.fromClass);
-    await user.selectOptions(classSelect, 'A');
+    console.log('Available text:', screen.queryByText(/Available:/)?.textContent);
 
     // Submit
     const submitButton = screen.getByRole('button', { name: t.recordEntry });
+    console.log('Submit button disabled:', (submitButton as HTMLButtonElement).disabled);
     await user.click(submitButton);
 
     expect(mockRecordComponentInstallation).toHaveBeenCalledWith({
-      batchId: '16-03-2026',
       brand: 'Apple',
       series: 'MacBook Pro',
       model: 'M1 2020',
-      fromClass: 'A',
       componentChanges: { Screen: 2 },
       notes: ''
     });
@@ -294,11 +287,11 @@ describe('UpdateComponents', () => {
     await user.selectOptions(classSelect, 'A');
 
     // Select component to extract
-    const screenButton = screen.getByRole('button', { name: 'Screen' });
-    await user.click(screenButton);
+    const screenQtyInput = screen.getByLabelText('Screen quantity');
+    fireEvent.change(screenQtyInput, { target: { value: '1' } });
 
     // Enter laptop quantity
-    const laptopQtyInput = screen.getByLabelText(t.laptopQuantityToExtract);
+    const laptopQtyInput = screen.getByLabelText(t.laptopQuantity);
     fireEvent.change(laptopQtyInput, { target: { value: '1' } });
 
     // Submit

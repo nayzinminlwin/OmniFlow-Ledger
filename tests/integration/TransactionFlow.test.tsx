@@ -158,26 +158,24 @@ describe('Integration: Inventory Flows', () => {
 
       await user.click(screen.getByRole('button', { name: translations.en.buyComponents }));
 
-      await act(async () => {
-        const brandSelect = screen.getAllByRole('combobox')[0];
-        await user.selectOptions(brandSelect, 'Apple');
+      const brandSelect = screen.getAllByRole('combobox')[0];
+      await user.selectOptions(brandSelect, 'Apple');
 
-        const seriesSelect = screen.getAllByRole('combobox')[1];
-        await user.selectOptions(seriesSelect, 'MacBook Pro');
+      const seriesSelect = screen.getAllByRole('combobox')[1];
+      await user.selectOptions(seriesSelect, 'MacBook Pro');
 
-        const modelSelect = screen.getAllByRole('combobox')[2];
-        await user.selectOptions(modelSelect, 'M1 2020');
+      const modelSelect = screen.getAllByRole('combobox')[2];
+      await user.selectOptions(modelSelect, 'M1 2020');
 
-        const componentSelect = screen.getAllByRole('combobox')[3];
-        await user.selectOptions(componentSelect, 'Screen');
+      const componentSelect = screen.getAllByRole('combobox')[3];
+      await user.selectOptions(componentSelect, 'Screen');
 
-        const quantityInput = screen.getByLabelText(translations.en.quantity);
-        await user.clear(quantityInput);
-        await user.type(quantityInput, '5');
+      const quantityInput = screen.getByLabelText(translations.en.quantity);
+      await user.clear(quantityInput);
+      await user.type(quantityInput, '5');
 
-        const submitButton = screen.getByText(translations.en.recordEntry);
-        await user.click(submitButton);
-      });
+      const submitButton = screen.getByText(translations.en.recordEntry);
+      await user.click(submitButton);
 
       expect(firestore.runTransaction).toHaveBeenCalled();
       expect(mockTransaction.set).toHaveBeenCalledTimes(3);
@@ -209,32 +207,24 @@ describe('Integration: Inventory Flows', () => {
 
       await user.click(screen.getByRole('button', { name: translations.en.installComponents }));
 
-      await act(async () => {
-        const batchSelect = screen.getByLabelText(translations.en.batchId);
-        await user.selectOptions(batchSelect, '16-03-2026');
+      const brandSelect = screen.getByLabelText(translations.en.brandLabel);
+      await user.selectOptions(brandSelect, 'Apple');
 
-        const brandSelect = screen.getByLabelText(translations.en.brandLabel);
-        await user.selectOptions(brandSelect, 'Apple');
+      const seriesSelect = screen.getByLabelText(translations.en.seriesLabel);
+      await user.selectOptions(seriesSelect, 'MacBook Pro');
 
-        const seriesSelect = screen.getByLabelText(translations.en.seriesLabel);
-        await user.selectOptions(seriesSelect, 'MacBook Pro');
+      const modelSelect = screen.getByLabelText(translations.en.modelLabel);
+      await user.selectOptions(modelSelect, 'M1 2020');
 
-        const modelSelect = screen.getByLabelText(translations.en.modelLabel);
-        await user.selectOptions(modelSelect, 'M1 2020');
+      const componentSelect = screen.getByLabelText(translations.en.componentLabel);
+      await user.selectOptions(componentSelect, 'Screen');
 
-        const fromClassSelect = screen.getByLabelText(translations.en.fromClass);
-        await user.selectOptions(fromClassSelect, 'A');
+      const quantityInput = screen.getByLabelText(translations.en.quantity);
+      await user.clear(quantityInput);
+      await user.type(quantityInput, '2');
 
-        const componentSelect = screen.getByLabelText(translations.en.componentLabel);
-        await user.selectOptions(componentSelect, 'Screen');
-
-        const quantityInput = screen.getByLabelText(translations.en.quantity);
-        await user.clear(quantityInput);
-        await user.type(quantityInput, '2');
-
-        const submitButton = screen.getByText(translations.en.recordEntry);
-        await user.click(submitButton);
-      });
+      const submitButton = screen.getByRole('button', { name: translations.en.recordEntry });
+      await user.click(submitButton);
 
       expect(firestore.runTransaction).toHaveBeenCalled();
       expect(mockTransaction.set).toHaveBeenCalledTimes(3);
@@ -266,32 +256,30 @@ describe('Integration: Inventory Flows', () => {
         />
       );
 
-      await act(async () => {
-        const batchSelect = screen.getByLabelText(translations.en.batchId);
-        await user.selectOptions(batchSelect, '16-03-2026');
+      const batchSelect = screen.getByLabelText(translations.en.batchId);
+      await user.selectOptions(batchSelect, '16-03-2026');
 
-        const brandSelect = screen.getByLabelText(translations.en.brandLabel);
-        await user.selectOptions(brandSelect, 'Apple');
+      const brandSelect = screen.getByLabelText(translations.en.brandLabel);
+      await user.selectOptions(brandSelect, 'Apple');
 
-        const seriesSelect = screen.getByLabelText(translations.en.seriesLabel);
-        await user.selectOptions(seriesSelect, 'MacBook Pro');
+      const seriesSelect = screen.getByLabelText(translations.en.seriesLabel);
+      await user.selectOptions(seriesSelect, 'MacBook Pro');
 
-        const modelSelect = screen.getByLabelText(translations.en.modelLabel);
-        await user.selectOptions(modelSelect, 'M1 2020');
+      const modelSelect = screen.getByLabelText(translations.en.modelLabel);
+      await user.selectOptions(modelSelect, 'M1 2020');
 
-        const classSelect = await screen.findByLabelText(translations.en.fromClass);
-        await user.selectOptions(classSelect, 'A');
+      const classSelect = await screen.findByLabelText(translations.en.fromClass);
+      await user.selectOptions(classSelect, 'A');
 
-        const laptopQtyInput = screen.getByLabelText(translations.en.laptopQuantityToExtract);
-        // Use fireEvent for more reliable value setting in this case
-        fireEvent.change(laptopQtyInput, { target: { value: '1' } });
+      const laptopQtyInput = screen.getByLabelText(translations.en.laptopQuantityToExtract);
+      // Use fireEvent for more reliable value setting in this case
+      fireEvent.change(laptopQtyInput, { target: { value: '1' } });
 
-        const screenButton = screen.getByRole('button', { name: 'Screen' });
-        await user.click(screenButton);
+      const screenButton = screen.getByRole('button', { name: 'Screen' });
+      await user.click(screenButton);
 
-        const submitButton = screen.getByText(translations.en.recordEntry);
-        await user.click(submitButton);
-      });
+      const submitButton = screen.getByText(translations.en.recordEntry);
+      await user.click(submitButton);
 
       expect(firestore.runTransaction).toHaveBeenCalled();
       expect(mockTransaction.set).toHaveBeenCalled();
@@ -491,9 +479,7 @@ describe('Integration: Inventory Flows', () => {
 
       // Try to submit without filling fields
       const submitButton = screen.getByRole('button', { name: translations.en.recordEntry });
-      await act(async () => {
-        await user.click(submitButton);
-      });
+      await user.click(submitButton);
 
       // Should not call onAddTransaction because brand/series/model are empty
       expect(onAddTransaction).not.toHaveBeenCalled();

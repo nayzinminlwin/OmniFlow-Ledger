@@ -4,6 +4,15 @@ import { History } from '../src/components/History';
 import { Transaction, UserProfile } from '../src/types';
 import { translations } from '../src/translations';
 
+vi.mock('motion/react', () => ({
+  motion: {
+    div: ({ children, className, style, onClick }: any) => (
+      <div className={className} style={style} onClick={onClick}>{children}</div>
+    )
+  },
+  AnimatePresence: ({ children }: any) => <>{children}</>
+}));
+
 // Mock hooks
 const mockHandleUndoTransaction = vi.fn();
 vi.mock('../src/hooks/useTransactionActions', () => ({

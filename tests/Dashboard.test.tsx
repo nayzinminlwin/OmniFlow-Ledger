@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, fireEvent } from '@testing-library/react';
 import { Dashboard } from '../src/components/Dashboard';
 import { translations } from '../src/translations';
 import { Stock, Batch } from '../src/types';
@@ -215,7 +215,7 @@ describe('Dashboard Component', () => {
 
     // Click to show
     await act(async () => {
-      breakdownItem?.click();
+      if (breakdownItem) fireEvent.click(breakdownItem);
     });
 
     expect(screen.getByText(t.goodComponents)).toBeInTheDocument();
@@ -224,7 +224,7 @@ describe('Dashboard Component', () => {
 
     // Click again to hide
     await act(async () => {
-      breakdownItem?.click();
+      if (breakdownItem) fireEvent.click(breakdownItem);
     });
 
     expect(screen.queryByText(t.goodComponents)).not.toBeInTheDocument();
@@ -245,7 +245,7 @@ describe('Dashboard Component', () => {
 
     const viewFullLedger = screen.getByText(t.viewFullLedger);
     await act(async () => {
-      viewFullLedger.click();
+      fireEvent.click(viewFullLedger);
     });
 
     expect(setActiveTab).toHaveBeenCalledWith('history');

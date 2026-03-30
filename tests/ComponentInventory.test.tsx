@@ -8,7 +8,7 @@ import { COMPONENTS } from '../src/constants';
 describe('ComponentInventory Component', () => {
   const t = translations.en;
   const mockUsers: Record<string, UserProfile> = {
-    'u1': { uid: 'u1', email: 'admin@test.com', role: 'admin', displayName: 'Admin User', username: 'Admin User' }
+    'u1': { uid: 'u1', email: 'admin@test.com', role: 'admin', username: 'Admin User', status: 'approved', createdAt: new Date().toISOString() }
   };
 
   const mockStock: ComponentStock = {

@@ -87,16 +87,16 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
 
   const eligibleClasses: LaptopClass[] = ['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', 'C5', 'D', 'Spoiled', 'UNCLASSIFIED'];
 
-  const handleComponentChange = (comp: ComponentType) => {
+  const handleComponentQuantityChange = (comp: ComponentType, qty: number) => {
     setComponentChanges(prev => ({
       ...prev,
-      [comp]: prev[comp] ? 0 : 1
+      [comp]: qty
     }));
   };
 
   const maxLaptopQuantity = useMemo(() => {
     if (!selectedModelStock) return 0;
-    if (mode === 'extract' || mode === 'install') {
+    if (mode === 'extract') {
       return (fromClass && selectedModelStock.counts) ? (selectedModelStock.counts[fromClass as LaptopClass] || 0) : 0;
     }
     return 0;
@@ -159,8 +159,8 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {mode !== 'buy' && (
+            <div className="space-y-8">
+              {mode === 'extract' && (
                 <div className="space-y-3">
                   <label htmlFor="update-batch-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.batchId}</label>
                   {!isNewBatch ? (
@@ -204,176 +204,194 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
                 </div>
               )}
 
-              <div className={cn("space-y-3", mode === 'buy' && "col-span-2")}>
-                <label htmlFor="update-brand-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.brandLabel}</label>
-                {!isNewBrand ? (
-                  <select
-                    id="update-brand-select"
-                    value={brand}
-                    onChange={(e) => handleBrandChange(e.target.value)}
-                    className="ios-input w-full"
-                    required
-                  >
-                    <option value="" disabled>{t.selectBrand}</option>
-                    {brands.map((b, i) => <option key={`update-brand-${b}-${i}`} value={b}>{b}</option>)}
-                    {mode === 'buy' && <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>}
-                  </select>
-                ) : (
-                  <div className="relative flex items-center">
-                    <input
-                      id="update-brand-input"
-                      ref={brandInputRef}
-                      type="text"
-                      placeholder={t.newBrand}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="space-y-3">
+                  <label htmlFor="update-brand-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.brandLabel}</label>
+                  {!isNewBrand ? (
+                    <select
+                      id="update-brand-select"
                       value={brand}
-                      onChange={(e) => setBrand(e.target.value)}
-                      className="ios-input w-full pr-10"
+                      onChange={(e) => handleBrandChange(e.target.value)}
+                      className="ios-input w-full"
                       required
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => handleBrandChange('')}
-                      className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                     >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-              </div>
+                      <option value="" disabled>{t.selectBrand}</option>
+                      {brands.map((b, i) => <option key={`update-brand-${b}-${i}`} value={b}>{b}</option>)}
+                      {mode === 'buy' && <option value="__NEW__" className="font-bold text-blue-600">+ {t.newBrand}</option>}
+                    </select>
+                  ) : (
+                    <div className="relative flex items-center">
+                      <input
+                        id="update-brand-input"
+                        ref={brandInputRef}
+                        type="text"
+                        placeholder={t.newBrand}
+                        value={brand}
+                        onChange={(e) => setBrand(e.target.value)}
+                        className="ios-input w-full pr-10"
+                        required
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => handleBrandChange('')}
+                        className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-              <div className="space-y-3">
-                <label htmlFor="update-series-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.seriesLabel}</label>
-                {!isNewSeries ? (
-                  <select
-                    id="update-series-select"
-                    value={series}
-                    onChange={(e) => handleSeriesChange(e.target.value)}
-                    className="ios-input w-full"
-                    disabled={!brand && !isNewBrand}
-                    required
-                  >
-                    <option value="" disabled>{t.selectSeries}</option>
-                    {seriesList.map((s, i) => <option key={`update-series-${s}-${i}`} value={s}>{s}</option>)}
-                    {mode === 'buy' && <option value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>}
-                  </select>
-                ) : (
-                  <div className="relative flex items-center">
-                    <input
-                      id="update-series-input"
-                      ref={seriesInputRef}
-                      type="text"
-                      placeholder={t.newSeries}
+                <div className="space-y-3">
+                  <label htmlFor="update-series-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.seriesLabel}</label>
+                  {!isNewSeries ? (
+                    <select
+                      id="update-series-select"
                       value={series}
-                      onChange={(e) => setSeries(e.target.value)}
-                      className="ios-input w-full pr-10"
+                      onChange={(e) => handleSeriesChange(e.target.value)}
+                      className="ios-input w-full"
+                      disabled={!brand && !isNewBrand}
                       required
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => handleSeriesChange('')}
-                      className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                     >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-              </div>
+                      <option value="" disabled>{t.selectSeries}</option>
+                      {seriesList.map((s, i) => <option key={`update-series-${s}-${i}`} value={s}>{s}</option>)}
+                      {mode === 'buy' && <option value="__NEW__" className="font-bold text-blue-600">+ {t.newSeries}</option>}
+                    </select>
+                  ) : (
+                    <div className="relative flex items-center">
+                      <input
+                        id="update-series-input"
+                        ref={seriesInputRef}
+                        type="text"
+                        placeholder={t.newSeries}
+                        value={series}
+                        onChange={(e) => setSeries(e.target.value)}
+                        className="ios-input w-full pr-10"
+                        required
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => handleSeriesChange('')}
+                        className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-              <div className="space-y-3">
-                <label htmlFor="update-model-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.modelLabel}</label>
-                {!isNewModel ? (
-                  <select
-                    id="update-model-select"
-                    value={model}
-                    onChange={(e) => handleModelChange(e.target.value)}
-                    className="ios-input w-full"
-                    disabled={(!series && !isNewSeries) || (!brand && !isNewBrand)}
-                    required
-                  >
-                    <option value="" disabled>{t.selectModel}</option>
-                    {modelList.map((m, i) => <option key={`update-model-${m}-${i}`} value={m}>{m}</option>)}
-                    {mode === 'buy' && <option value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>}
-                  </select>
-                ) : (
-                  <div className="relative flex items-center">
-                    <input
-                      id="update-model-input"
-                      ref={modelInputRef}
-                      type="text"
-                      placeholder={t.newModel}
+                <div className="space-y-3">
+                  <label htmlFor="update-model-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.modelLabel}</label>
+                  {!isNewModel ? (
+                    <select
+                      id="update-model-select"
                       value={model}
-                      onChange={(e) => setModel(e.target.value)}
-                      className="ios-input w-full pr-10"
+                      onChange={(e) => handleModelChange(e.target.value)}
+                      className="ios-input w-full"
+                      disabled={(!series && !isNewSeries) || (!brand && !isNewBrand)}
                       required
-                    />
-                    <button 
-                      type="button" 
-                      onClick={() => handleModelChange('')}
-                      className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                     >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
+                      <option value="" disabled>{t.selectModel}</option>
+                      {modelList.map((m, i) => <option key={`update-model-${m}-${i}`} value={m}>{m}</option>)}
+                      {mode === 'buy' && <option value="__NEW__" className="font-bold text-blue-600">+ {t.newModel}</option>}
+                    </select>
+                  ) : (
+                    <div className="relative flex items-center">
+                      <input
+                        id="update-model-input"
+                        ref={modelInputRef}
+                        type="text"
+                        placeholder={t.newModel}
+                        value={model}
+                        onChange={(e) => setModel(e.target.value)}
+                        className="ios-input w-full pr-10"
+                        required
+                      />
+                      <button 
+                        type="button" 
+                        onClick={() => handleModelChange('')}
+                        className="absolute right-2 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             {mode === 'extract' && (
               <div className="space-y-8 animate-in fade-in slide-in-from-top duration-300">
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <label htmlFor="extract-laptop-quantity" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.laptopQuantityToExtract}</label>
-                    {selectedModelStock && (
-                      <span className="text-[11px] font-bold text-ios-blue bg-ios-blue/10 px-2 py-0.5 rounded-full">
-                        {t.availableLaptops}: {maxLaptopQuantity}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <button
-                      type="button"
-                      onClick={() => setLaptopQuantity(prev => Math.max(1, (Number(prev) || 1) - 1))}
-                      className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-colors"
-                      aria-label={t.decreaseQuantity}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="from-class-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.fromClass}</label>
+                      {selectedModelStock && (
+                        <span className={cn(
+                          "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                          maxLaptopQuantity <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
+                        )}>
+                          {t.availableLaptops}: {maxLaptopQuantity}
+                        </span>
+                      )}
+                    </div>
+                    <select
+                      id="from-class-select"
+                      value={fromClass}
+                      onChange={(e) => setFromClass(e.target.value as LaptopClass)}
+                      className="ios-input w-full"
+                      required
                     >
-                      <Minus className="w-6 h-6" />
-                    </button>
+                      <option value="" disabled>{t.selectClass}</option>
+                      {eligibleClasses.map((c, i) => <option key={`class-opt-${c}-${i}`} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
+                    </select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label htmlFor="extract-laptop-quantity" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.laptopQuantity}</label>
                     <input
                       id="extract-laptop-quantity"
                       type="number"
                       value={laptopQuantity}
                       onChange={(e) => setLaptopQuantity(Math.min(maxLaptopQuantity, Math.max(1, parseInt(e.target.value) || 1)))}
-                      className="ios-input w-24 text-center text-[24px] font-bold"
+                      className="ios-input w-full"
+                      required
                     />
-                    <button
-                      type="button"
-                      onClick={() => setLaptopQuantity(prev => Math.min(maxLaptopQuantity, (Number(prev) || 0) + 1))}
-                      className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center hover:bg-black/10 transition-colors"
-                      aria-label={t.increaseQuantity}
-                    >
-                      <Plus className="w-6 h-6" />
-                    </button>
                   </div>
                 </div>
 
                 <fieldset className="space-y-4 border-none p-0 m-0">
-                  <legend className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest mb-4">{t.selectComponentsToExtract}</legend>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4" role="group" aria-labelledby="extract-components-legend">
+                  <legend className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest mb-4">COMPONENT CHANGES</legend>
+                  <div className="bg-[#F8F8F8] rounded-[24px] p-6 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
                     {COMPONENTS.map((comp) => (
-                      <button
-                        key={`comp-${comp}`}
-                        type="button"
-                        onClick={() => handleComponentChange(comp as ComponentType)}
-                        className={cn(
-                          "p-4 rounded-[20px] text-[13px] font-bold border-2 transition-all text-center",
-                          componentChanges[comp as ComponentType]
-                            ? "bg-ios-blue border-ios-blue text-white shadow-lg shadow-ios-blue/20"
-                            : "bg-white border-gray-100 text-gray-600 hover:border-gray-200"
-                        )}
-                        aria-pressed={!!componentChanges[comp as ComponentType]}
-                      >
-                        {t[comp.toLowerCase() as keyof typeof t] || comp}
-                      </button>
+                      <div key={`comp-${comp}`} className="flex items-center justify-between">
+                        <span className="text-[13px] font-semibold text-gray-600">{t[comp.toLowerCase() as keyof typeof t] || comp}</span>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            aria-label={`Decrease ${t[comp.toLowerCase() as keyof typeof t] || comp} quantity`}
+                            onClick={() => handleComponentQuantityChange(comp as ComponentType, Math.max(0, (componentChanges[comp as ComponentType] ?? laptopQuantity) - 1))}
+                            className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                          >
+                            <Minus className="w-4 h-4 text-gray-500" />
+                          </button>
+                          <input
+                            type="number"
+                            aria-label={`${t[comp.toLowerCase() as keyof typeof t] || comp} quantity`}
+                            value={componentChanges[comp as ComponentType] ?? laptopQuantity}
+                            onChange={(e) => handleComponentQuantityChange(comp as ComponentType, Math.max(0, Math.min(laptopQuantity, parseInt(e.target.value) || 0)))}
+                            className="w-16 text-center bg-white border border-gray-200 rounded-lg py-1 text-[13px] font-bold"
+                          />
+                          <button
+                            type="button"
+                            aria-label={`Increase ${t[comp.toLowerCase() as keyof typeof t] || comp} quantity`}
+                            onClick={() => handleComponentQuantityChange(comp as ComponentType, Math.min(laptopQuantity, (componentChanges[comp as ComponentType] ?? laptopQuantity) + 1))}
+                            className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+                          >
+                            <Plus className="w-4 h-4 text-gray-500" />
+                          </button>
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </fieldset>
@@ -414,72 +432,46 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
               </div>
             )}
 
-            {(mode === 'extract' || mode === 'install') && (
+
+
+            {mode === 'install' && (
               <div className="space-y-8 animate-in fade-in slide-in-from-top duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <label htmlFor="from-class-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.fromClass}</label>
-                      {selectedModelStock && (
-                        <span className={cn(
-                          "text-[11px] font-bold px-2 py-0.5 rounded-full",
-                          maxLaptopQuantity <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
-                        )}>
-                          {t.availableLaptops}: {maxLaptopQuantity}
-                        </span>
-                      )}
+                      <label htmlFor="install-component-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.componentLabel}</label>
+                      <span className={cn(
+                        "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                        availableComponentCount <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
+                      )}>
+                        {t.availableStock}: {availableComponentCount}
+                      </span>
                     </div>
                     <select
-                      id="from-class-select"
-                      value={fromClass}
-                      onChange={(e) => setFromClass(e.target.value as LaptopClass)}
+                      id="install-component-select"
+                      value={selectedComponent}
+                      onChange={(e) => setSelectedComponent(e.target.value as ComponentType)}
                       className="ios-input w-full"
                       required
                     >
-                      <option value="" disabled>{t.selectClass}</option>
-                      {eligibleClasses.map((c, i) => <option key={`class-opt-${c}-${i}`} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
+                      <option value="" disabled>{t.selectComponent}</option>
+                      {COMPONENTS.map((comp) => (
+                        <option key={`install-comp-${comp}`} value={comp}>{t[comp.toLowerCase() as keyof typeof t] || comp}</option>
+                      ))}
                     </select>
                   </div>
 
-                  {mode === 'install' && (
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <label htmlFor="install-component-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.componentLabel}</label>
-                        <span className={cn(
-                          "text-[11px] font-bold px-2 py-0.5 rounded-full",
-                          availableComponentCount <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
-                        )}>
-                          {t.availableStock}: {availableComponentCount}
-                        </span>
-                      </div>
-                      <select
-                        id="install-component-select"
-                        value={selectedComponent}
-                        onChange={(e) => setSelectedComponent(e.target.value as ComponentType)}
-                        className="ios-input w-full"
-                        required
-                      >
-                        <option value="" disabled>{t.selectComponent}</option>
-                        {COMPONENTS.map((comp) => (
-                          <option key={`install-comp-${comp}`} value={comp}>{t[comp.toLowerCase() as keyof typeof t] || comp}</option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {mode === 'install' && (
-                    <div className="space-y-3 col-span-2">
-                      <label htmlFor="install-quantity-input" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.quantity}</label>
-                      <input
-                        id="install-quantity-input"
-                        type="number"
-                        value={purchaseQuantity}
-                        onChange={(e) => setPurchaseQuantity(Math.min(availableComponentCount, Math.max(1, parseInt(e.target.value) || 1)))}
-                        className="ios-input w-full"
-                        required
-                      />
-                    </div>
-                  )}
+                  <div className="space-y-3">
+                    <label htmlFor="install-quantity-input" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.quantity}</label>
+                    <input
+                      id="install-quantity-input"
+                      type="number"
+                      value={purchaseQuantity}
+                      onChange={(e) => setPurchaseQuantity(Math.min(availableComponentCount, Math.max(1, parseInt(e.target.value) || 1)))}
+                      className="ios-input w-full"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
             )}
@@ -497,10 +489,10 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
 
             <button
               type="submit"
-              disabled={isSubmitting || ((mode === 'extract' || mode === 'install') && maxLaptopQuantity <= 0) || (mode === 'extract' && Object.values(componentChanges).filter(v => (v as number) > 0).length === 0) || (mode === 'install' && availableComponentCount <= 0)}
+              disabled={isSubmitting || (mode === 'extract' && maxLaptopQuantity <= 0) || (mode === 'extract' && Object.values(componentChanges).filter(v => (v as number) > 0).length === 0) || (mode === 'install' && availableComponentCount <= 0)}
               className={cn(
                 "ios-button w-full py-5 text-[19px] mt-4",
-                (isSubmitting || ((mode === 'extract' || mode === 'install') && maxLaptopQuantity <= 0) || (mode === 'extract' && Object.values(componentChanges).filter(v => (v as number) > 0).length === 0) || (mode === 'install' && availableComponentCount <= 0)) && "opacity-50 cursor-not-allowed bg-gray-400"
+                (isSubmitting || (mode === 'extract' && maxLaptopQuantity <= 0) || (mode === 'extract' && Object.values(componentChanges).filter(v => (v as number) > 0).length === 0) || (mode === 'install' && availableComponentCount <= 0)) && "opacity-50 cursor-not-allowed bg-gray-400"
               )}
             >
               {isSubmitting ? <RefreshCw className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}

@@ -224,6 +224,7 @@ export function useUpdateComponentsForm({
   }, [brand, series, model, componentStock]);
 
   const availableComponentCount = useMemo(() => {
+    console.log('availableComponentCount calc:', { brand, series, model, selectedComponent, selectedComponentModelStock });
     if (!selectedComponentModelStock || !selectedComponent) return 0;
     return selectedComponentModelStock?.counts?.[selectedComponent as ComponentType] || 0;
   }, [selectedComponentModelStock, selectedComponent]);
@@ -282,6 +283,22 @@ export function useUpdateComponentsForm({
     }
   }, [modelList, isNewModel, model]);
 
+  useEffect(() => {
+    if (mode === 'extract') {
+      setComponentChanges(prev => {
+        let hasChanges = false;
+        const newChanges = { ...prev };
+        for (const comp in newChanges) {
+          if (newChanges[comp as ComponentType]! > laptopQuantity) {
+            newChanges[comp as ComponentType] = laptopQuantity;
+            hasChanges = true;
+          }
+        }
+        return hasChanges ? newChanges : prev;
+      });
+    }
+  }, [laptopQuantity, mode]);
+
   const handleModeChange = (newMode: 'extract' | 'buy' | 'install') => {
     setMode(newMode);
     setBrand('');
@@ -333,13 +350,11 @@ export function useUpdateComponentsForm({
         setNotes('');
       }
     } else if (mode === 'install') {
-      if (!batchId || !brand || !series || !model || !selectedComponent || !purchaseQuantity || !fromClass) return;
+      if (!brand || !series || !model || !selectedComponent || !purchaseQuantity) return;
       const result = await recordComponentInstallation({
-        batchId,
         brand,
         series,
         model,
-        fromClass: fromClass as LaptopClass,
         componentChanges: { [selectedComponent as ComponentType]: Number(purchaseQuantity) },
         notes
       });

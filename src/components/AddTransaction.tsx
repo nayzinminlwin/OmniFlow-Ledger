@@ -293,7 +293,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className={cn("grid grid-cols-1 gap-8", txType === 'REPAIR' && "md:grid-cols-2")}>
               {(txType === 'REPAIR' || txType === 'SALE') && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
@@ -317,7 +317,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                 </div>
               )}
               {(txType === 'REPAIR' || txType === 'ADJUSTMENT' || txType === 'INCOMING') && (
-                <div className={cn("space-y-2", (txType === 'ADJUSTMENT' || txType === 'INCOMING') && "col-span-2")}>
+                <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <label htmlFor="to-class-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">
                       {(txType === 'ADJUSTMENT' || txType === 'INCOMING') ? t.targetClass : t.toClass}
