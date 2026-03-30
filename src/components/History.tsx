@@ -240,8 +240,8 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                           <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.undone}</span>
                         ) : tx.batchActive === false ? (
                           <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest">{t.batchDeleted}</span>
-                        ) : tx.type === 'UNDO' ? (
-                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest opacity-50">{t.undo}</span>
+                        ) : tx.type === 'UNDO' || tx.type === 'EXPORT' ? (
+                          <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest opacity-50">{tx.type === 'UNDO' ? t.undo : t.export}</span>
                         ) : isAdmin ? (
                           <button
                             onClick={() => tx.id && handleUndo(tx.id)}

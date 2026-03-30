@@ -616,6 +616,10 @@ export function useTransactionActions(user: User | null, lang: Language) {
           throw new Error('Cannot undo an undo transaction. Please perform the action manually.');
         }
 
+        if (txData.type === 'EXPORT') {
+          throw new Error('Export transactions cannot be undone.');
+        }
+
         // Permission Check
         const isOwnTransaction = txData.userId === user.uid;
         const isUltimateAdmin = currentUserProfile.isUltimateAdmin;

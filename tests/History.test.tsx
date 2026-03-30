@@ -69,6 +69,8 @@ describe('History Component', () => {
 
   const mockProps = {
     transactions: mockTransactions,
+    batches: [],
+    componentStock: null,
     users: mockUsers,
     t: translations.en,
     activeTab: 'history',
@@ -95,6 +97,21 @@ describe('History Component', () => {
     render(<History {...mockProps} />);
     expect(screen.getByText(translations.en.export)).toBeInTheDocument();
     expect(screen.getByText('Inventory exported by John Doe')).toBeInTheDocument();
+  });
+
+  it('should not show undo button for Export transactions', () => {
+    render(<History {...mockProps} />);
+    
+    // Find the row with EXPORT type
+    const exportRow = screen.getByText('Inventory exported by John Doe').closest('tr');
+    expect(exportRow).toBeInTheDocument();
+    
+    // Check that there is no undo button in this row
+    // The undo button has title="Undo" or is an icon. 
+    // In our implementation, for EXPORT it should show a span with t.export and opacity-50
+    const undoCell = exportRow?.querySelectorAll('td')[10];
+    expect(undoCell?.textContent).toBe(translations.en.export);
+    expect(undoCell?.querySelector('button')).not.toBeInTheDocument();
   });
 
   it('should display Undo type with correct label', () => {

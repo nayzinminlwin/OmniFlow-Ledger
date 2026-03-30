@@ -98,6 +98,29 @@ describe('useTransactionActions', () => {
       expect(result.current.error).toBe('Transaction is already undone');
     });
 
+    it('should throw an error if transaction type is EXPORT', async () => {
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
+      
+      const mockTransaction = {
+        get: vi.fn().mockResolvedValueOnce({ 
+          exists: () => true,
+          data: () => ({ isUndone: false, type: 'EXPORT' })
+        }),
+      };
+      
+      vi.mocked(firestore.runTransaction).mockImplementation(async (db, updateFunction) => {
+        await updateFunction(mockTransaction as any);
+      });
+
+      const mockProfile: UserProfile = { uid: 'user123', username: 'test', email: 'test@test.com', status: 'approved', role: 'user', createdAt: '' };
+
+      await act(async () => {
+        await result.current.handleUndoTransaction('tx1', mockProfile);
+      });
+
+      expect(result.current.error).toBe('Export transactions cannot be undone.');
+    });
+
     it('should deny permission for normal user trying to undo another user transaction', async () => {
       const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
