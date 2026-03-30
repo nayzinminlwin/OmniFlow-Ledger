@@ -145,14 +145,16 @@ describe('useInventory', () => {
       const cb = typeof options === 'function' ? options : callback;
       const isQuery = (ref as any)?.type !== 'document';
 
-      if (isQuery && (ref as any)?.path === 'batches') {
+      if (isQuery) {
         cb({ 
           forEach: (fn: any) => {
-            fn({ id: 'batch-missing', data: () => mockBatchWithMissingCounts });
+            if ((ref as any)?.path === 'batches') {
+              fn({ id: 'batch-missing', data: () => mockBatchWithMissingCounts });
+            }
           },
-          docs: [{ id: 'batch-missing', data: () => mockBatchWithMissingCounts }],
-          size: 1,
-          empty: false,
+          docs: (ref as any)?.path === 'batches' ? [{ id: 'batch-missing', data: () => mockBatchWithMissingCounts }] : [],
+          size: (ref as any)?.path === 'batches' ? 1 : 0,
+          empty: (ref as any)?.path !== 'batches',
           metadata: { fromCache: false, hasPendingWrites: false },
           query: {},
           docChanges: () => []

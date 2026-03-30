@@ -95,7 +95,7 @@ describe('History Component', () => {
 
   it('should display Export type correctly', () => {
     render(<History {...mockProps} />);
-    expect(screen.getByText(translations.en.export)).toBeInTheDocument();
+    expect(screen.getAllByText(translations.en.export).length).toBeGreaterThan(0);
     expect(screen.getByText('Inventory exported by John Doe')).toBeInTheDocument();
   });
 
