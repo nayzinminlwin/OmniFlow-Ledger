@@ -102,7 +102,18 @@ service cloud.firestore {
 
     function isValidBatch(data) {
       return data.keys().hasAll(['batchId', 'items', 'createdAt']) &&
-             data.batchId is string && data.items is list && isValidTimestamp(data.createdAt);
+             data.batchId is string && data.items is list && isValidTimestamp(data.createdAt) &&
+             data.items.all(item => 
+               item.counts.values().all(count => count >= 0)
+             );
+    }
+
+    function isValidComponentStock(data) {
+      return data.keys().hasAll(['items', 'lastUpdated']) &&
+             data.items is list && isValidTimestamp(data.lastUpdated) &&
+             data.items.all(item => 
+               item.counts.values().all(count => count >= 0)
+             );
     }
 
     // ===============================================================
@@ -145,11 +156,13 @@ service cloud.firestore {
     }
 
     match /batches/{batchId} {
-      allow read, write: if isApproved();
+      allow read: if isApproved();
+      allow write: if isApproved() && isValidBatch(request.resource.data);
     }
 
     match /components/{docId} {
-      allow read, write: if isApproved();
+      allow read: if isApproved();
+      allow write: if isApproved() && isValidComponentStock(request.resource.data);
     }
   }
 }

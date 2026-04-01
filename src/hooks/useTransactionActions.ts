@@ -16,6 +16,59 @@ import { COMPONENTS, INITIAL_CLASS_COUNTS, INITIAL_COMPONENT_COUNTS, INITIAL_COM
 import { translations, Language } from '../translations';
 import { withTimeout } from '../lib/utils';
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId: string | undefined;
+    email: string | null | undefined;
+    emailVerified: boolean | undefined;
+    isAnonymous: boolean | undefined;
+    tenantId: string | null | undefined;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+const handleFirestoreError = (error: any, operationType: OperationType, path: string | null, user: User | null) => {
+  if (error?.code === 'permission-denied' || error?.message?.includes('insufficient permissions')) {
+    const errInfo: FirestoreErrorInfo = {
+      error: error instanceof Error ? error.message : String(error),
+      authInfo: {
+        userId: user?.uid,
+        email: user?.email,
+        emailVerified: user?.emailVerified,
+        isAnonymous: user?.isAnonymous,
+        tenantId: user?.tenantId,
+        providerInfo: user?.providerData.map(provider => ({
+          providerId: provider.providerId,
+          displayName: provider.displayName,
+          email: provider.email,
+          photoUrl: provider.photoURL
+        })) || []
+      },
+      operationType,
+      path
+    }
+    throw new Error(JSON.stringify(errInfo));
+  }
+  throw error;
+}
+
 const getModelStock = (items: ModelStock[], brand: string, series: string, model: string): ModelStock => {
   let ms = items.find(i => i.brand === brand && i.series === series && i.model === model);
   if (!ms) {
@@ -161,7 +214,12 @@ export function useTransactionActions(user: User | null, lang: Language) {
       setSuccess(t.transactionSuccess);
       return true;
     } catch (err: any) {
-      console.error('Transaction failed:', err);
+      try {
+        handleFirestoreError(err, OperationType.WRITE, 'transaction', user);
+      } catch (fErr: any) {
+        setError(fErr.message);
+        return false;
+      }
       setError(err.message || t.transactionFailed);
       return false;
     } finally {
@@ -229,7 +287,12 @@ export function useTransactionActions(user: User | null, lang: Language) {
       setSuccess(t.renameSuccess);
       return true;
     } catch (err: any) {
-      console.error('Rename failed:', err);
+      try {
+        handleFirestoreError(err, OperationType.WRITE, 'rename', user);
+      } catch (fErr: any) {
+        setError(fErr.message);
+        return false;
+      }
       setError(err.message || t.renameFailed);
       return false;
     } finally {
@@ -292,7 +355,12 @@ export function useTransactionActions(user: User | null, lang: Language) {
       setSuccess(t.deleteSuccess);
       return true;
     } catch (err: any) {
-      console.error('Delete failed:', err);
+      try {
+        handleFirestoreError(err, OperationType.DELETE, `batches/${batchId}`, user);
+      } catch (fErr: any) {
+        setError(fErr.message);
+        return false;
+      }
       setError(err.message || t.deleteFailed);
       return false;
     } finally {
@@ -421,7 +489,12 @@ export function useTransactionActions(user: User | null, lang: Language) {
       setSuccess(t.breakdownSuccess);
       return true;
     } catch (err: any) {
-      console.error('Breakdown failed:', err);
+      try {
+        handleFirestoreError(err, OperationType.WRITE, 'breakdown', user);
+      } catch (fErr: any) {
+        setError(fErr.message);
+        return false;
+      }
       setError(err.message || t.breakdownFailed);
       return false;
     } finally {
@@ -499,7 +572,12 @@ export function useTransactionActions(user: User | null, lang: Language) {
       setSuccess(t.purchaseSuccess);
       return true;
     } catch (err: any) {
-      console.error('Purchase failed:', err);
+      try {
+        handleFirestoreError(err, OperationType.WRITE, 'purchase', user);
+      } catch (fErr: any) {
+        setError(fErr.message);
+        return false;
+      }
       setError(err.message || t.purchaseFailed);
       return false;
     } finally {
@@ -581,7 +659,12 @@ export function useTransactionActions(user: User | null, lang: Language) {
       setSuccess(t.installSuccess);
       return true;
     } catch (err: any) {
-      console.error('Installation failed:', err);
+      try {
+        handleFirestoreError(err, OperationType.WRITE, 'install', user);
+      } catch (fErr: any) {
+        setError(fErr.message);
+        return false;
+      }
       setError(err.message || t.installFailed);
       return false;
     } finally {
@@ -682,7 +765,12 @@ export function useTransactionActions(user: User | null, lang: Language) {
         }
 
         if (txData.type === 'INCOMING') {
-          if (batchModelStock) batchModelStock.counts['UNCLASSIFIED'] -= quantity;
+          if (batchModelStock) {
+            batchModelStock.counts['UNCLASSIFIED'] -= quantity;
+            if (batchModelStock.counts['UNCLASSIFIED'] < 0) {
+              throw new Error(t.undoNegativeStock(`${txData.brand} ${txData.model}`, t.unclassified));
+            }
+          }
         } else if (txData.type === 'SALE') {
           if (txData.fromClass) {
             if (batchModelStock) batchModelStock.counts[txData.fromClass] += quantity;
@@ -691,12 +779,20 @@ export function useTransactionActions(user: User | null, lang: Language) {
           if (txData.fromClass && txData.toClass) {
             if (batchModelStock) {
               batchModelStock.counts[txData.toClass] -= quantity;
+              if (batchModelStock.counts[txData.toClass] < 0) {
+                throw new Error(t.undoNegativeStock(`${txData.brand} ${txData.model}`, txData.toClass));
+              }
               batchModelStock.counts[txData.fromClass] += quantity;
             }
           }
         } else if (txData.type === 'ADJUSTMENT') {
            if (txData.toClass) {
-              if (batchModelStock) batchModelStock.counts[txData.toClass] -= quantity;
+              if (batchModelStock) {
+                batchModelStock.counts[txData.toClass] -= quantity;
+                if (batchModelStock.counts[txData.toClass] < 0) {
+                  throw new Error(t.undoNegativeStock(`${txData.brand} ${txData.model}`, txData.toClass));
+                }
+              }
            }
         } else if (txData.type === 'BREAKDOWN') {
            if (txData.fromClass) {
@@ -720,7 +816,13 @@ export function useTransactionActions(user: User | null, lang: Language) {
                const spoiledQty = quantity - goodQty;
                
                compModel.counts[comp] = (compModel.counts[comp] || 0) - goodQty;
+               if (compModel.counts[comp] < 0) {
+                 throw new Error(t.undoNegativeComponentStock(`${txData.brand} ${txData.model}`, (t as any)[comp] || comp));
+               }
                spoiledCompModel.counts[comp] = (spoiledCompModel.counts[comp] || 0) - spoiledQty;
+               if (spoiledCompModel.counts[comp] < 0) {
+                 throw new Error(t.undoNegativeComponentStock(`${txData.brand} ${txData.model}`, ((t as any)[comp] || comp) + ' (Spoiled)'));
+               }
              });
            }
            compData.lastUpdated = new Date().toISOString();
@@ -736,6 +838,9 @@ export function useTransactionActions(user: User | null, lang: Language) {
            if (txData.componentChanges) {
              Object.entries(txData.componentChanges).forEach(([comp, qty]) => {
                compModel.counts[comp as ComponentType] = (compModel.counts[comp as ComponentType] || 0) - (qty || 0);
+               if (compModel.counts[comp as ComponentType] < 0) {
+                 throw new Error(t.undoNegativeComponentStock(`${txData.brand} ${txData.model}`, (t as any)[comp] || comp));
+               }
              });
            }
            compData.lastUpdated = new Date().toISOString();
@@ -847,7 +952,12 @@ export function useTransactionActions(user: User | null, lang: Language) {
       setSuccess(t.undoSuccess);
       return true;
     } catch (err: any) {
-      console.error('Undo failed:', err);
+      try {
+        handleFirestoreError(err, OperationType.WRITE, `transactions/${transactionId}/undo`, user);
+      } catch (fErr: any) {
+        setError(fErr.message);
+        return false;
+      }
       setError(err.message || t.undoFailed);
       return false;
     } finally {

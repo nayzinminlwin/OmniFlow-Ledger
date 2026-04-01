@@ -85,7 +85,7 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
     t
   });
 
-  const eligibleClasses: LaptopClass[] = ['A', 'B', 'B-', 'C1', 'C2', 'C3', 'C4', 'C5', 'D', 'Spoiled', 'UNCLASSIFIED'];
+  const eligibleClasses: LaptopClass[] = ['C1', 'C2', 'C3', 'C4', 'C5', 'D', 'Spoiled', 'UNCLASSIFIED'];
 
   const handleComponentQuantityChange = (comp: ComponentType, qty: number) => {
     setComponentChanges(prev => ({
@@ -402,7 +402,17 @@ export const UpdateComponents: React.FC<UpdateComponentsProps> = memo(({
               <div className="space-y-8 animate-in fade-in slide-in-from-top duration-300">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div className="space-y-3">
-                    <label htmlFor="buy-component-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.componentLabel}</label>
+                    <div className="flex justify-between items-center">
+                      <label htmlFor="buy-component-select" className="block text-[13px] font-bold text-gray-400 uppercase tracking-widest">{t.componentLabel}</label>
+                      {selectedComponent && (
+                        <span className={cn(
+                          "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                          availableComponentCount <= 0 ? "text-red-600 bg-red-50" : "text-ios-blue bg-ios-blue/10"
+                        )}>
+                          {t.availableStock}: {availableComponentCount}
+                        </span>
+                      )}
+                    </div>
                     <select
                       id="buy-component-select"
                       value={selectedComponent}

@@ -199,6 +199,8 @@ export const translations = {
     undo: 'Undo',
     undoSuccess: 'Transaction undone successfully!',
     undoFailed: 'Failed to undo transaction.',
+    undoNegativeStock: (model: string, cls: string) => `Cannot undo: results in negative stock for ${model} (Class ${cls})`,
+    undoNegativeComponentStock: (model: string, comp: string) => `Cannot undo: results in negative stock for ${model} (${comp})`,
     transactionTimeout: 'Transaction timed out. Please check your connection and try again.',
     retry: 'Retry',
     undone: 'Undone',
@@ -208,6 +210,8 @@ export const translations = {
     exportReport: 'Export Report',
     series: 'Series',
     model: 'Model',
+    success: 'Success',
+    notice: 'Notice',
   },
   ms: {
     brand: 'OmniFlow Ledger',
@@ -407,6 +411,8 @@ export const translations = {
     undo: 'Buat Asal',
     undoSuccess: 'Transaksi berjaya dibuat asal!',
     undoFailed: 'Gagal membuat asal transaksi.',
+    undoNegativeStock: (model: string, cls: string) => `Gagal membuat asal: mengakibatkan stok negatif untuk ${model} (Kelas ${cls})`,
+    undoNegativeComponentStock: (model: string, comp: string) => `Gagal membuat asal: mengakibatkan stok negatif untuk ${model} (${comp})`,
     transactionTimeout: 'Transaksi tamat masa. Sila periksa sambungan anda dan cuba lagi.',
     retry: 'Cuba Semula',
     undone: 'Dibuat Asal',
@@ -415,7 +421,9 @@ export const translations = {
     totalInventory: 'Jumlah Inventori',
     exportReport: 'Eksport Laporan',
     series: 'Siri',
-    model: 'Model'
+    model: 'Model',
+    success: 'Berjaya',
+    notice: 'Makluman',
   },
   zh: {
     brand: 'OmniFlow Ledger',
@@ -615,6 +623,8 @@ export const translations = {
     undo: '撤销',
     undoSuccess: '交易撤销成功！',
     undoFailed: '撤销交易失败。',
+    undoNegativeStock: (model: string, cls: string) => `无法撤销：将导致 ${model} (等级 ${cls}) 的库存为负数`,
+    undoNegativeComponentStock: (model: string, comp: string) => `无法撤销：将导致 ${model} (${comp}) 的库存为负数`,
     transactionTimeout: '交易超时。请检查您的网络连接并重试。',
     retry: '重试',
     undone: '已撤销',
@@ -623,6 +633,8 @@ export const translations = {
     totalInventory: '总库存',
     exportReport: '导出报告',
     series: '系列',
-    model: '型号'
+    model: '型号',
+    success: '成功',
+    notice: '通知',
   }
 };

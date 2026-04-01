@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { CheckCircle2, AlertCircle, X, Sparkles } from 'lucide-react';
+import { CheckCircle2, Info, X, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -39,19 +39,19 @@ export const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration =
             {/* Animated Background Glow */}
             <div className={cn(
               "absolute inset-0 opacity-10 blur-2xl -z-10 animate-pulse",
-              type === 'success' ? "bg-emerald-400" : "bg-red-400"
+              type === 'success' ? "bg-emerald-400" : "bg-amber-400"
             )} />
 
             <div className={cn(
               "w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-lg relative overflow-hidden",
-              type === 'success' ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
+              type === 'success' ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
             )}>
               <motion.div
                 initial={{ rotate: -20, scale: 0.5 }}
                 animate={{ rotate: 0, scale: 1 }}
                 transition={{ type: "spring", stiffness: 300, damping: 15 }}
               >
-                {type === 'success' ? <CheckCircle2 className="w-7 h-7" /> : <AlertCircle className="w-7 h-7" />}
+                {type === 'success' ? <CheckCircle2 className="w-7 h-7" /> : <Info className="w-7 h-7" />}
               </motion.div>
               
               {type === 'success' && (
@@ -70,11 +70,26 @@ export const Toast: React.FC<ToastProps> = ({ message, type, onClose, duration =
 
             <div className="flex-1 min-w-0">
               <p className="text-[16px] font-black leading-tight tracking-tight uppercase">
-                {type === 'success' ? (t.success || 'SUCCESS') : (t.error || 'ERROR')}
+                {type === 'success' ? (t.success || 'SUCCESS') : (t.notice || 'NOTICE')}
               </p>
-              <p className="text-[14px] opacity-70 font-semibold mt-0.5 line-clamp-2">
-                {message}
-              </p>
+              <div className="text-[14px] opacity-70 font-semibold mt-0.5 line-clamp-2">
+                {(() => {
+                  try {
+                    const errInfo = JSON.parse(message || '');
+                    if (errInfo && errInfo.error) {
+                      return (
+                        <span>
+                          <span className="block text-[11px] opacity-60 uppercase tracking-wider">{errInfo.operationType}</span>
+                          {errInfo.error}
+                        </span>
+                      );
+                    }
+                  } catch (e) {
+                    // Not a JSON error
+                  }
+                  return message;
+                })()}
+              </div>
             </div>
 
             <button 

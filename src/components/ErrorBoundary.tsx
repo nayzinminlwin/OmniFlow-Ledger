@@ -20,7 +20,9 @@ export class ErrorBoundary extends React.Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+    // Silently handle uncaught errors in production-like environments if requested,
+    // but usually ErrorBoundary is for real crashes.
+    // For now, we just remove the console.error as requested.
   }
 
   public render() {
@@ -33,14 +35,32 @@ export class ErrorBoundary extends React.Component<Props, State> {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
-            <h1 className="text-[22px] font-semibold text-[var(--color-ios-text)] mb-3 tracking-tight">Something went wrong</h1>
+            <h1 className="text-[22px] font-semibold text-[var(--color-ios-text)] mb-3 tracking-tight">Application Notice</h1>
             <p className="text-[15px] text-[var(--color-ios-text-secondary)] mb-8 leading-relaxed">
-              We encountered an unexpected error. Please try refreshing the page.
+              The application encountered an unexpected state. Please try refreshing.
             </p>
             <div className="bg-black/5 rounded-2xl p-4 mb-8 text-left overflow-auto max-h-40 border border-white/10">
-              <code className="text-[13px] text-red-500 font-mono">
-                {this.state.error?.message}
-              </code>
+              {(() => {
+                try {
+                  const errInfo = JSON.parse(this.state.error?.message || '');
+                  if (errInfo && errInfo.error) {
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-[13px] text-red-500 font-semibold">Notice: {errInfo.operationType}</p>
+                        <p className="text-[12px] text-[var(--color-ios-text-secondary)] font-mono break-all">{errInfo.error}</p>
+                        <p className="text-[11px] text-[var(--color-ios-text-secondary)] opacity-50">Path: {errInfo.path}</p>
+                      </div>
+                    );
+                  }
+                } catch (e) {
+                  // Not a JSON error
+                }
+                return (
+                  <code className="text-[13px] text-red-500 font-mono">
+                    {this.state.error?.message}
+                  </code>
+                );
+              })()}
             </div>
             <button
               onClick={() => window.location.reload()}

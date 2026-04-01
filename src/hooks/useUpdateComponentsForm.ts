@@ -224,7 +224,6 @@ export function useUpdateComponentsForm({
   }, [brand, series, model, componentStock]);
 
   const availableComponentCount = useMemo(() => {
-    console.log('availableComponentCount calc:', { brand, series, model, selectedComponent, selectedComponentModelStock });
     if (!selectedComponentModelStock || !selectedComponent) return 0;
     return selectedComponentModelStock?.counts?.[selectedComponent as ComponentType] || 0;
   }, [selectedComponentModelStock, selectedComponent]);
