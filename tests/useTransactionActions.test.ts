@@ -161,8 +161,8 @@ describe('useTransactionActions', () => {
       const mockTransaction = {
         get: vi.fn()
           .mockResolvedValueOnce({ exists: () => true, data: () => mockTxData }) // txDoc
-          .mockResolvedValueOnce({ exists: () => true, data: () => mockStock }) // stockDoc
-          .mockResolvedValueOnce({ exists: () => true, data: () => ({ batchId: 'batch1', items: [] }) }), // batchDoc
+          .mockResolvedValueOnce({ exists: () => true, data: () => ({ items: [{ brand: 'Apple', series: 'MacBook', model: 'Pro', counts: { UNCLASSIFIED: 10 } }] }) }) // stockDoc
+          .mockResolvedValueOnce({ exists: () => true, data: () => ({ batchId: 'batch1', items: [{ brand: 'Apple', series: 'MacBook', model: 'Pro', counts: { UNCLASSIFIED: 10 } }] }) }), // batchDoc
         update: vi.fn(),
         set: vi.fn(),
       };

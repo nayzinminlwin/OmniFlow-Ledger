@@ -91,7 +91,7 @@ describe('Integration: Inventory Flows', () => {
         brand: 'Apple',
         series: 'MacBook Pro',
         model: 'M1 2020',
-        counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2, 'UNCLASSIFIED': 10 }
+        counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2, 'C1': 10, 'UNCLASSIFIED': 10 }
       }
     ],
     lastUpdated: new Date().toISOString()
@@ -119,7 +119,7 @@ describe('Integration: Inventory Flows', () => {
           brand: 'Apple',
           series: 'MacBook Pro',
           model: 'M1 2020',
-          counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2, 'UNCLASSIFIED': 10 }
+          counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2, 'C1': 10, 'UNCLASSIFIED': 10 }
         }
       ],
       createdAt: new Date().toISOString()
@@ -269,7 +269,7 @@ describe('Integration: Inventory Flows', () => {
       await user.selectOptions(modelSelect, 'M1 2020');
 
       const classSelect = await screen.findByLabelText(translations.en.fromClass);
-      await user.selectOptions(classSelect, 'A');
+      await user.selectOptions(classSelect, 'C1');
 
       const laptopQtyInput = screen.getByLabelText(translations.en.laptopQuantity);
       // Use fireEvent for more reliable value setting in this case

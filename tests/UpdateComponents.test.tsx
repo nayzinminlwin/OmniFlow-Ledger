@@ -36,7 +36,7 @@ const mockStock: Stock = {
       brand: 'Apple',
       series: 'MacBook Pro',
       model: 'M1 2020',
-      counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2 }
+      counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2, 'C1': 10 }
     }
   ],
   lastUpdated: new Date().toISOString()
@@ -64,7 +64,7 @@ const mockBatches: Batch[] = [
         brand: 'Apple',
         series: 'MacBook Pro',
         model: 'M1 2020',
-        counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2 }
+        counts: { ...INITIAL_CLASS_COUNTS, 'A': 5, 'B': 2, 'C1': 10 }
       }
     ],
     createdAt: new Date().toISOString()
@@ -284,7 +284,7 @@ describe('UpdateComponents', () => {
 
     // Select class
     const classSelect = screen.getByLabelText(t.fromClass);
-    await user.selectOptions(classSelect, 'A');
+    await user.selectOptions(classSelect, 'C1');
 
     // Enter laptop quantity
     const laptopQtyInput = screen.getByLabelText(t.laptopQuantity);
@@ -303,7 +303,7 @@ describe('UpdateComponents', () => {
       brand: 'Apple',
       series: 'MacBook Pro',
       model: 'M1 2020',
-      fromClass: 'A',
+      fromClass: 'C1',
       laptopQuantity: 2,
       componentChanges: { Screen: 1 },
       notes: ''
@@ -342,7 +342,7 @@ describe('UpdateComponents', () => {
           brand: 'Apple',
           series: 'MacBook Pro',
           model: 'M1 2020',
-          counts: { ...INITIAL_CLASS_COUNTS, 'A': 0, 'B': 1 } // Keep one to allow selection
+          counts: { ...INITIAL_CLASS_COUNTS, 'C1': 0, 'B': 1 } // Keep one to allow selection
         }
       ]
     };
@@ -365,8 +365,8 @@ describe('UpdateComponents', () => {
     await user.selectOptions(screen.getByLabelText(t.seriesLabel), 'MacBook Pro');
     await user.selectOptions(screen.getByLabelText(t.modelLabel), 'M1 2020');
     
-    // Select Class A (which has 0)
-    await user.selectOptions(screen.getByLabelText(t.fromClass), 'A');
+    // Select Class C1 (which has 0)
+    await user.selectOptions(screen.getByLabelText(t.fromClass), 'C1');
 
     const laptopStockDisplay = screen.getByLabelText(t.fromClass).closest('div')?.querySelector('span');
     expect(laptopStockDisplay).toHaveTextContent(`${t.availableLaptops}: 0`);
