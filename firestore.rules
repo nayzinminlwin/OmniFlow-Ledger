@@ -102,18 +102,12 @@ service cloud.firestore {
 
     function isValidBatch(data) {
       return data.keys().hasAll(['batchId', 'items', 'createdAt']) &&
-             data.batchId is string && data.items is list && isValidTimestamp(data.createdAt) &&
-             data.items.all(item => 
-               item.counts.values().all(count => count >= 0)
-             );
+             data.batchId is string && data.items is list && isValidTimestamp(data.createdAt);
     }
 
     function isValidComponentStock(data) {
       return data.keys().hasAll(['items', 'lastUpdated']) &&
-             data.items is list && isValidTimestamp(data.lastUpdated) &&
-             data.items.all(item => 
-               item.counts.values().all(count => count >= 0)
-             );
+             data.items is list && isValidTimestamp(data.lastUpdated);
     }
 
     // ===============================================================
