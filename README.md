@@ -51,7 +51,7 @@ This application relies on Firebase Authentication and Firestore.
 ```bash
 # Clone the repository
 git clone <your-repo-url>
-cd laptop-repair-shop
+cd OmniFlow-Ledger
 
 # Install dependencies
 npm install
