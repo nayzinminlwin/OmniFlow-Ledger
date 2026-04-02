@@ -87,6 +87,8 @@ service cloud.firestore {
     function isValidTransaction(data) {
       return data.keys().hasAll(['type', 'batchId', 'brand', 'series', 'model', 'quantity', 'timestamp', 'userId']) &&
              data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT', 'BREAKDOWN', 'PURCHASE', 'INSTALL'] &&
+             (data.type != 'REPAIR' || (data.fromClass != data.toClass)) &&
+             (data.type == 'ADJUSTMENT' ? data.quantity != 0 : data.quantity > 0) &&
              data.batchId is string && data.brand is string && data.series is string &&
              data.model is string && data.quantity is int &&
              isValidTimestamp(data.timestamp) && data.userId == request.auth.uid;
@@ -136,7 +138,8 @@ service cloud.firestore {
     }
 
     match /transactions/{txId} {
-      allow read, create: if isApproved();
+      allow read: if isApproved();
+      allow create: if isApproved() && isValidTransaction(request.resource.data);
       allow update: if isApproved() && (
         isUltimateAdmin() || 
         (resource.data.userId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isUndone']))
@@ -145,7 +148,8 @@ service cloud.firestore {
     }
 
     match /component_transactions/{txId} {
-      allow read, create: if isApproved();
+      allow read: if isApproved();
+      allow create: if isApproved() && isValidComponentTransaction(request.resource.data);
       allow update, delete: if isUltimateAdmin();
     }
 

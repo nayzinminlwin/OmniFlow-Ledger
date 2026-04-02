@@ -92,6 +92,9 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
     );
   }
 
+  const isAdjustmentSameValue = txType === 'ADJUSTMENT' && Number(quantity) === getStockCount(toClass);
+  const isInvalidQuantity = txType === 'ADJUSTMENT' ? (quantity === '' || Number(quantity) < 0) : (!quantity || Number(quantity) <= 0);
+
   return (
     <div className={cn(
       "lg:col-span-12 animate-in slide-in-from-bottom duration-500",
@@ -342,8 +345,14 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
                     className={cn("ios-input w-full", txType === 'INCOMING' && "bg-gray-100 cursor-not-allowed")}
                     disabled={txType === 'INCOMING'}
                   >
-                    {(txType === 'ADJUSTMENT' || txType === 'INCOMING' || txType === 'REPAIR') ? <option key="unclassified" value="UNCLASSIFIED">{t.unclassified}</option> : null}
-                    {CLASSES.map((c, i) => <option key={`class-to-${c}-${i}`} value={c}>{c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}</option>)}
+                    {(txType === 'ADJUSTMENT' || txType === 'INCOMING' || (txType === 'REPAIR' && fromClass !== 'UNCLASSIFIED')) ? (
+                      <option key="unclassified" value="UNCLASSIFIED">{t.unclassified}</option>
+                    ) : null}
+                    {CLASSES.filter(c => txType !== 'REPAIR' || c !== fromClass).map((c, i) => (
+                      <option key={`class-to-${c}-${i}`} value={c}>
+                        {c === 'Spoiled' ? t.spoiled : `${t.class} ${c}`}
+                      </option>
+                    ))}
                   </select>
                 </div>
               )}
@@ -389,10 +398,10 @@ export const AddTransaction: React.FC<AddTransactionProps> = memo(({
 
             <button
               type="submit"
-              disabled={isSubmitting || isFromStockEmpty || !quantity || Number(quantity) <= 0}
+              disabled={isSubmitting || isFromStockEmpty || isAdjustmentSameValue || isInvalidQuantity}
               className={cn(
                 "ios-button w-full py-5 text-[19px] mt-4",
-                (isFromStockEmpty || !quantity || Number(quantity) <= 0) && "opacity-50 cursor-not-allowed bg-gray-400"
+                (isFromStockEmpty || isAdjustmentSameValue || isInvalidQuantity) && "opacity-50 cursor-not-allowed bg-gray-400"
               )}
             >
               {isSubmitting ? <RefreshCw className="w-6 h-6 animate-spin" /> : <CheckCircle2 className="w-6 h-6" />}

@@ -97,11 +97,25 @@ sequenceDiagram
 ## 6. UI Layer (`/src/components`)
 
 - **Conditional Rendering**: Components check `isAdmin` to show/hide restricted actions (Undo, Edit, User Management).
+- **Transaction Restrictions**:
+    - **Repair**: Cannot move components within the same class (From Class != To Class).
+    - **Adjustment**: New total count must be different from the current stock.
 - **Translations**: Uses the `t` object from `translations.ts` for all text, supporting English, Malay, and Chinese.
 
 ---
 
-## 7. UI Patterns & Tab Management
+## 7. Testing Strategy
+
+The application uses **Vitest** and **React Testing Library** for comprehensive testing:
+
+- **Unit Tests (`/tests/*.test.ts`)**: Verify core logic in hooks and utility functions (e.g., `useAddTransactionForm`, `dateUtils`).
+- **Component Tests (`/tests/*.test.tsx`)**: Ensure UI components render correctly and handle user interactions (e.g., `AddTransaction`, `Dashboard`).
+- **Integration Tests (`/tests/integration/*.test.tsx`)**: Test end-to-end flows involving multiple components and hooks (e.g., `TransactionFlow`).
+- **Database Rules**: Firestore security rules (`firestore.rules`) are used to enforce data integrity and security at the database level.
+
+---
+
+## 8. UI Patterns & Tab Management
 
 - **Tab Switching**: The application uses a `hidden` class pattern for tab switching (Dashboard, Batches, History, etc.).
 - **Why `hidden`?**: Instead of conditional rendering (`{activeTab === 'tab' && <Component />}`), we use `<div className={cn(activeTab === 'tab' ? "block" : "hidden")}>`. This ensures components remain mounted in the DOM, preserving their internal state and allowing for smoother transitions and easier testing.

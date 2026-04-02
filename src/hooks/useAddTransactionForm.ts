@@ -243,6 +243,16 @@ export function useAddTransactionForm({ batches, onAddTransaction, t }: UseAddTr
     e.preventDefault();
     if (!brand.trim() || !series.trim() || !model.trim()) return;
     
+    if (txType === 'REPAIR' && fromClass === toClass) {
+      setError(t.sameClassRepairError || 'Cannot repair to the same class');
+      return;
+    }
+
+    if (txType === 'ADJUSTMENT' && Number(quantity) === getStockCount(toClass)) {
+      setError(t.sameValueAdjustmentError || 'New value must be different from current stock');
+      return;
+    }
+    
     const finalBatchId = padBatchId(batchId);
     
     if (!isValidBatchDate(finalBatchId)) {

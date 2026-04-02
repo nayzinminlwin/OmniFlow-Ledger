@@ -340,6 +340,87 @@ describe('AddTransaction Component', () => {
     expect(screen.getByLabelText(t.toClass)).toBeInTheDocument();
   });
 
+  it('filters out the selected fromClass from the toClass dropdown for REPAIR', async () => {
+    const user = userEvent.setup();
+    render(
+      <AddTransaction 
+        batches={mockBatches} 
+        t={t} 
+        activeTab="add" 
+        isAdmin={true}
+        onAddTransaction={mockHandleAddTransaction}
+        isSubmitting={false}
+      />
+    );
+
+    const repairBtn = screen.getByRole('radio', { name: t.repair });
+    await user.click(repairBtn);
+
+    const fromClassSelect = screen.getByLabelText(t.fromClass) as HTMLSelectElement;
+    const toClassSelect = screen.getByLabelText(t.toClass) as HTMLSelectElement;
+
+    // Select Class A in fromClass
+    await user.selectOptions(fromClassSelect, 'A');
+    
+    // Check that Class A is NOT in toClass options
+    const toClassOptions = Array.from(toClassSelect.options).map(opt => opt.value);
+    expect(toClassOptions).not.toContain('A');
+    expect(toClassOptions).toContain('B');
+  });
+
+  it('disables submit button when ADJUSTMENT new value is same as current stock', async () => {
+    const user = userEvent.setup();
+    const batchesWithItems: Batch[] = [
+      { 
+        id: 'b1', 
+        batchId: 'Batch 1', 
+        active: true, 
+        items: [{ brand: 'Dell', series: 'XPS', model: '13', counts: { ...INITIAL_CLASS_COUNTS, A: 10 } }], 
+        createdAt: new Date().toISOString() 
+      }
+    ];
+
+    render(
+      <AddTransaction 
+        batches={batchesWithItems} 
+        t={t} 
+        activeTab="add" 
+        isAdmin={true}
+        onAddTransaction={mockHandleAddTransaction}
+        isSubmitting={false}
+      />
+    );
+
+    const adjBtn = screen.getByRole('radio', { name: t.adjustment });
+    await user.click(adjBtn);
+
+    // Select Dell XPS 13
+    const brandSelect = screen.getByLabelText(t.brandLabel);
+    await user.selectOptions(brandSelect, 'Dell');
+    
+    const seriesSelect = screen.getByLabelText(t.seriesLabel);
+    await user.selectOptions(seriesSelect, 'XPS');
+
+    const modelSelect = screen.getByLabelText(t.modelLabel);
+    await user.selectOptions(modelSelect, '13');
+
+    // Select Class A (which has 10 stock)
+    const toClassSelect = screen.getByLabelText(t.targetClass);
+    await user.selectOptions(toClassSelect, 'A');
+
+    const quantityInput = screen.getByLabelText(t.newTotalCount);
+    await user.clear(quantityInput);
+    await user.type(quantityInput, '10');
+
+    const submitButton = screen.getByRole('button', { name: t.recordEntry });
+    expect(submitButton).toBeDisabled();
+
+    // Change to 11, should be enabled
+    await user.clear(quantityInput);
+    await user.type(quantityInput, '11');
+    expect(submitButton).not.toBeDisabled();
+  });
+
   it('disables submit button when quantity is invalid', async () => {
     const user = userEvent.setup();
     render(

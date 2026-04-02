@@ -212,6 +212,8 @@ export const translations = {
     model: 'Model',
     success: 'Success',
     notice: 'Notice',
+    sameClassRepairError: 'Cannot repair to the same class',
+    sameValueAdjustmentError: 'New value must be different from current stock',
   },
   ms: {
     brand: 'OmniFlow Ledger',
@@ -424,6 +426,8 @@ export const translations = {
     model: 'Model',
     success: 'Berjaya',
     notice: 'Makluman',
+    sameClassRepairError: 'Gagal pembaikan: tidak boleh ke kelas yang sama',
+    sameValueAdjustmentError: 'Nilai baru mestilah berbeza daripada stok semasa',
   },
   zh: {
     brand: 'OmniFlow Ledger',
@@ -636,5 +640,7 @@ export const translations = {
     model: '型号',
     success: '成功',
     notice: '通知',
+    sameClassRepairError: '无法维修：不能选择相同的等级',
+    sameValueAdjustmentError: '新数值必须与当前库存不同',
   }
 };

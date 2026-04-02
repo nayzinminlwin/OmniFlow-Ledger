@@ -311,6 +311,42 @@ describe('useTransactionActions', () => {
       expect(result.current.success).toBe('Transaction recorded successfully!');
     });
 
+    it('should throw an error for same-class repair', async () => {
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
+      
+      const mockBatch = {
+        batchId: 'B-2023-01',
+        items: [{ brand: 'Apple', series: 'MacBook', model: 'Pro', counts: { A: 10 } }],
+        active: true
+      };
+
+      const mockTransaction = {
+        get: vi.fn().mockResolvedValue({ exists: () => true, data: () => mockBatch }),
+        set: vi.fn(),
+      };
+      
+      vi.mocked(firestore.runTransaction).mockImplementation(async (db, updateFunction) => {
+        await updateFunction(mockTransaction as any);
+      });
+
+      await act(async () => {
+        const res = await result.current.handleAddTransaction(
+          'REPAIR',
+          'B-2023-01',
+          'Apple',
+          'MacBook',
+          'Pro',
+          'A',
+          'A',
+          5,
+          'Test repair'
+        );
+        expect(res).toBe(false);
+      });
+
+      expect(result.current.error).toBe('Cannot repair to the same class');
+    });
+
     it('should successfully record an adjustment transaction', async () => {
       const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
       
@@ -342,6 +378,42 @@ describe('useTransactionActions', () => {
       expect(firestore.runTransaction).toHaveBeenCalled();
       expect(mockTransaction.set).toHaveBeenCalledTimes(2); // Batch, Transaction
       expect(result.current.success).toBe('Transaction recorded successfully!');
+    });
+
+    it('should throw an error for same-value adjustment', async () => {
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
+      
+      const mockBatch = {
+        batchId: 'B-2023-01',
+        items: [{ brand: 'Apple', series: 'MacBook', model: 'Pro', counts: { A: 10 } }],
+        active: true
+      };
+
+      const mockTransaction = {
+        get: vi.fn().mockResolvedValue({ exists: () => true, data: () => mockBatch }),
+        set: vi.fn(),
+      };
+      
+      vi.mocked(firestore.runTransaction).mockImplementation(async (db, updateFunction) => {
+        await updateFunction(mockTransaction as any);
+      });
+
+      await act(async () => {
+        const res = await result.current.handleAddTransaction(
+          'ADJUSTMENT',
+          'B-2023-01',
+          'Apple',
+          'MacBook',
+          'Pro',
+          'D',
+          'A',
+          10,
+          'Test adjustment'
+        );
+        expect(res).toBe(false);
+      });
+
+      expect(result.current.error).toBe('New value must be different from current stock');
     });
   });
 

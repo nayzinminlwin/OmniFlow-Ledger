@@ -171,12 +171,18 @@ export function useTransactionActions(user: User | null, lang: Language) {
           }
           batchModelStock.counts[fromClass] -= quantity;
         } else if (txType === 'REPAIR') {
+          if (fromClass === toClass) {
+            throw new Error(t.sameClassRepairError || 'Cannot repair to the same class');
+          }
           if (batchModelStock.counts[fromClass] < quantity) {
             throw new Error(t.insufficientStock(batchId, fromClass));
           }
           batchModelStock.counts[fromClass] -= quantity;
           batchModelStock.counts[toClass] += quantity;
         } else if (txType === 'ADJUSTMENT') {
+          if (quantity === batchModelStock.counts[toClass]) {
+            throw new Error(t.sameValueAdjustmentError || 'New value must be different from current stock');
+          }
           adjustmentDiff = quantity - batchModelStock.counts[toClass];
           batchModelStock.counts[toClass] += adjustmentDiff;
           if (batchModelStock.counts[toClass] < 0) {
