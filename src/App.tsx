@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Hooks
@@ -62,6 +62,9 @@ export default function App() {
     success,
     setSuccess
   } = useAppLogic();
+
+  const closeError = useCallback(() => setError(null), [setError]);
+  const closeSuccess = useCallback(() => setSuccess(null), [setSuccess]);
 
   if (!isAuthReady || isLoggingIn) {
     return (
@@ -233,13 +236,13 @@ export default function App() {
         <Toast 
           message={error} 
           type="error" 
-          onClose={() => setError(null)} 
+          onClose={closeError} 
           t={t}
         />
         <Toast 
           message={success} 
           type="success" 
-          onClose={() => setSuccess(null)} 
+          onClose={closeSuccess} 
           t={t}
         />
         <Toaster position="top-center" />

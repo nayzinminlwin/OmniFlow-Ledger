@@ -16,7 +16,7 @@ export const useHistoryLogic = ({
   currentUserProfile
 }: UseHistoryLogicProps) => {
   const [hoveredTxId, setHoveredTxId] = useState<string | null>(null);
-  const [popupConfig, setPopupConfig] = useState<{ top: number, left: number, index: number, tx: Transaction } | null>(null);
+  const [popupConfig, setPopupConfig] = useState<{ top: number, left: number, showAbove: boolean, tx: Transaction } | null>(null);
   const [undoingTxId, setUndoingTxId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -87,11 +87,15 @@ export const useHistoryLogic = ({
       if (left < padding) left = padding;
       if (left + 256 > window.innerWidth - padding) left = window.innerWidth - 256 - padding;
 
+      // Determine if there's enough space below (approx 300px for a large popup)
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const showAbove = spaceBelow < 300 && rect.top > 300;
+
       setHoveredTxId(txUniqueId);
       setPopupConfig({
         top: rect.top,
         left: left,
-        index: index,
+        showAbove: showAbove,
         tx: tx
       });
     }

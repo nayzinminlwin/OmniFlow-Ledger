@@ -291,14 +291,14 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
         <AnimatePresence>
           {popupConfig && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: popupConfig.index < 10 ? -10 : 10 }}
+              initial={{ opacity: 0, scale: 0.95, y: popupConfig.showAbove ? 10 : -10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: popupConfig.index < 10 ? -10 : 10 }}
+              exit={{ opacity: 0, scale: 0.95, y: popupConfig.showAbove ? 10 : -10 }}
               style={{
                 position: 'fixed',
-                top: popupConfig.index < 10 ? popupConfig.top + 40 : popupConfig.top - 10,
+                top: popupConfig.showAbove ? popupConfig.top - 10 : popupConfig.top + 40,
                 left: popupConfig.left,
-                transform: popupConfig.index < 10 ? 'none' : 'translateY(-100%)',
+                transform: popupConfig.showAbove ? 'translateY(-100%)' : 'none',
                 zIndex: 9999
               }}
               className={cn(
@@ -334,7 +334,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
               </div>
               <div className={cn(
                 "absolute w-4 h-4 bg-white border-black/5 rotate-45",
-                popupConfig.index < 10 ? "-top-2 border-l border-t" : "-bottom-2 border-r border-b"
+                popupConfig.showAbove ? "-bottom-2 border-r border-b" : "-top-2 border-l border-t"
               )} 
               style={{
                 left: 'calc(50% - 8px)'

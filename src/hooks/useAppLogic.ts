@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Language, translations } from '../translations';
 import { useAuth } from './useAuth';
 import { useInventory } from './useInventory';
@@ -47,6 +47,15 @@ export const useAppLogic = () => {
   const [editingBatch, setEditingBatch] = useState<Batch | null>(null);
   const [newBatchName, setNewBatchName] = useState('');
 
+  // Clear errors and successes when switching tabs or language
+  useEffect(() => {
+    setAuthError(null);
+    setInvError(null);
+    setActionError(null);
+    setAuthSuccess(null);
+    setActionSuccess(null);
+  }, [activeTab, lang, setAuthError, setInvError, setActionError, setAuthSuccess, setActionSuccess]);
+
   useEffect(() => {
     if (!selectedBatchId && batches.length > 0) {
       setSelectedBatchId(batches[0].batchId);
@@ -54,17 +63,17 @@ export const useAppLogic = () => {
   }, [batches, selectedBatchId]);
 
   const error = authError || invError || actionError;
-  const setError = (err: string | null) => {
+  const setError = useCallback((err: string | null) => {
     setAuthError(err);
     setInvError(err);
     setActionError(err);
-  };
+  }, [setAuthError, setInvError, setActionError]);
 
   const success = authSuccess || actionSuccess;
-  const setSuccess = (msg: string | null) => {
+  const setSuccess = useCallback((msg: string | null) => {
     setAuthSuccess(msg);
     setActionSuccess(msg);
-  };
+  }, [setAuthSuccess, setActionSuccess]);
 
   return {
     lang,
