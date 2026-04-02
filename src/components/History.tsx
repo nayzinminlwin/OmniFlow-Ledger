@@ -135,7 +135,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                           onClick={(e) => togglePopup(tx, txUniqueId, index, e)}
                         >
                           <span className={cn(
-                            "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5",
+                            "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap",
                             tx.type === 'INCOMING' && "bg-green-500/10 text-green-700",
                             tx.type === 'PURCHASE' && "bg-emerald-500/10 text-emerald-700",
                             tx.type === 'SALE' && "bg-orange-500/10 text-orange-700",
