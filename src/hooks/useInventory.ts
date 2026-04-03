@@ -66,9 +66,11 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
     const aggregatedItems: ModelStock[] = [];
     
     batches.forEach(batch => {
-      if (batch.active === false) return;
+      if (batch.active === false || !batch.items) return;
       
       batch.items.forEach(batchItem => {
+        if (!batchItem) return;
+        
         let globalItem = aggregatedItems.find(i => 
           i.brand === batchItem.brand && 
           i.series === batchItem.series && 
@@ -88,7 +90,9 @@ export function useInventory(user: User | null, isAuthReady: boolean, lang: Lang
         if (!batchItem.counts) return;
         
         Object.entries(batchItem.counts).forEach(([cls, count]) => {
-          globalItem!.counts[cls as any] += (count || 0);
+          if (globalItem) {
+            globalItem.counts[cls as any] = (globalItem.counts[cls as any] || 0) + (count || 0);
+          }
         });
       });
     });
