@@ -77,9 +77,9 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.seriesLabel}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.modelLabel}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.type}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.movement}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8] min-w-[200px]">{t.movement}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-right bg-[#F8F8F8]">{t.qty}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.user}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8] min-w-[200px]">{t.user}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.notes}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.undo}</th>
               </tr>
@@ -167,7 +167,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                           )}
                         </div>
                       </td>
-                      <td className="px-8 py-4">
+                      <td className="px-8 py-4 min-w-[200px]">
                         <p className="text-[15px] font-medium text-gray-700">
                           {tx.type === 'REPAIR' ? (
                             <>{getClassName(tx.fromClass)} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.toClass)}</>
@@ -224,7 +224,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                           )}
                         </p>
                       </td>
-                      <td className="px-8 py-4">
+                      <td className="px-8 py-4 min-w-[200px]">
                         <p className={cn(
                           "text-[15px] font-medium text-gray-700",
                           wordCount > 5 ? "whitespace-nowrap" : ""

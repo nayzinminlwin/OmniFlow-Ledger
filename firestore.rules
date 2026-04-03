@@ -30,22 +30,14 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function isBootstrapAdmin() {
-      return isAuthenticated() && 
-             request.auth.token.email in ["tpl.pauline.pts2026@gmail.com", "nayzinminlwin22@gmail.com"] && 
-             request.auth.token.email_verified == true;
-    }
-
     function getUserData() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function isOriginalAdmin() {
-      return isAuthenticated() && (
-        isBootstrapAdmin() ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         getUserData().isOriginalAdmin == true)
-      );
+      return isAuthenticated() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+             getUserData().isOriginalAdmin == true;
     }
 
     function isUltimateAdmin() {
@@ -86,9 +78,9 @@ service cloud.firestore {
 
     function isValidTransaction(data) {
       return data.keys().hasAll(['type', 'batchId', 'brand', 'series', 'model', 'quantity', 'timestamp', 'userId']) &&
-             data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT', 'BREAKDOWN', 'PURCHASE', 'INSTALL'] &&
+             data.type in ['INCOMING', 'REPAIR', 'SALE', 'ADJUSTMENT', 'BREAKDOWN', 'PURCHASE', 'INSTALL', 'UNDO', 'DELETION', 'EXPORT'] &&
              (data.type != 'REPAIR' || (data.fromClass != data.toClass)) &&
-             (data.type == 'ADJUSTMENT' ? data.quantity != 0 : data.quantity > 0) &&
+             (data.type in ['ADJUSTMENT', 'UNDO', 'DELETION'] ? data.quantity != 0 : (data.type in ['PURCHASE', 'INSTALL', 'EXPORT'] ? data.quantity >= 0 : data.quantity > 0)) &&
              data.batchId is string && data.brand is string && data.series is string &&
              data.model is string && data.quantity is int &&
              isValidTimestamp(data.timestamp) && data.userId == request.auth.uid;
@@ -96,7 +88,7 @@ service cloud.firestore {
 
     function isValidComponentTransaction(data) {
       return data.keys().hasAll(['type', 'brand', 'series', 'model', 'componentChanges', 'timestamp', 'userId']) &&
-             data.type in ['BREAKDOWN', 'INCOMING', 'SALE', 'ADJUSTMENT', 'PURCHASE', 'INSTALL'] &&
+             data.type in ['BREAKDOWN', 'INCOMING', 'SALE', 'ADJUSTMENT', 'PURCHASE', 'INSTALL', 'UNDO'] &&
              data.brand is string && data.series is string && data.model is string &&
              data.componentChanges is map && isValidTimestamp(data.timestamp) &&
              data.userId == request.auth.uid;
@@ -117,10 +109,8 @@ service cloud.firestore {
     // ===============================================================
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (
-                      (request.resource.data.role == 'user' && request.resource.data.status == 'pending') ||
-                      (isBootstrapAdmin() && request.resource.data.role == 'admin' && request.resource.data.status == 'approved' && request.resource.data.isOriginalAdmin == true)
-                    );
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && 
+                      request.resource.data.role == 'user' && request.resource.data.status == 'pending';
       allow update: if isAuthenticated() && (
                       // Original Admin can do anything
                       isOriginalAdmin() ||
