@@ -180,4 +180,53 @@ describe('useInventory', () => {
     // Should still have default counts from INITIAL_CLASS_COUNTS
     expect(result.current.stock?.items[0].counts.A).toBe(0);
   });
+
+  it('should handle malformed batch data (missing items or not an array) gracefully', async () => {
+    const malformedBatches = [
+      { batchId: 'B-NO-ITEMS', createdAt: new Date().toISOString(), active: true }, // Missing items
+      { batchId: 'B-ITEMS-NOT-ARRAY', items: 'not-an-array', createdAt: new Date().toISOString(), active: true }, // items not an array
+      { batchId: 'B-NULL-ITEM', items: [null], createdAt: new Date().toISOString(), active: true }, // null item in array
+      { batchId: 'B-MISSING-BRAND', items: [{ model: 'Pro' }], createdAt: new Date().toISOString(), active: true }, // missing brand
+    ];
+    
+    vi.mocked(firestore.onSnapshot).mockImplementation((ref, options, callback) => {
+      const cb = typeof options === 'function' ? options : callback;
+      const isQuery = (ref as any)?.type !== 'document';
+
+      if (isQuery) {
+        cb({ 
+          forEach: (fn: any) => {
+            if ((ref as any)?.path === 'batches') {
+              malformedBatches.forEach((batch, i) => {
+                fn({ id: `batch-malformed-${i}`, data: () => batch });
+              });
+            }
+          },
+          docs: (ref as any)?.path === 'batches' ? malformedBatches.map((batch, i) => ({ id: `batch-malformed-${i}`, data: () => batch })) : [],
+          size: (ref as any)?.path === 'batches' ? malformedBatches.length : 0,
+          empty: (ref as any)?.path !== 'batches',
+          metadata: { fromCache: false, hasPendingWrites: false },
+          query: {},
+          docChanges: () => []
+        } as any);
+      } else {
+        cb({ 
+          exists: () => true, 
+          data: () => ({ items: [], lastUpdated: new Date().toISOString() }),
+          metadata: { fromCache: false, hasPendingWrites: false }
+        } as any);
+      }
+      return vi.fn();
+    });
+
+    const { result } = renderHook(() => useInventory(mockUser, true, mockLang, true));
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+    });
+
+    // Should not crash and should have filtered out the invalid items
+    expect(result.current.batches.length).toBe(4);
+    expect(result.current.stock?.items.length).toBe(0);
+  });
 });

@@ -312,4 +312,22 @@ describe('History Component', () => {
     expect(screen.queryByTitle('Undo')).not.toBeInTheDocument();
     expect(screen.getByText(translations.en.batchDeleted)).toBeInTheDocument();
   });
+
+  it('should handle malformed transactions (missing fields) gracefully', () => {
+    const malformedTransactions: any[] = [
+      { id: 'malformed1', type: 'INCOMING', timestamp: new Date().toISOString(), userId: 'user1' }, // Missing brand, series, model
+      { id: 'malformed2', type: 'SALE', brand: 'Apple', timestamp: new Date().toISOString(), userId: 'user1' }, // Missing series, model
+    ];
+
+    render(<History {...mockProps} transactions={malformedTransactions} />);
+
+    // Should render without crashing
+    expect(screen.getAllByText('John Doe').length).toBeGreaterThan(0);
+    
+    // Test search on malformed data
+    const searchInput = screen.getByPlaceholderText(translations.en.searchTransactions);
+    fireEvent.change(searchInput, { target: { value: 'Apple' } });
+    
+    expect(screen.getByText('Apple')).toBeInTheDocument();
+  });
 });
