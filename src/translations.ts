@@ -215,6 +215,10 @@ export const translations = {
     notice: 'Notice',
     sameClassRepairError: 'Cannot repair to the same class',
     sameValueAdjustmentError: 'New value must be different from current stock',
+    noComponentsRecorded: 'No components recorded for this model.',
+    laptops: 'laptops',
+    selectClass: 'Select Class',
+    optionalNotes: 'Notes (Optional)',
   },
   ms: {
     brand: 'OmniFlow Ledger',
@@ -430,6 +434,10 @@ export const translations = {
     notice: 'Makluman',
     sameClassRepairError: 'Gagal pembaikan: tidak boleh ke kelas yang sama',
     sameValueAdjustmentError: 'Nilai baru mestilah berbeza daripada stok semasa',
+    noComponentsRecorded: 'Tiada komponen direkodkan untuk model ini.',
+    laptops: 'komputer riba',
+    selectClass: 'Pilih Kelas',
+    optionalNotes: 'Nota (Pilihan)',
   },
   zh: {
     brand: 'OmniFlow Ledger',
@@ -645,5 +653,9 @@ export const translations = {
     notice: '通知',
     sameClassRepairError: '无法维修：不能选择相同的等级',
     sameValueAdjustmentError: '新数值必须与当前库存不同',
+    noComponentsRecorded: '此型号没有记录任何组件。',
+    laptops: '台笔记本',
+    selectClass: '选择等级',
+    optionalNotes: '备注（可选）',
   }
 };

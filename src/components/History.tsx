@@ -196,7 +196,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                                 <>{t.components} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.fromClass)}</>
                               ) : (tx.undoneType === 'PURCHASE' || tx.undoneType === 'INSTALL') ? (
                                 <>{tx.componentChanges && Object.keys(tx.componentChanges).length > 0 
-                                  ? `${t.undo} ${Object.keys(tx.componentChanges).map(c => t[c] || c).join(', ')}`
+                                  ? `${t.undo} ${tx.undoneType === 'PURCHASE' ? t.purchase : t.install} ${Object.keys(tx.componentChanges).map(c => t[c] || c).join(', ')}`
                                   : t.undo}</>
                               ) : (tx.fromClass && tx.toClass && tx.undoneType !== 'ADJUSTMENT') ? (
                                 `${getClassName(tx.toClass)} → ${getClassName(tx.fromClass)}`
