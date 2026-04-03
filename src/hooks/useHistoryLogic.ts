@@ -105,11 +105,11 @@ export const useHistoryLogic = ({
     if (!searchTerm.trim()) return true;
     const search = searchTerm.toLowerCase();
     return (
-      tx.brand.toLowerCase().includes(search) ||
-      tx.series.toLowerCase().includes(search) ||
-      tx.model.toLowerCase().includes(search) ||
-      tx.batchId.toLowerCase().includes(search) ||
-      tx.type.toLowerCase().includes(search) ||
+      (tx.brand || '').toLowerCase().includes(search) ||
+      (tx.series || '').toLowerCase().includes(search) ||
+      (tx.model || '').toLowerCase().includes(search) ||
+      (tx.batchId || '').toLowerCase().includes(search) ||
+      (tx.type || '').toLowerCase().includes(search) ||
       (tx.notes || '').toLowerCase().includes(search)
     );
   });
