@@ -205,10 +205,10 @@ export function useTransactionActions(user: User | null, lang: Language) {
           userId: user.uid,
         };
         
-        if (txType !== 'INCOMING' && fromClass) {
+        if ((txType === 'REPAIR' || txType === 'SALE') && fromClass) {
           txData.fromClass = fromClass;
         }
-        if (txType !== 'SALE' && toClass) {
+        if ((txType === 'REPAIR' || txType === 'ADJUSTMENT' || txType === 'INCOMING') && toClass) {
           txData.toClass = toClass;
         }
         if (notes.trim()) {

@@ -189,8 +189,14 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                             <span className="text-yellow-600 font-semibold">
                               {tx.undoneType === 'BREAKDOWN' ? (
                                 <>{t.components} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.fromClass)}</>
-                              ) : tx.fromClass && tx.toClass ? (
+                              ) : (tx.undoneType === 'PURCHASE' || tx.undoneType === 'INSTALL') ? (
+                                <>{tx.componentChanges && Object.keys(tx.componentChanges).length > 0 
+                                  ? `${t.undo} ${Object.keys(tx.componentChanges).map(c => t[c] || c).join(', ')}`
+                                  : t.undo}</>
+                              ) : (tx.fromClass && tx.toClass && tx.undoneType !== 'ADJUSTMENT') ? (
                                 `${getClassName(tx.toClass)} → ${getClassName(tx.fromClass)}`
+                              ) : (tx.toClass && tx.undoneType === 'ADJUSTMENT') ? (
+                                <>{getClassName(tx.toClass) === t.spoiled ? t.spoiled : `${t.class} ${getClassName(tx.toClass)}`}</>
                               ) : tx.fromClass ? (
                                 `${t.to} ${getClassName(tx.fromClass)}`
                               ) : tx.toClass ? (
