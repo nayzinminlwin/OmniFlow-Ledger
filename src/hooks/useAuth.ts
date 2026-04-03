@@ -24,7 +24,7 @@ export function useAuth(lang: Language) {
   const t = translations[lang];
 
   const bootstrapAdminEmails = ["tpl.pauline.pts2026@gmail.com", "nayzinminlwin22@gmail.com"];
-  const originalAdminEmails = ["nayzinminlwin22@gmail.com", "tpl.pauline.pts2026@gmail.com"];
+  const originalAdminEmails = ["tpl.pauline.pts2026@gmail.com", "nayzinminlwin22@gmail.com"];
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {

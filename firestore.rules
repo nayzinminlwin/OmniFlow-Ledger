@@ -32,7 +32,7 @@ service cloud.firestore {
 
     function isBootstrapAdmin() {
       return isAuthenticated() && 
-             request.auth.token.email in ["nayzinminlwin22@gmail.com", "tpl.pauline.pts2026@gmail.com"] && 
+             request.auth.token.email in ["tpl.pauline.pts2026@gmail.com", "nayzinminlwin22@gmail.com"] && 
              request.auth.token.email_verified == true;
     }
 
