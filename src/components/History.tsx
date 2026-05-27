@@ -77,9 +77,9 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.seriesLabel}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.modelLabel}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.type}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.movement}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8] min-w-[200px]">{t.movement}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest text-right bg-[#F8F8F8]">{t.qty}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.user}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8] min-w-[200px]">{t.user}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.notes}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.undo}</th>
               </tr>
@@ -127,47 +127,52 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                         <p className="text-[15px] font-medium text-gray-600">{tx.model}</p>
                       </td>
                       <td className="px-8 py-4 relative">
-                        <div 
-                          className={cn(
-                            "inline-flex items-center gap-1.5",
-                            (tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges)) && "cursor-pointer breakdown-trigger"
-                          )}
-                          onClick={(e) => togglePopup(tx, txUniqueId, index, e)}
-                        >
-                          <span className={cn(
-                            "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap",
-                            tx.type === 'INCOMING' && "bg-green-500/10 text-green-700",
-                            tx.type === 'PURCHASE' && "bg-emerald-500/10 text-emerald-700",
-                            tx.type === 'SALE' && "bg-orange-500/10 text-orange-700",
-                            tx.type === 'REPAIR' && "bg-blue-500/10 text-blue-700",
-                            tx.type === 'ADJUSTMENT' && "bg-gray-500/10 text-gray-700",
-                            tx.type === 'DELETION' && "bg-red-500/10 text-red-700",
-                            tx.type === 'UNDO' && "bg-yellow-500/10 text-yellow-700",
-                            tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-700",
-                            tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-700"
-                          )}>
-                            {tx.type === 'INCOMING' && <ArrowDownLeft className="w-3 h-3" />}
-                            {tx.type === 'PURCHASE' && <ShoppingCart className="w-3 h-3" />}
-                            {tx.type === 'SALE' && <ArrowUpRight className="w-3 h-3" />}
-                            {tx.type === 'REPAIR' && (tx.fromClass === 'UNCLASSIFIED' ? <PlusCircle className="w-3 h-3" /> : <Wrench className="w-3 h-3" />)}
-                            {tx.type === 'ADJUSTMENT' && <Sliders className="w-3 h-3" />}
-                            {tx.type === 'DELETION' && <PlusCircle className="w-3 h-3 rotate-45" />}
-                            {tx.type === 'UNDO' && <Undo2 className="w-3 h-3" />}
-                            {tx.type === 'BREAKDOWN' && <Hammer className="w-3 h-3" />}
-                            {tx.type === 'INSTALL' && <PackagePlus className="w-3 h-3" />}
-                            {tx.type === 'EXPORT' && <FileSpreadsheet className="w-3 h-3" />}
-                            {tx.type === 'REPAIR' && tx.fromClass === 'UNCLASSIFIED' 
-                              ? t.initClass 
-                              : tx.type === 'UNDO' 
-                                ? `${t.undo} ${tx.undoneType === 'PURCHASE' ? t.buy : (tx.undoneType ? (t[tx.undoneType.toLowerCase() as keyof typeof t] || tx.undoneType) : '')}`
-                                : (t[tx.type.toLowerCase() as keyof typeof t] || tx.type)}
-                          </span>
-                          {(tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges)) && (
-                            <Info className="w-3.5 h-3.5 text-purple-400 opacity-50 group-hover:opacity-100 transition-opacity" />
-                          )}
-                        </div>
+                        {(() => {
+                          const isComponentTx = tx.type === 'BREAKDOWN' || tx.type === 'PURCHASE' || tx.type === 'INSTALL' || (tx.type === 'UNDO' && tx.componentChanges);
+                          return (
+                            <div 
+                              className={cn(
+                                "inline-flex items-center gap-1.5",
+                                isComponentTx && "cursor-pointer breakdown-trigger"
+                              )}
+                              onClick={(e) => isComponentTx && togglePopup(tx, txUniqueId, index, e)}
+                            >
+                              <span className={cn(
+                                "px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 whitespace-nowrap",
+                                tx.type === 'INCOMING' && "bg-green-500/10 text-green-700",
+                                tx.type === 'PURCHASE' && "bg-emerald-500/10 text-emerald-700",
+                                tx.type === 'SALE' && "bg-orange-500/10 text-orange-700",
+                                tx.type === 'REPAIR' && "bg-blue-500/10 text-blue-700",
+                                tx.type === 'ADJUSTMENT' && "bg-gray-500/10 text-gray-700",
+                                tx.type === 'DELETION' && "bg-red-500/10 text-red-700",
+                                tx.type === 'UNDO' && "bg-yellow-500/10 text-yellow-700",
+                                tx.type === 'BREAKDOWN' && "bg-purple-500/10 text-purple-700",
+                                tx.type === 'INSTALL' && "bg-pink-500/10 text-pink-700"
+                              )}>
+                                {tx.type === 'INCOMING' && <ArrowDownLeft className="w-3 h-3" />}
+                                {tx.type === 'PURCHASE' && <ShoppingCart className="w-3 h-3" />}
+                                {tx.type === 'SALE' && <ArrowUpRight className="w-3 h-3" />}
+                                {tx.type === 'REPAIR' && (tx.fromClass === 'UNCLASSIFIED' ? <PlusCircle className="w-3 h-3" /> : <Wrench className="w-3 h-3" />)}
+                                {tx.type === 'ADJUSTMENT' && <Sliders className="w-3 h-3" />}
+                                {tx.type === 'DELETION' && <PlusCircle className="w-3 h-3 rotate-45" />}
+                                {tx.type === 'UNDO' && <Undo2 className="w-3 h-3" />}
+                                {tx.type === 'BREAKDOWN' && <Hammer className="w-3 h-3" />}
+                                {tx.type === 'INSTALL' && <PackagePlus className="w-3 h-3" />}
+                                {tx.type === 'EXPORT' && <FileSpreadsheet className="w-3 h-3" />}
+                                {tx.type === 'REPAIR' && tx.fromClass === 'UNCLASSIFIED' 
+                                  ? t.initClass 
+                                  : tx.type === 'UNDO' 
+                                    ? `${t.undo} ${tx.undoneType === 'PURCHASE' ? t.buy : (tx.undoneType ? (t[tx.undoneType.toLowerCase() as keyof typeof t] || tx.undoneType) : '')}`
+                                    : (t[tx.type.toLowerCase() as keyof typeof t] || tx.type)}
+                              </span>
+                              {isComponentTx && (
+                                <Info className="w-3.5 h-3.5 text-purple-400 opacity-50 group-hover:opacity-100 transition-opacity" />
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
-                      <td className="px-8 py-4">
+                      <td className="px-8 py-4 min-w-[200px]">
                         <p className="text-[15px] font-medium text-gray-700">
                           {tx.type === 'REPAIR' ? (
                             <>{getClassName(tx.fromClass)} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.toClass)}</>
@@ -189,8 +194,14 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                             <span className="text-yellow-600 font-semibold">
                               {tx.undoneType === 'BREAKDOWN' ? (
                                 <>{t.components} <ArrowRightLeft className="inline w-3 h-3 mx-1 text-gray-400" /> {getClassName(tx.fromClass)}</>
-                              ) : tx.fromClass && tx.toClass ? (
+                              ) : (tx.undoneType === 'PURCHASE' || tx.undoneType === 'INSTALL') ? (
+                                <>{tx.componentChanges && Object.keys(tx.componentChanges).length > 0 
+                                  ? `${t.undo} ${tx.undoneType === 'PURCHASE' ? t.purchase : t.install} ${Object.keys(tx.componentChanges).map(c => t[c] || c).join(', ')}`
+                                  : t.undo}</>
+                              ) : (tx.fromClass && tx.toClass && tx.undoneType !== 'ADJUSTMENT') ? (
                                 `${getClassName(tx.toClass)} → ${getClassName(tx.fromClass)}`
+                              ) : (tx.toClass && tx.undoneType === 'ADJUSTMENT') ? (
+                                <>{getClassName(tx.toClass) === t.spoiled ? t.spoiled : `${t.class} ${getClassName(tx.toClass)}`}</>
                               ) : tx.fromClass ? (
                                 `${t.to} ${getClassName(tx.fromClass)}`
                               ) : tx.toClass ? (
@@ -224,7 +235,7 @@ export const History: React.FC<HistoryProps> = memo(({ transactions, users, t, a
                           )}
                         </p>
                       </td>
-                      <td className="px-8 py-4">
+                      <td className="px-8 py-4 min-w-[200px]">
                         <p className={cn(
                           "text-[15px] font-medium text-gray-700",
                           wordCount > 5 ? "whitespace-nowrap" : ""

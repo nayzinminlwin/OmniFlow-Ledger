@@ -474,6 +474,36 @@ describe('useTransactionActions', () => {
       expect(mockTransaction.update).toHaveBeenCalled();
       expect(result.current.success).toBe('Batch deleted successfully!');
     });
+
+    it('should handle malformed batch data (missing items) in handleDeleteBatch gracefully', async () => {
+      const { result } = renderHook(() => useTransactionActions(mockUser, mockLang));
+      
+      const malformedBatch = { batchId: 'malformed1' }; // Missing items
+      const mockTransaction = {
+        get: vi.fn().mockResolvedValue({ exists: () => true, data: () => mockStock }),
+        update: vi.fn(),
+        set: vi.fn(),
+      };
+      
+      vi.mocked(firestore.getDoc).mockResolvedValue({ exists: () => true, data: () => malformedBatch } as any);
+      vi.mocked(firestore.getDocs).mockResolvedValue({ docs: [] } as any);
+      vi.mocked(firestore.runTransaction).mockImplementation(async (db, updateFunction) => {
+        await updateFunction(mockTransaction as any);
+      });
+
+      vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+      const mockSetSelectedBatchId = vi.fn();
+
+      await act(async () => {
+        const res = await result.current.handleDeleteBatch('malformed1', mockSetSelectedBatchId);
+        expect(res).toBe(true);
+      });
+
+      expect(firestore.runTransaction).toHaveBeenCalled();
+      expect(mockTransaction.update).toHaveBeenCalled();
+      expect(result.current.success).toBe('Batch deleted successfully!');
+    });
   });
 
   describe('recordComponentPurchase', () => {

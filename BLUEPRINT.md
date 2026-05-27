@@ -123,7 +123,15 @@ The application uses **Vitest** and **React Testing Library** for comprehensive 
 
 ---
 
-## 8. Future Updates
+## 9. CI/CD & Deployment
+
+- **GitHub Actions**: Automated deployment is configured via `.github/workflows/firebase-hosting-merge.yml`.
+- **Environment Variables**: The application uses Vite environment variables (`VITE_FIREBASE_*`) for configuration, allowing for secure builds in CI environments without committing sensitive JSON files.
+- **Secrets Management**: Sensitive credentials (Firebase Service Account, API Keys) are managed via GitHub Repository Secrets.
+
+---
+
+## 10. Future Updates
 
 - **Before every update**: Read this blueprint to ensure the new code respects the existing architecture.
 - **After every update**: Update this blueprint if new directories, core hooks, or major data flows are introduced.

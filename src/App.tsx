@@ -1,5 +1,4 @@
 import React, { useCallback } from 'react';
-import { ErrorBoundary } from './components/ErrorBoundary';
 
 // Hooks
 import { useAppLogic } from './hooks/useAppLogic';
@@ -134,119 +133,117 @@ export default function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <Layout
-        user={user}
+    <Layout
+      user={user}
+      t={t}
+      lang={lang}
+      setLang={setLang}
+      handleLogout={handleLogout}
+      setActiveTab={setActiveTab}
+    >
+      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} t={t} isUltimateAdmin={isUltimateAdmin} isAdmin={isAdmin} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <Dashboard 
+          stock={stock} 
+          componentStock={componentStock}
+          batches={batches}
+          transactions={transactions} 
+          t={t} 
+          setActiveTab={setActiveTab}
+          activeTab={activeTab}
+          loading={loading}
+          isAdmin={isAdmin}
+          onAddTransaction={handleAddTransaction}
+          currentUserProfile={profile}
+        />
+
+        <History 
+          transactions={transactions} 
+          batches={batches}
+          componentStock={componentStock}
+          users={users}
+          t={t} 
+          activeTab={activeTab} 
+          loading={loading}
+          onUndo={handleUndoTransaction}
+          currentUserProfile={profile}
+          isAdmin={isAdmin}
+        />
+
+        <AddTransaction 
+          t={t}
+          activeTab={activeTab}
+          onAddTransaction={handleAddTransaction}
+          batches={batches}
+          isSubmitting={isSubmitting}
+          isAdmin={isAdmin}
+        />
+
+        <UpdateComponents
+          stock={stock}
+          componentStock={componentStock}
+          batches={batches}
+          t={t}
+          lang={lang}
+          activeTab={activeTab}
+          isAdmin={isAdmin}
+        />
+
+        <ComponentInventory
+          componentStock={componentStock}
+          spoiledComponentStock={spoiledComponentStock}
+          componentTransactions={componentTransactions}
+          users={users}
+          t={t}
+          activeTab={activeTab}
+        />
+
+        <Batches 
+          batches={batches}
+          selectedBatchId={selectedBatchId}
+          setSelectedBatchId={setSelectedBatchId}
+          setEditingBatch={setEditingBatch}
+          setNewBatchName={setNewBatchName}
+          onDeleteBatch={handleDeleteBatch}
+          t={t}
+          activeTab={activeTab}
+          loading={loading}
+          isAdmin={isAdmin}
+        />
+
+        <UserManagement 
+          t={t}
+          activeTab={activeTab}
+          isOriginalAdmin={isOriginalAdmin}
+        />
+      </div>
+
+      {editingBatch && (
+        <RenameBatchModal 
+          editingBatch={editingBatch}
+          setEditingBatch={setEditingBatch}
+          newBatchName={newBatchName}
+          setNewBatchName={setNewBatchName}
+          handleRenameBatch={() => handleRenameBatch(editingBatch, newBatchName, selectedBatchId, setSelectedBatchId)}
+          isRenaming={isRenaming}
+          t={t}
+        />
+      )}
+
+      <Toast 
+        message={error} 
+        type="error" 
+        onClose={closeError} 
         t={t}
-        lang={lang}
-        setLang={setLang}
-        handleLogout={handleLogout}
-        setActiveTab={setActiveTab}
-      >
-        <Navigation activeTab={activeTab} setActiveTab={setActiveTab} t={t} isUltimateAdmin={isUltimateAdmin} isAdmin={isAdmin} />
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <Dashboard 
-            stock={stock} 
-            componentStock={componentStock}
-            batches={batches}
-            transactions={transactions} 
-            t={t} 
-            setActiveTab={setActiveTab}
-            activeTab={activeTab}
-            loading={loading}
-            isAdmin={isAdmin}
-            onAddTransaction={handleAddTransaction}
-            currentUserProfile={profile}
-          />
-
-          <History 
-            transactions={transactions} 
-            batches={batches}
-            componentStock={componentStock}
-            users={users}
-            t={t} 
-            activeTab={activeTab} 
-            loading={loading}
-            onUndo={handleUndoTransaction}
-            currentUserProfile={profile}
-            isAdmin={isAdmin}
-          />
-
-          <AddTransaction 
-            t={t}
-            activeTab={activeTab}
-            onAddTransaction={handleAddTransaction}
-            batches={batches}
-            isSubmitting={isSubmitting}
-            isAdmin={isAdmin}
-          />
-
-          <UpdateComponents
-            stock={stock}
-            componentStock={componentStock}
-            batches={batches}
-            t={t}
-            lang={lang}
-            activeTab={activeTab}
-            isAdmin={isAdmin}
-          />
-
-          <ComponentInventory
-            componentStock={componentStock}
-            spoiledComponentStock={spoiledComponentStock}
-            componentTransactions={componentTransactions}
-            users={users}
-            t={t}
-            activeTab={activeTab}
-          />
-
-          <Batches 
-            batches={batches}
-            selectedBatchId={selectedBatchId}
-            setSelectedBatchId={setSelectedBatchId}
-            setEditingBatch={setEditingBatch}
-            setNewBatchName={setNewBatchName}
-            onDeleteBatch={handleDeleteBatch}
-            t={t}
-            activeTab={activeTab}
-            loading={loading}
-            isAdmin={isAdmin}
-          />
-
-          <UserManagement 
-            t={t}
-            activeTab={activeTab}
-            isOriginalAdmin={isOriginalAdmin}
-          />
-        </div>
-
-        {editingBatch && (
-          <RenameBatchModal 
-            editingBatch={editingBatch}
-            setEditingBatch={setEditingBatch}
-            newBatchName={newBatchName}
-            setNewBatchName={setNewBatchName}
-            handleRenameBatch={() => handleRenameBatch(editingBatch, newBatchName, selectedBatchId, setSelectedBatchId)}
-            isRenaming={isRenaming}
-            t={t}
-          />
-        )}
-
-        <Toast 
-          message={error} 
-          type="error" 
-          onClose={closeError} 
-          t={t}
-        />
-        <Toast 
-          message={success} 
-          type="success" 
-          onClose={closeSuccess} 
-          t={t}
-        />
-        <Toaster position="top-center" />
-      </Layout>
-    </ErrorBoundary>
+      />
+      <Toast 
+        message={success} 
+        type="success" 
+        onClose={closeSuccess} 
+        t={t}
+      />
+      <Toaster position="top-center" />
+    </Layout>
   );
 }

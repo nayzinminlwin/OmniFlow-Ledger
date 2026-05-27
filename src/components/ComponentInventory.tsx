@@ -111,13 +111,13 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
             <thead className="sticky top-0 z-20">
               <tr className="bg-[#F8F8F8] shadow-[0_1px_0_rgba(0,0,0,0.05)]">
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.dateTime}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.type}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8] min-w-[120px]">{t.type}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.brandLabel}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.seriesLabel}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.modelLabel}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.componentChanges}</th>
                 <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.user}</th>
-                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8]">{t.notes}</th>
+                <th className="px-8 py-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest bg-[#F8F8F8] min-w-[150px]">{t.notes}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-black/5">
@@ -138,9 +138,9 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
                         {safeFormatDate(tx.timestamp, 'HH:mm:ss')}
                       </span>
                     </td>
-                    <td className="px-8 py-4">
+                    <td className="px-8 py-4 whitespace-nowrap">
                       <span className={cn(
-                        "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
+                        "inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
                         tx.type === 'INCOMING' ? "bg-green-500/10 text-green-700" : 
                         tx.type === 'PURCHASE' ? "bg-emerald-500/10 text-emerald-700" :
                         tx.type === 'INSTALL' ? "bg-pink-500/10 text-pink-700" :
@@ -178,7 +178,7 @@ export const ComponentInventory: React.FC<ComponentInventoryProps> = memo(({ com
                         );
                       })()}
                     </td>
-                    <td className="px-8 py-4 text-[12px] text-gray-500 italic max-w-xs truncate">
+                    <td className="px-8 py-4 text-[12px] text-gray-500 italic max-w-[200px] truncate">
                       {tx.notes || '-'}
                     </td>
                   </tr>

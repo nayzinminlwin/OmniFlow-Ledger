@@ -51,7 +51,7 @@ This application relies on Firebase Authentication and Firestore.
 ```bash
 # Clone the repository
 git clone <your-repo-url>
-cd laptop-repair-shop
+cd OmniFlow-Ledger
 
 # Install dependencies
 npm install
@@ -59,22 +59,20 @@ npm install
 
 ### 3. Environment Configuration
 
-Create a `firebase-applet-config.json` file in the root directory (or `src/` depending on your setup) with your Firebase credentials:
+Create a `.env` file in the root directory based on `.env.example`. This application uses Vite environment variables for Firebase configuration:
 
-```json
-{
-  "apiKey": "YOUR_API_KEY",
-  "authDomain": "YOUR_AUTH_DOMAIN",
-  "projectId": "YOUR_PROJECT_ID",
-  "storageBucket": "YOUR_STORAGE_BUCKET",
-  "messagingSenderId": "YOUR_MESSAGING_SENDER_ID",
-  "appId": "YOUR_APP_ID",
-  "measurementId": "YOUR_MEASUREMENT_ID",
-  "firestoreDatabaseId": "(default)"
-}
+```env
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+VITE_FIREBASE_FIRESTORE_DATABASE_ID=(default)
 ```
 
-*Note: If you are running this within the Google AI Studio Applet environment, this file is automatically managed for you.*
+*Note: The `firebase-applet-config.json` file is no longer the primary source of configuration for builds, though it may still be used by local development tools.*
 
 ### 4. Running the Development Server
 
@@ -88,7 +86,17 @@ The application will be available at `http://localhost:3000`.
 
 ## 🌐 Hosting & Deployment
 
-### Option A: Firebase Hosting (Recommended)
+### Option A: Automated Deployment (GitHub Actions)
+
+This project is configured with a CI/CD pipeline that automatically builds and deploys your application to Firebase whenever you push to the `main` branch.
+
+1.  **GitHub Secrets**: Add the following secrets to your GitHub repository (**Settings > Secrets and variables > Actions**):
+    -   `FIREBASE_SERVICE_ACCOUNT_LAPTOPREPAIRSHOP`: Your Firebase Service Account JSON key.
+    -   `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, etc. (All variables listed in `.env.example`).
+2.  **Push to Main**: Simply run `git push origin main`.
+3.  **Monitor**: Check the **Actions** tab in GitHub to see the build and deployment progress.
+
+### Option B: Manual Firebase Hosting (Recommended)
 
 Since the app already uses Firebase for its backend, Firebase Hosting is the most seamless option.
 

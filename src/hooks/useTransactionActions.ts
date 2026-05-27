@@ -205,10 +205,10 @@ export function useTransactionActions(user: User | null, lang: Language) {
           userId: user.uid,
         };
         
-        if (txType !== 'INCOMING' && fromClass) {
+        if ((txType === 'REPAIR' || txType === 'SALE') && fromClass) {
           txData.fromClass = fromClass;
         }
-        if (txType !== 'SALE' && toClass) {
+        if ((txType === 'REPAIR' || txType === 'ADJUSTMENT' || txType === 'INCOMING') && toClass) {
           txData.toClass = toClass;
         }
         if (notes.trim()) {
@@ -326,12 +326,16 @@ export function useTransactionActions(user: User | null, lang: Language) {
         const currentBatchData = batchDoc.data() as Batch;
         let totalBatchQty = 0;
         
-        currentBatchData.items.forEach(batchItem => {
-          Object.keys(batchItem.counts).forEach(cls => {
-            const count = batchItem.counts[cls as LaptopClass] || 0;
-            totalBatchQty += count;
+        if (currentBatchData.items && Array.isArray(currentBatchData.items)) {
+          currentBatchData.items.forEach(batchItem => {
+            if (batchItem && batchItem.counts) {
+              Object.keys(batchItem.counts).forEach(cls => {
+                const count = batchItem.counts[cls as LaptopClass] || 0;
+                totalBatchQty += count;
+              });
+            }
           });
-        });
+        }
         
         transaction.update(batchRef, { active: false });
 
