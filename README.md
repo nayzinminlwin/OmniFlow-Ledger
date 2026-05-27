@@ -5,6 +5,7 @@ A comprehensive, real-time inventory management web application tailored specifi
 ## 🎯 Target Audience
 
 This application is perfectly suited for:
+
 - **Laptop Repair Shops:** Track incoming broken laptops, manage repair components, and record sales of refurbished units.
 - **IT Refurbishers:** Manage batches of incoming laptops, classify them by condition (Class A, B, C, D, Spoiled), and track the extraction of good components from spoiled units.
 - **Electronics Recyclers:** Keep a detailed ledger of parts harvested from recycled electronics.
@@ -13,17 +14,20 @@ This application is perfectly suited for:
 ## ✨ Key Features
 
 ### Core Inventory Management
+
 - **Laptop Stock Tracking:** Track laptops by Brand, Series, Model, and Condition Class (A, B, C, D, Spoiled).
 - **Component Inventory:** Manage individual components (Screens, Batteries, Motherboards, RAM, SSDs, etc.) extracted from spoiled laptops or purchased new.
 - **Batch Management:** Group incoming laptops into batches (e.g., by date or supplier) for easier tracking and reporting.
 - **Transaction Ledger:** A complete, immutable history of all inventory movements (Incoming, Repair, Sale, Adjustment, Component Extraction, Component Installation).
 
 ### Advanced Capabilities
+
 - **Component Extraction Workflow:** A dedicated UI to record the breakdown of spoiled laptops into reusable components, automatically updating both laptop and component inventories.
 - **Component Installation Workflow:** Track the consumption of components when repairing or upgrading laptops.
 - **Real-time Synchronization:** Powered by Firebase Firestore, ensuring all users see the most up-to-date inventory instantly.
 
 ### System Features
+
 - **User Management & Authentication:** Secure Google Login integration. Administrators can approve new users and assign roles (Admin/User).
 - **Multi-language Support:** Built-in internationalization (i18n) supporting English, Malay, and Chinese, making it accessible to diverse teams.
 - **Responsive Design:** A mobile-first, iOS-inspired UI that works flawlessly on desktops, tablets, and smartphones.
@@ -34,11 +38,13 @@ This application is perfectly suited for:
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - [Node.js](https://nodejs.org/) (v18 or higher)
 - [npm](https://www.npmjs.com/) or [yarn](https://yarnpkg.com/)
 - A [Firebase](https://firebase.google.com/) account
 
 ### 1. Firebase Setup
+
 This application relies on Firebase Authentication and Firestore.
 
 1. Create a new project in the [Firebase Console](https://console.firebase.google.com/).
@@ -72,7 +78,7 @@ VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
 VITE_FIREBASE_FIRESTORE_DATABASE_ID=(default)
 ```
 
-*Note: The `firebase-applet-config.json` file is no longer the primary source of configuration for builds, though it may still be used by local development tools.*
+_Note: The `firebase-applet-config.json` file is no longer the primary source of configuration for builds, though it may still be used by local development tools._
 
 ### 4. Running the Development Server
 
@@ -91,8 +97,8 @@ The application will be available at `http://localhost:3000`.
 This project is configured with a CI/CD pipeline that automatically builds and deploys your application to Firebase whenever you push to the `main` branch.
 
 1.  **GitHub Secrets**: Add the following secrets to your GitHub repository (**Settings > Secrets and variables > Actions**):
-    -   `FIREBASE_SERVICE_ACCOUNT_LAPTOPREPAIRSHOP`: Your Firebase Service Account JSON key.
-    -   `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, etc. (All variables listed in `.env.example`).
+    - `FIREBASE_SERVICE_ACCOUNT_LAPTOPREPAIRSHOP`: Your Firebase Service Account JSON key.
+    - `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, etc. (All variables listed in `.env.example`).
 2.  **Push to Main**: Simply run `git push origin main`.
 3.  **Monitor**: Check the **Actions** tab in GitHub to see the build and deployment progress.
 
@@ -122,9 +128,43 @@ This is a standard Vite React application, which makes it incredibly easy to dep
 
 ---
 
+## 📸 Screenshots
+
+The screenshots below showcase the main features and user interface of the application, demonstrating its clean, iOS-inspired design and intuitive workflows.
+
+### Dashboard
+
+![Dashboard screenshot](resources/assets/Dashboard_page.png)
+
+### Batches
+
+![Batches screenshot](resources/assets/Batches_page.png)
+
+### Update Stock
+
+![Update Stock screenshot](resources/assets/UpdateStock_page.png)
+
+### Component Inventory
+
+![Component Inventory screenshot](resources/assets/ComponentInventory_page.png)
+
+### Update Component
+
+![Update Component screenshot](resources/assets/UpdateComponent_page.png)
+
+### Ledger
+
+![Ledger screenshot](resources/assets/Ledger_page.png)
+
+### User Management
+
+![User Management screenshot](resources/assets/UserManagement_page.jpeg)
+
+---
+
 ## 🛡️ Security Rules
 
-To ensure your data is secure, you must deploy Firestore Security Rules. A prototype `firestore.rules` file is included in the repository. 
+To ensure your data is secure, you must deploy Firestore Security Rules. A prototype `firestore.rules` file is included in the repository.
 
 **Important:** The first user to log in with the email specified in the rules will be granted Ultimate Admin privileges. From there, they can approve other users via the User Management dashboard.
 
